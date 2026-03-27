@@ -30,7 +30,9 @@ import {
   CreditCard,
   Puzzle,
   ShieldAlert,
-  MessageSquare
+  MessageSquare,
+  Code2,
+  MessageCircle
 } from 'lucide-react'
 
 interface SystemLog {
@@ -106,6 +108,16 @@ interface LogsResponse {
     scannerTraffic?: {
       total: number
       note: string
+    }
+    websiteEmbedStats?: {
+      settingsSaved: number
+      codeCopied: number
+      settingsSaved7d: number
+      codeCopied7d: number
+    }
+    whatsappOrderRedirectStats?: {
+      total: number
+      last7Days: number
     }
   }
 }
@@ -211,6 +223,9 @@ export default function SystemLogsPage() {
       storefront_404: 'Storefront 404',
       storefront_error: 'Storefront Error',
       storefront_success: 'Storefront Success',
+      storefront_order_whatsapp_redirect: 'Storefront WhatsApp order redirect',
+      website_embed_settings_saved: 'Website embed settings saved',
+      website_embed_copy: 'Website embed copy',
       products_error: 'Products Error',
       order_created: 'Order Created',
       order_error: 'Order Error',
@@ -391,6 +406,9 @@ export default function SystemLogsPage() {
                   <option value="storefront_success">Storefront Success</option>
                   <option value="storefront_404">Storefront 404</option>
                   <option value="storefront_error">Storefront Error</option>
+                  <option value="storefront_order_whatsapp_redirect">Storefront WhatsApp order redirect</option>
+                  <option value="website_embed_settings_saved">Website embed settings saved</option>
+                  <option value="website_embed_copy">Website embed copy</option>
                   <option value="products_error">Products Error</option>
                 </optgroup>
                 <optgroup label="Orders &amp; Appointments">
@@ -886,6 +904,79 @@ export default function SystemLogsPage() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Website embed (admin Marketing → Embedded: save + copy snippet) */}
+            {analytics.websiteEmbedStats && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <Code2 className="w-5 h-5 text-cyan-600" />
+                    Website embed
+                  </h3>
+                  <span className="text-2xl font-bold text-gray-900">
+                    {(
+                      analytics.websiteEmbedStats.settingsSaved +
+                      analytics.websiteEmbedStats.codeCopied
+                    ).toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">
+                  Marketing → Embedded: save configuration and copy embed code. Headline is all-time total events.
+                </p>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-gray-600">Settings saved</span>
+                    <span className="text-sm font-medium text-gray-900">
+                      {analytics.websiteEmbedStats.settingsSaved.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-gray-600">Code copied</span>
+                    <span className="text-sm font-medium text-gray-900">
+                      {analytics.websiteEmbedStats.codeCopied.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <p className="text-xs text-gray-500">
+                    Last 7 days:{' '}
+                    <span className="font-medium text-gray-700">
+                      {analytics.websiteEmbedStats.settingsSaved7d.toLocaleString()} saves
+                    </span>
+                    {' · '}
+                    <span className="font-medium text-gray-700">
+                      {analytics.websiteEmbedStats.codeCopied7d.toLocaleString()} copies
+                    </span>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Storefront WhatsApp order redirect (checkout → wa.me) */}
+            {analytics.whatsappOrderRedirectStats && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5 text-emerald-600" />
+                    WhatsApp order redirects
+                  </h3>
+                  <span className="text-2xl font-bold text-gray-900">
+                    {analytics.whatsappOrderRedirectStats.total.toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">
+                  Logged when a customer is sent to WhatsApp after placing an order (storefront checkout flow).
+                </p>
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <p className="text-sm text-gray-600">
+                    Last 7 days:{' '}
+                    <span className="font-semibold text-emerald-700">
+                      {analytics.whatsappOrderRedirectStats.last7Days.toLocaleString()}
+                    </span>
+                  </p>
+                </div>
               </div>
             )}
           </div>

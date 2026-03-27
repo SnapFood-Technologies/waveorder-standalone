@@ -2,7 +2,9 @@
 // PERFORMANCE OPTIMIZED: Separate endpoint for products with filtering, search, and pagination
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { businessSlugFilter } from '@/lib/storefront-slug'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
+import { mergeProductWhereVisitorCountry, resolveVisitorCountryIso } from '@/lib/visitor-country-catalog'
 
 // Albanian to English product term translations
 // Maps common Albanian jewelry/product terms to their English equivalents
@@ -203,10 +205,10 @@ export async function GET(
     const brandIds = searchParams.get('brands') ? searchParams.get('brands')!.split(',').filter(id => id.trim()) : []
     const sortBy = searchParams.get('sortBy') || 'stock-desc'
     
-    // Find business by slug
-    const businessData = await prisma.business.findUnique({
+    // Find business by slug (case-insensitive)
+    const businessData = await prisma.business.findFirst({
       where: { 
-        slug,
+        slug: businessSlugFilter(slug),
         isActive: true,
         setupWizardCompleted: true
       }
@@ -240,6 +242,15 @@ export async function GET(
       
       return NextResponse.json({ error: 'Store not found' }, { status: 404 })
     }
+
+    let visitorIso: string | null = null
+    if (businessData.countryBasedCatalogEnabled) {
+      visitorIso = await resolveVisitorCountryIso(request)
+    }
+    const countryCatalogOpts = {
+      enabled: !!businessData.countryBasedCatalogEnabled,
+      visitorIso
+    }
     
     business = {
       id: businessData.id,
@@ -247,7 +258,8 @@ export async function GET(
       storefrontLanguage: businessData.storefrontLanguage,
       connectedBusinesses: businessData.connectedBusinesses,
       hideProductsWithoutPhotos: businessData.hideProductsWithoutPhotos,
-      showStockBadge: businessData.showStockBadge ?? false
+      showStockBadge: businessData.showStockBadge ?? false,
+      countryBasedCatalogEnabled: businessData.countryBasedCatalogEnabled ?? false
     }
 
 
@@ -259,13 +271,16 @@ export async function GET(
 
     // SINGLE PRODUCT FETCH: If productId is provided, fetch just that product (for share links)
     if (singleProductId) {
+      const singleWhere: Record<string, unknown> = {
+        id: singleProductId,
+        businessId: { in: businessIds },
+        isActive: true,
+        price: { gt: 0 }
+      }
+      mergeProductWhereVisitorCountry(singleWhere, countryCatalogOpts)
+
       const singleProduct = await prisma.product.findFirst({
-        where: {
-          id: singleProductId,
-          businessId: { in: businessIds },
-          isActive: true,
-          price: { gt: 0 }
-        },
+        where: singleWhere,
         select: {
           id: true,
           name: true,
@@ -527,6 +542,8 @@ export async function GET(
       productWhere.OR = stockConditions
     }
     // If showStockBadge is enabled and no search term, no OR conditions needed
+
+    mergeProductWhereVisitorCountry(productWhere, countryCatalogOpts)
 
     // Build orderBy clause
     let orderBy: any = { stock: 'desc' }

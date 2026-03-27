@@ -47,11 +47,26 @@ import {
   Megaphone
 } from 'lucide-react'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
+import { logStorefrontWhatsAppOrderRedirect } from '@/lib/client-system-log'
+import {
+  persistCatalogVisitorCookie,
+  readCatalogVisitorIsoFromBrowser
+} from '@/lib/storefront-catalog-visitor'
+import {
+  canSubmitStorefrontOrder,
+  formatStorefrontOrderButtonLabel,
+  formatStorefrontOrderFooterHint,
+  getPrimaryStorefrontOrderBlockerForDisplay,
+  getStorefrontOrderSubmitErrorMessage,
+  type StorefrontDeliveryErrorState,
+  type StorefrontOrderValidationContext
+} from '@/lib/storefront-order-validation'
 import { FaFacebook, FaLinkedin, FaTelegram, FaWhatsapp } from 'react-icons/fa'
 import { FaXTwitter } from 'react-icons/fa6'
 import { PhoneInput } from '../site/PhoneInput'
 import LegalPagesModal from './LegalPagesModal'
 import { AiChatBubble } from './AiChatBubble'
+import { StorefrontOrderSubmitButton } from './StorefrontOrderSubmitButton'
 
 // Google Places API hook
 const useGooglePlaces = () => {
@@ -553,6 +568,9 @@ function OrderSuccessMessage({
                   <div>3. {translations.weWillPrepareOrder || 'We\'ll prepare your order once confirmed'}</div>
                 </div>
               </div>
+              <p className="text-xs text-gray-500 mt-2">
+                {translations.youCanCloseThisPage || 'You can safely close this page'}
+              </p>
             </div>
           </div>
           <button
@@ -1841,6 +1859,7 @@ interface StoreData {
   bannerFontSize?: string
   rememberCustomerEnabled?: boolean
   timezone?: string
+  countryBasedCatalogEnabled?: boolean
   aiAssistantEnabled?: boolean
   aiChatIcon?: 'message' | 'help' | 'robot'
   aiChatIconSize?: 'xs' | 'sm' | 'medium' | 'lg' | 'xl'
@@ -1986,6 +2005,24 @@ const getCoverImageStyle = (storeData: any, primaryColor: string) => {
 export default function StoreFront({ storeData }: { storeData: StoreData }) {
   // URL params for product sharing
   const searchParams = useSearchParams()
+
+  /** Resolved ISO2 for country-based catalog (query ?cc / ?visitorCountry, then cookie). */
+  const [catalogVisitorIso, setCatalogVisitorIso] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!storeData.countryBasedCatalogEnabled) {
+      setCatalogVisitorIso(null)
+      return
+    }
+    const cc = searchParams.get('cc') || searchParams.get('visitorCountry')
+    if (cc && /^[a-zA-Z]{2}$/.test(cc)) {
+      const iso = cc.toUpperCase()
+      setCatalogVisitorIso(iso)
+      persistCatalogVisitorCookie(iso)
+      return
+    }
+    setCatalogVisitorIso(readCatalogVisitorIsoFromBrowser())
+  }, [storeData.countryBasedCatalogEnabled, storeData.slug, searchParams])
   
   // Capture UTM parameters from URL for affiliate tracking
   const [utmParams, setUtmParams] = useState<{
@@ -2127,11 +2164,7 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
     return 'pickup' // Fallback
   }
 
-  const [deliveryError, setDeliveryError] = useState<{
-    type: 'OUTSIDE_DELIVERY_AREA' | 'DELIVERY_NOT_AVAILABLE' | 'CALCULATION_FAILED' | null
-    message: string
-    maxDistance?: number
-  } | null>(null)
+  const [deliveryError, setDeliveryError] = useState<StorefrontDeliveryErrorState>(null)
 
 
   // Helper function to show errors
@@ -2396,7 +2429,12 @@ const trackProductEvent = useCallback((
         // Product not in loaded products - fetch it directly from API
         const fetchSharedProduct = async () => {
           try {
-            const response = await fetch(`/api/storefront/${storeData.slug}/products?productId=${productId}`)
+            const sp = new URLSearchParams()
+            sp.set('productId', productId!)
+            if (storeData.countryBasedCatalogEnabled && catalogVisitorIso) {
+              sp.set('visitorCountry', catalogVisitorIso)
+            }
+            const response = await fetch(`/api/storefront/${storeData.slug}/products?${sp.toString()}`)
             if (response.ok) {
               const data = await response.json()
               if (data.products && data.products.length > 0) {
@@ -2415,7 +2453,7 @@ const trackProductEvent = useCallback((
         fetchSharedProduct()
       }
     }
-  }, [searchParams, products, storeData.slug])
+  }, [searchParams, products, storeData.slug, storeData.countryBasedCatalogEnabled, catalogVisitorIso])
 
   // Share product handler - creates URL with encoded product ID and tracking params
   const handleShareProduct = useCallback((productId: string) => {
@@ -2568,6 +2606,10 @@ const trackProductEvent = useCallback((
       params.set('sortBy', sortBy)
       params.set('page', page.toString())
       params.set('limit', '50') // Load 50 products per page for better performance
+
+      if (storeData.countryBasedCatalogEnabled && catalogVisitorIso) {
+        params.set('visitorCountry', catalogVisitorIso)
+      }
       
       const response = await fetch(`/api/storefront/${storeData.slug}/products?${params.toString()}`)
       
@@ -2601,7 +2643,7 @@ const trackProductEvent = useCallback((
       // Clear ref when fetch completes (allows next scroll-triggered fetch)
       isFetchingRef.current = false
     }
-  }, [storeData.slug, selectedCategory, selectedSubCategory, selectedFilterCategory, debouncedSearchTerm, priceMin, priceMax, sortBy, selectedCollections, selectedGroups, selectedBrands])
+  }, [storeData.slug, storeData.countryBasedCatalogEnabled, catalogVisitorIso, selectedCategory, selectedSubCategory, selectedFilterCategory, debouncedSearchTerm, priceMin, priceMax, sortBy, selectedCollections, selectedGroups, selectedBrands])
 
   // Initial products load - skip if we already have initialProducts from server
   useEffect(() => {
@@ -2610,7 +2652,7 @@ const trackProductEvent = useCallback((
       fetchProducts(1, true)
     }
     setDisplayedProductsCount(PRODUCTS_PER_PAGE)
-  }, [storeData.slug]) // Only run when slug changes
+  }, [storeData.slug, catalogVisitorIso, storeData.countryBasedCatalogEnabled]) // Slug or visitor override for country catalog
 
   // Debounce search term - wait 400ms after user stops typing
   useEffect(() => {
@@ -2661,7 +2703,7 @@ const trackProductEvent = useCallback((
     fetchProducts(1, true)
     setDisplayedProductsCount(PRODUCTS_PER_PAGE)
     window.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [debouncedSearchTerm, selectedCategory, selectedSubCategory, selectedFilterCategory, priceMin, priceMax, sortBy, selectedCollections, selectedGroups, selectedBrands])
+  }, [debouncedSearchTerm, selectedCategory, selectedSubCategory, selectedFilterCategory, priceMin, priceMax, sortBy, selectedCollections, selectedGroups, selectedBrands, catalogVisitorIso, storeData.countryBasedCatalogEnabled])
 
   // Update displayed count when products are loaded
   useEffect(() => {
@@ -2822,6 +2864,83 @@ const trackProductEvent = useCallback((
   // Check minimum order requirement
   const meetsMinimumOrder = cartSubtotal >= storeData.minimumOrder || deliveryType !== 'delivery'
 
+  const storefrontOrderValidationContext: StorefrontOrderValidationContext = useMemo(
+    () => ({
+      isTemporarilyClosed: storeData.isTemporarilyClosed,
+      cartItemCount: cart.length,
+      cartSubtotal,
+      cartTotal,
+      minimumOrder: storeData.minimumOrder,
+      businessType: storeData.businessType,
+      deliveryType,
+      isOrderLoading,
+      forceScheduleMode,
+      storeIsOpen: storeData.isOpen,
+      deliveryError,
+      customerName: customerInfo.name,
+      customerPhone: customerInfo.phone,
+      invoiceType: customerInfo.invoiceType || '',
+      invoiceAfm: customerInfo.invoiceAfm,
+      invoiceMinimumOrderValue: storeData.invoiceMinimumOrderValue,
+      customerAddress: customerInfo.address,
+      latitude: customerInfo.latitude,
+      longitude: customerInfo.longitude,
+      deliveryTime: customerInfo.deliveryTime,
+      countryCode: customerInfo.countryCode,
+      city: customerInfo.city,
+      postalPricingId: customerInfo.postalPricingId
+    }),
+    [
+      storeData.isTemporarilyClosed,
+      storeData.minimumOrder,
+      storeData.businessType,
+      storeData.isOpen,
+      storeData.invoiceMinimumOrderValue,
+      cart,
+      cartSubtotal,
+      cartTotal,
+      deliveryType,
+      isOrderLoading,
+      forceScheduleMode,
+      deliveryError,
+      customerInfo.name,
+      customerInfo.phone,
+      customerInfo.invoiceType,
+      customerInfo.invoiceAfm,
+      customerInfo.address,
+      customerInfo.latitude,
+      customerInfo.longitude,
+      customerInfo.deliveryTime,
+      customerInfo.countryCode,
+      customerInfo.city,
+      customerInfo.postalPricingId
+    ]
+  )
+
+  const canSubmitOrder = useCallback(
+    () => canSubmitStorefrontOrder(storefrontOrderValidationContext),
+    [storefrontOrderValidationContext]
+  )
+
+  const orderButtonLabel = useMemo(
+    () =>
+      formatStorefrontOrderButtonLabel(
+        storefrontOrderValidationContext,
+        translations as unknown as Record<string, string | undefined>,
+        currencySymbol
+      ),
+    [storefrontOrderValidationContext, translations, currencySymbol]
+  )
+
+  const orderFooterHint = useMemo(
+    () =>
+      formatStorefrontOrderFooterHint(
+        storefrontOrderValidationContext,
+        translations as unknown as Record<string, string | undefined>
+      ),
+    [storefrontOrderValidationContext, translations]
+  )
+
   // PERFORMANCE OPTIMIZATION: Use products from API (already filtered server-side)
   // Map products to include category name for display - MUST be reactive to products changes
   // IMPORTANT: When searching, only show products from API (products state), not initialProducts
@@ -2838,98 +2957,6 @@ const trackProductEvent = useCallback((
     })
   }, [products, storeData.categories])
 
-  // Helper function to validate phone number is complete
-  const isPhoneValid = (phone: string) => {
-    if (!phone) return false
-    
-    // Remove all non-numeric characters except +
-    const cleanPhone = phone.replace(/[^\d+]/g, '')
-    
-    // Check minimum length based on country code
-    if (cleanPhone.startsWith('+355')) {
-      // Albania: +355 + 9 digits = 13 characters
-      return cleanPhone.length >= 13
-    } else if (cleanPhone.startsWith('+30')) {
-      // Greece: +30 + 10 digits = 13 characters
-      return cleanPhone.length >= 13
-    } else if (cleanPhone.startsWith('+39')) {
-      // Italy: +39 + 9-10 digits = 12-13 characters
-      return cleanPhone.length >= 12
-    } else if (cleanPhone.startsWith('+34')) {
-      // Spain: +34 + 9 digits = 12 characters
-      return cleanPhone.length >= 12
-    } else if (cleanPhone.startsWith('+383')) {
-      // Kosovo: +383 + 8 digits = 12 characters
-      return cleanPhone.length >= 12
-    } else if (cleanPhone.startsWith('+389')) {
-      // North Macedonia: +389 + 8 digits = 12 characters
-      return cleanPhone.length >= 12
-    } else if (cleanPhone.startsWith('+973')) {
-      // Bahrain: +973 + 8 digits = 12 characters
-      return cleanPhone.length >= 12
-    } else if (cleanPhone.startsWith('+44')) {
-      // UK: +44 + 10-11 digits = 13-14 characters
-      return cleanPhone.length >= 13
-    } else if (cleanPhone.startsWith('+1246')) {
-      // Barbados: +1246 + 7 digits = 12 characters
-      return cleanPhone.length >= 12
-    } else if (cleanPhone.startsWith('+1')) {
-      // US: +1 + 10 digits = 12 characters
-      return cleanPhone.length >= 12
-    } else {
-      // Generic: at least 11 digits total (minimum international format)
-      return cleanPhone.length >= 11
-    }
-  }
-
-  // Create a helper function to check if the order can be submitted:
-  const canSubmitOrder = () => {
-    if (storeData.isTemporarilyClosed) return false
-    
-    // Basic requirements
-    if (cart.length === 0) return false
-    if (!customerInfo.name || !customerInfo.phone) return false
-    
-    // Phone validation - must be complete and valid
-    if (!isPhoneValid(customerInfo.phone)) return false
-    
-    if (isOrderLoading) return false
-    
-    // Delivery specific checks
-    if (deliveryType === 'delivery') {
-      if (!customerInfo.address) return false
-      if (deliveryError?.type === 'OUTSIDE_DELIVERY_AREA') return false
-      if (!meetsMinimumOrder && !deliveryError) return false
-      
-      // For non-RETAIL businesses, require coordinates (detect autofill without proper selection)
-      if (storeData.businessType !== 'RETAIL' && customerInfo.address && (!customerInfo.latitude || !customerInfo.longitude)) {
-        return false
-      }
-    }
-    
-    // Invoice validation
-    if (customerInfo.invoiceType === 'INVOICE') {
-      // Check minimum order value for invoice
-      if (storeData.invoiceMinimumOrderValue && cartTotal < storeData.invoiceMinimumOrderValue) {
-        return false
-      }
-      // Validate AFM (must be 9 digits)
-      if (!customerInfo.invoiceAfm || customerInfo.invoiceAfm.length !== 9) {
-        return false
-      }
-    }
-    
-    // Time selection validation for scheduled orders
-    // Check if scheduling mode is active (not 'asap') but no specific time selected
-    if (forceScheduleMode || (customerInfo.deliveryTime !== 'asap' && !storeData.isOpen)) {
-      if (!customerInfo.deliveryTime || customerInfo.deliveryTime === 'asap' || customerInfo.deliveryTime === '') {
-        return false
-      }
-    }
-    
-    return true
-  }
-  
   // Helper to check if address needs confirmation (has text but no coordinates - likely autofill)
   const hasAddressWithoutCoordinates = Boolean(
     deliveryType === 'delivery' && 
@@ -3492,68 +3519,27 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       return
     }
   
-   // Basic validations
-    if (!customerInfo.name || !customerInfo.phone) {
-      showError(translations.fillRequiredInfo || 'Please fill in required customer information')
-      return
-    }
-
-    // Validation for delivery address
-    if (deliveryType === 'delivery') {
-      if (storeData.businessType === 'RETAIL') {
-        // RETAIL businesses require address, country, and city
-        if (!customerInfo.address) {
-          showError(translations.addDeliveryAddress || 'Please provide delivery address')
-          return
-        }
-        if (!customerInfo.countryCode) {
-          showError('Please select a country')
-          return
-        }
-        if (!customerInfo.city) {
-          showError('Please select a city')
-          return
-        }
-        if (!customerInfo.postalPricingId) {
-          showError(translations.pleaseSelectDeliveryMethod || 'Please select a delivery method')
-          return
-        }
+    if (!canSubmitStorefrontOrder(storefrontOrderValidationContext)) {
+      const blocker = getPrimaryStorefrontOrderBlockerForDisplay(storefrontOrderValidationContext)
+      if (blocker) {
+        const msg = getStorefrontOrderSubmitErrorMessage(
+          blocker,
+          translations as unknown as Record<string, string | undefined>,
+          {
+            currencySymbol,
+            minimumOrder: storeData.minimumOrder,
+            invoiceMinimumOrderValue: storeData.invoiceMinimumOrderValue
+          }
+        )
+        const level: 'error' | 'warning' =
+          blocker === 'MINIMUM_ORDER_NOT_MET' || blocker === 'INVOICE_MINIMUM_NOT_MET' ? 'warning' : 'error'
+        showError(msg, level)
       } else {
-        // Non-RETAIL businesses require address
-        if (!customerInfo.address) {
-          showError(translations.addDeliveryAddress || 'Please provide delivery address')
-          return
-        }
+        showError(translations.failedToSubmitOrder || 'Unable to submit order. Please check your details.', 'error')
       }
-    }
-
-    if (!meetsMinimumOrder) {
-      showError(`${translations.minimumOrder} ${currencySymbol}${storeData.minimumOrder.toFixed(2)} ${translations.forDelivery}`, 'warning')
       return
     }
 
-    // NEW: Check if scheduled time is selected when not ordering "now"
-    if (customerInfo.deliveryTime !== 'asap' && (!customerInfo.deliveryTime || customerInfo.deliveryTime === '')) {
-      showError(translations.selectTimeForSchedule || 'Please select a time for your scheduled order')
-      return
-    }
-
-    // Validate invoice fields if invoice is selected
-    if (customerInfo.invoiceType === 'INVOICE') {
-      // Check minimum order value for invoice
-      if (storeData.invoiceMinimumOrderValue && cartTotal < storeData.invoiceMinimumOrderValue) {
-        const minAmount = `${currencySymbol}${storeData.invoiceMinimumOrderValue.toFixed(2)}`
-        showError(translations.invoiceMinimumOrderError?.replace('{amount}', minAmount) || `To select Invoice, your order must be at least ${minAmount}`, 'warning')
-        return
-      }
-      
-      // Validate AFM (must be 9 digits)
-      if (!customerInfo.invoiceAfm || customerInfo.invoiceAfm.length !== 9) {
-        showError(translations.enterValidTaxId || 'Please enter a valid Tax ID (9 digits)', 'error')
-        return
-      }
-    }
-  
     setIsOrderLoading(true)
   
     try {
@@ -3691,30 +3677,57 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         setDeliveryError(null)
         setCalculatedDeliveryFee(storeData.deliveryFee)
       
+        // Fire Meta Pixel Purchase event (if pixel is loaded)
+        if (typeof window !== 'undefined' && window.fbq) {
+          window.fbq('track', 'Purchase', {
+            value: cartTotal,
+            currency: storeData.currency || 'EUR',
+            content_name: storeData.name,
+            order_id: result.orderId,
+          })
+        }
+
+        // Push order_success param to URL for Meta custom conversion matching
+        if (typeof window !== 'undefined' && result.orderId) {
+          const url = new URL(window.location.href)
+          url.searchParams.set('order_success', result.orderId)
+          window.history.replaceState({}, '', url.toString())
+        }
+
         // Show enhanced success message
         setOrderSuccessMessage({
           visible: true,
-          orderNumber: result.orderNumber,
+          orderNumber: result.orderNumber || '',
           directNotification: result.directNotification || false
         })
         
-        // Check if this is a direct notification (Twilio) or traditional wa.me flow
-        if (result.directNotification) {
-          // Direct notification - business was notified automatically via Twilio
-          // No redirect needed, just show success message longer
+        const redirectMs = 5000
+        if (result.directNotification && result.customerFollowUpWhatsappUrl) {
           setTimeout(() => {
-            setOrderSuccessMessage(null)
-          }, 15000) // Show for 15 seconds since no redirect
-        } else {
-          // Traditional flow - redirect to WhatsApp after delay
+            logStorefrontWhatsAppOrderRedirect({
+              slug: storeData.slug,
+              businessId: storeData.id,
+              orderId: result.orderId,
+              orderNumber: result.orderNumber,
+              variant: 'mix_follow_up',
+            })
+            window.location.href = result.customerFollowUpWhatsappUrl
+          }, redirectMs)
+          setTimeout(() => setOrderSuccessMessage(null), 15000)
+        } else if (result.directNotification) {
+          setTimeout(() => setOrderSuccessMessage(null), 15000)
+        } else if (result.whatsappUrl) {
           setTimeout(() => {
+            logStorefrontWhatsAppOrderRedirect({
+              slug: storeData.slug,
+              businessId: storeData.id,
+              orderId: result.orderId,
+              orderNumber: result.orderNumber,
+              variant: 'classic_wa_me',
+            })
             window.location.href = result.whatsappUrl
-          }, 5000)
-          
-          // Hide success message after 10 seconds
-          setTimeout(() => {
-            setOrderSuccessMessage(null)
-          }, 10000)
+          }, redirectMs)
+          setTimeout(() => setOrderSuccessMessage(null), 10000)
         }
       } else {
         // Display the error message from the API, or fallback to default message
@@ -4796,6 +4809,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           deliveryError={deliveryError}
           onClearDeliveryError={handleClearDeliveryError}
           canSubmitOrder={canSubmitOrder}
+          orderButtonLabel={orderButtonLabel}
+          orderFooterHint={orderFooterHint}
           forceScheduleMode={forceScheduleMode}
           hasAddressWithoutCoordinates={hasAddressWithoutCoordinates}
         />
@@ -4869,6 +4884,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
               deliveryError={deliveryError}
               onClearDeliveryError={handleClearDeliveryError}
               canSubmitOrder={canSubmitOrder}
+              orderButtonLabel={orderButtonLabel}
+              orderFooterHint={orderFooterHint}
               forceScheduleMode={forceScheduleMode}
               hasAddressWithoutCoordinates={hasAddressWithoutCoordinates}
             />
@@ -6679,6 +6696,8 @@ function OrderPanel({
   deliveryError = null,
   onClearDeliveryError,
   canSubmitOrder,
+  orderButtonLabel,
+  orderFooterHint,
   forceScheduleMode = false,
   postalPricingOptions = [],
   loadingPostalPricing = false,
@@ -6718,6 +6737,8 @@ function OrderPanel({
   } | null
   onClearDeliveryError?: () => void
   canSubmitOrder: () => boolean
+  orderButtonLabel: string
+  orderFooterHint: string
   forceScheduleMode?: boolean
   postalPricingOptions?: any[]
   loadingPostalPricing?: boolean
@@ -7395,74 +7416,13 @@ function OrderPanel({
           </div>
         )}
 
-        {/* Order Button */}
-        <button
-  onClick={submitOrder}
-  disabled={!canSubmitOrder()}
-  className={`w-full py-4 rounded-xl text-white font-semibold transition-all hover:opacity-90 flex items-center justify-center ${
-    !canSubmitOrder() ? 'opacity-50 cursor-not-allowed' : ''
-  }`}
-  style={{ backgroundColor: storeData.whatsappButtonColor || primaryColor }}
->
-  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
-    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.893 3.382"/>
-  </svg>
-  {(() => {
-    // Check blocking conditions first
-    if (storeData.isTemporarilyClosed) {
-      return translations.storeTemporarilyClosed || 'Store Temporarily Closed'
-    } else if (deliveryError?.type === 'OUTSIDE_DELIVERY_AREA') {
-      return translations.outsideDeliveryArea || 'Address Outside Delivery Area'
-    } else if (deliveryError) {
-      return translations.deliveryNotAvailable || 'Delivery Not Available'
-    } else if (isOrderLoading) {
-      return translations.placingOrder || 'Placing Order...'
-    }
-    
-    // Check step-by-step requirements
-    if (cart.length === 0) {
-      return translations.addItemsToCart || 'Add items to cart'
-    }
-    
-    if (!customerInfo.name || !customerInfo.phone) {
-      return translations.fillRequiredInfo || 'Fill required information'
-    }
-    
-    if (deliveryType === 'delivery' && !customerInfo.address) {
-      return translations.addDeliveryAddress || 'Add delivery address'
-    }
-    
-    // Check for address without coordinates (autofill detection)
-    if (hasAddressWithoutCoordinates) {
-      return translations.confirmDeliveryAddress || 'Confirm your delivery address'
-    }
-    
-    if (!meetsMinimumOrder && deliveryType === 'delivery') {
-      return `${translations.minimumOrder} ${currencySymbol}${storeData.minimumOrder.toFixed(2)}`
-    }
-    
-    // CHECK TIME SELECTION BEFORE SHOWING FINAL ORDER BUTTON
-    if (customerInfo.deliveryTime !== 'asap' && (!customerInfo.deliveryTime || customerInfo.deliveryTime === '')) {
-      return translations.selectTimeForSchedule || 'Select time for schedule'
-    }
-    
-    // All requirements met - show final order button
-    return `${translations.orderViaWhatsapp || 'Order via WhatsApp'} - ${currencySymbol}${cartTotal.toFixed(2)}`
-  })()}
-</button>
-
-<p className="text-xs text-gray-500 text-center mt-3">
-  {storeData.isTemporarilyClosed
-    ? (translations.storeClosedMessage || 'We apologize for any inconvenience.')
-    : deliveryError?.type === 'OUTSIDE_DELIVERY_AREA'
-    ? (translations.selectDifferentArea || 'Please select an address within our delivery area')
-    : hasAddressWithoutCoordinates
-    ? (translations.selectAddressFromSuggestions || 'Please type and select your address from the suggestions')
-    : customerInfo.deliveryTime !== 'asap' && (!customerInfo.deliveryTime || customerInfo.deliveryTime === '')
-    ? (translations.selectTimeForSchedule || 'Please select a time for your scheduled order')
-    : (translations.clickingButton || 'By clicking this button, you agree to place your order via WhatsApp.')
-  }
-</p>
+        <StorefrontOrderSubmitButton
+          canSubmitOrder={canSubmitOrder}
+          submitOrder={submitOrder}
+          orderButtonLabel={orderButtonLabel}
+          orderFooterHint={orderFooterHint}
+          backgroundColor={storeData.whatsappButtonColor || primaryColor}
+        />
       </div>
     </div>
   )

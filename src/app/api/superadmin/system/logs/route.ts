@@ -3,64 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-
-// Shared spam detection for scanner/bot 404 traffic.
-// Instead of maintaining an ever-growing exact list, we combine:
-//   1. File extension patterns (catches .php, .php7, .yaml, .cfg, etc.)
-//   2. Structural patterns (port numbers, brackets, slashes, wildcards)
-//   3. Known exact slugs for common attack paths
-//   4. Prefix rules (., _, :, [ etc.)
-
-const spamFilePatterns = /\.(php\d?|png|ico|xml|txt|js|css|svg|jpg|jpeg|gif|webp|json|html?|asp|aspx|jsp|cgi|env|sql|bak|log|zip|tar|gz|git|htaccess|htpasswd|ds_store|gitignore|npmrc|dockerignore|yaml|yml|cfg|ini|conf|toml|sh|bash|bat|ps1|rb|py|pl|lua|map|woff2?|ttf|eot|swf|class|jar|war|pem|key|crt|vcl|config|credentials|backup|old|rar|tgz|md|rdb|tf|tfvars|tfstate|properties|lock|dist|swp|save|gradle|secret|axd)$/i
-
-const spamStructuralPatterns = [
-  /^\d+$/,                    // pure numbers: "1", "8080", etc.
-  /^:\d+/,                    // port probes: ":27017", ":28017"
-  /\[/,                       // bracket patterns: "[...catchAll]", "[[...optional]]"
-  /\*/,                       // wildcard patterns: "*update.cgi*"
-  /\.\./,                     // path traversal: "../etc/passwd"
-  /^(upload|uploads|fileupload|file-upload|uploadfile)$/i,
-  /^(import|export|migrate|migration|seed|seeder)$/i,
-  /^(controlpanel|cpanel|webmail|plesk|directadmin)$/i,
-  /^(package-updates|update|updates|upgrade)$/i,
-  /^(alfa|alfanew|alfa-rex|shell|r57|c99|b374k)/i, // web shells
-  /^(stripe\.yaml|stripe\.json|config\.|\.config)/i,
-  /~$/,                       // backup files: config.php~, wp-config.php~
-  /\.php-/i,                  // php backups: getcpuutil.php-bakworking
-  /-bak/i,                    // backup variants
-]
-
-const spamExactSlugs = new Set([
-  'wp-admin', 'wp-login', 'wp-content', 'wp-includes', 'administrator',
-  'admin', 'admin_', 'phpmyadmin', 'cpanel', '.git', '.env', '.aws', 'config',
-  'backup', 'db', 'database', 'mysql', 'phpinfo', 'info', 'test', 'debug',
-  'shell', 'cmd', 'eval', 'exec', 'system', 'passwd', 'etc', 'proc',
-  'boot', 'root', 'tmp', 'var', 'usr', 'bin', 'cgi-bin', 'scripts',
-  'includes', 'vendor', 'node_modules', '.well-known', 'xmlrpc', 'wp-json',
-  'api', 'robots', 'sitemap', 'favicon', 'apple-touch-icon',
-  'apple-touch-icon-precomposed', 'browserconfig', 'crossdomain',
-  'clientaccesspolicy', 'dashboard', 'login', 'logout', 'register',
-  'signup', 'signin', 'auth', 'account', 'profile', 'settings', 'setup',
-  'install', 'superadmin', 'management', 'secure',
-  'getcmd', '_next', '1', 'feed', 'cookie',
-  'chatgpt-user', 'anthropic-ai', 'claude-web', 'ccbot', 'gptbot',
-  'version', 'license', 'changelog', 'readme', 'graphql',
-  'jenkinsfile', 'access_log', 'error_log', 'pipfile',
-  'aws_credentials', 'credentials', 'artisan', 'makefile', 'dockerfile', 'gemfile',
-  'server-info', 'wp-config', 'enhancecp',
-])
-
-const isSpamSlug = (s: string | null | undefined): boolean => {
-  if (!s) return false
-  const lower = s.toLowerCase()
-  if (lower.startsWith('.') || lower.startsWith('_') || lower.startsWith(':')) return true
-  if (spamFilePatterns.test(lower)) return true
-  if (spamExactSlugs.has(lower)) return true
-  for (const pattern of spamStructuralPatterns) {
-    if (pattern.test(lower)) return true
-  }
-  return false
-}
+import { isSpamSlug } from '@/lib/storefront-404-spam'
 
 export async function GET(request: NextRequest) {
   try {
@@ -103,6 +46,28 @@ export async function GET(request: NextRequest) {
         totalSpam404s += group._count.id
       }
     }
+
+    // Spam 404s split by severity (invalid slug → warning; not found → error). Summary stats must only
+    // subtract spam rows in the matching severity bucket — subtracting all spam from Errors caused negatives.
+    const [spamError404s, spamWarning404s] =
+      allSpamSlugs.length === 0
+        ? [0, 0]
+        : await Promise.all([
+            prisma.systemLog.count({
+              where: {
+                logType: 'storefront_404',
+                severity: 'error',
+                slug: { in: allSpamSlugs },
+              },
+            }),
+            prisma.systemLog.count({
+              where: {
+                logType: 'storefront_404',
+                severity: 'warning',
+                slug: { in: allSpamSlugs },
+              },
+            }),
+          ])
 
     // Step 2: Build where clause with user filters
     const where: any = {}
@@ -178,7 +143,8 @@ export async function GET(request: NextRequest) {
     ])
 
     const totalLogs = rawTotalLogs - totalSpam404s
-    const errorLogs = rawErrorLogs - totalSpam404s
+    const errorLogs = rawErrorLogs - spamError404s
+    const warningLogsAdjusted = warningLogs - spamWarning404s
     const storefront404s = totalStorefront404s - totalSpam404s
 
     // Get log type distribution for analytics
@@ -238,7 +204,38 @@ export async function GET(request: NextRequest) {
     // Top active stores (last 7 days) — uses the same spam filter
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-    
+
+    const [
+      websiteEmbedSettingsSavedTotal,
+      websiteEmbedCodeCopiedTotal,
+      websiteEmbedSettingsSaved7d,
+      websiteEmbedCodeCopied7d,
+      whatsappOrderRedirectTotal,
+      whatsappOrderRedirect7d,
+    ] = await Promise.all([
+      prisma.systemLog.count({ where: { logType: 'website_embed_settings_saved' } }),
+      prisma.systemLog.count({ where: { logType: 'website_embed_copy' } }),
+      prisma.systemLog.count({
+        where: {
+          logType: 'website_embed_settings_saved',
+          createdAt: { gte: sevenDaysAgo },
+        },
+      }),
+      prisma.systemLog.count({
+        where: {
+          logType: 'website_embed_copy',
+          createdAt: { gte: sevenDaysAgo },
+        },
+      }),
+      prisma.systemLog.count({ where: { logType: 'storefront_order_whatsapp_redirect' } }),
+      prisma.systemLog.count({
+        where: {
+          logType: 'storefront_order_whatsapp_redirect',
+          createdAt: { gte: sevenDaysAgo },
+        },
+      }),
+    ])
+
     const allSlugsByLogs = await prisma.systemLog.groupBy({
       by: ['slug'],
       where: {
@@ -247,7 +244,8 @@ export async function GET(request: NextRequest) {
       },
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },
-      take: 50
+      // Over-fetch: many top slugs are scanner noise; after isSpamSlug we still want 10 real stores.
+      take: 150
     })
     
     const topSlugsByLogs = allSlugsByLogs
@@ -371,7 +369,7 @@ export async function GET(request: NextRequest) {
       stats: {
         total: totalLogs,
         errors: errorLogs,
-        warnings: warningLogs,
+        warnings: warningLogsAdjusted,
         info: infoLogs,
         storefront404s
       },
@@ -447,7 +445,17 @@ export async function GET(request: NextRequest) {
         scannerTraffic: {
           total: totalSpam404s,
           note: 'Bot probes, vulnerability scanners, and noisy 404s filtered from main view'
-        }
+        },
+        websiteEmbedStats: {
+          settingsSaved: websiteEmbedSettingsSavedTotal,
+          codeCopied: websiteEmbedCodeCopiedTotal,
+          settingsSaved7d: websiteEmbedSettingsSaved7d,
+          codeCopied7d: websiteEmbedCodeCopied7d,
+        },
+        whatsappOrderRedirectStats: {
+          total: whatsappOrderRedirectTotal,
+          last7Days: whatsappOrderRedirect7d,
+        },
       }
     })
   } catch (error) {

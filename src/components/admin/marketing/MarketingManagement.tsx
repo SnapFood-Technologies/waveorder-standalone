@@ -1,9 +1,11 @@
 // components/admin/marketing/MarketingManagement.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Share2, Copy, Download, QrCode, ExternalLink, Check } from 'lucide-react'
+import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
+import { Share2, Copy, Download, QrCode, ExternalLink, Check, TrendingUp, Code2, ChevronRight } from 'lucide-react'
 import QRCode from 'qrcode'
+import { buildWebsiteEmbedOrderUrl, getPublicSiteBaseUrl } from '@/lib/website-embed-url'
 
 interface MarketingComponentProps {
   businessId: string // Changed from params object to direct businessId
@@ -14,6 +16,8 @@ interface Business {
   name: string
   slug: string
   description?: string
+  metaPixelEnabled?: boolean
+  websiteEmbedEnabled?: boolean
 }
 
 export default function MarketingComponent({ businessId }: MarketingComponentProps) {
@@ -23,8 +27,24 @@ export default function MarketingComponent({ businessId }: MarketingComponentPro
   const [copiedUrl, setCopiedUrl] = useState(false)
   const [copiedEmbed, setCopiedEmbed] = useState(false)
 
-  const storeUrl = business ? `https://waveorder.app/${business.slug}` : ''
-  const embedCode = `<iframe src="${storeUrl}" width="100%" height="600" frameborder="0"></iframe>`
+  const siteBase = getPublicSiteBaseUrl()
+  const storeUrl = business ? `${siteBase}/${business.slug}` : ''
+
+  const embedIframeSrc = useMemo(
+    () => (business ? buildWebsiteEmbedOrderUrl(siteBase, business.slug, {}) : ''),
+    [business, siteBase]
+  )
+
+  const embedCode = useMemo(() => {
+    if (!business || !embedIframeSrc) return ''
+    const title = (business.name || 'WaveOrder store').replace(/"/g, '&quot;')
+    return `<iframe src="${embedIframeSrc}" title="${title}" width="100%" height="600" frameborder="0" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>`
+  }, [business, embedIframeSrc])
+
+  const baseMarketingPath = `/admin/stores/${businessId}/marketing`
+  const showAdsCta = business?.metaPixelEnabled === true
+  const showEmbeddedCta = business?.websiteEmbedEnabled === true
+  const showEmbedQuickGuide = !showAdsCta && !showEmbeddedCta
 
   useEffect(() => {
     const fetchBusiness = async () => {
@@ -257,24 +277,28 @@ export default function MarketingComponent({ businessId }: MarketingComponentPro
         </div>
 
         {/* Embed Code Section */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="bg-white rounded-lg border border-gray-200 p-6 flex flex-col">
           <div className="flex items-center mb-2">
             <ExternalLink className="w-5 h-5 text-teal-600 mr-2" />
             <h3 className="text-lg font-semibold text-gray-900">Embed Code</h3>
           </div>
           <p className="text-gray-600 mb-4">
-            Add this code to your website to embed your store directly
+            Add this code to your website to embed your store. The link includes{' '}
+            <code className="text-xs bg-gray-100 px-1 rounded">embed_waveorder=1</code> so visits from your site are
+            recognized.
           </p>
-          
-          <div className="space-y-3">
+
+          <div className="space-y-3 flex-1 flex flex-col">
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
               <code className="text-sm text-gray-800 font-mono break-all">
                 {embedCode}
               </code>
             </div>
             <button
+              type="button"
               onClick={() => copyToClipboard(embedCode, 'embed')}
-              className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors"
+              disabled={!embedCode}
+              className="flex items-center px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-fit"
             >
               {copiedEmbed ? (
                 <Check className="w-4 h-4 mr-2" />
@@ -283,6 +307,54 @@ export default function MarketingComponent({ businessId }: MarketingComponentPro
               )}
               {copiedEmbed ? 'Copied!' : 'Copy Embed Code'}
             </button>
+
+            {(showAdsCta || showEmbeddedCta) && (
+              <div className="pt-4 mt-auto border-t border-gray-100 space-y-2">
+                <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">More</p>
+                {showAdsCta && (
+                  <Link
+                    href={`${baseMarketingPath}/ads`}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-gray-800 hover:bg-gray-50 hover:border-teal-200 transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4 text-teal-600 shrink-0" />
+                      Marketing ads &amp; Meta Pixel
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
+                  </Link>
+                )}
+                {showEmbeddedCta && (
+                  <Link
+                    href={`${baseMarketingPath}/embedded`}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-gray-800 hover:bg-gray-50 hover:border-teal-200 transition-colors"
+                  >
+                    <span className="flex items-center gap-2">
+                      <Code2 className="w-4 h-4 text-teal-600 shrink-0" />
+                      Customize embed (UTM, button, snippets)
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
+                  </Link>
+                )}
+              </div>
+            )}
+
+            {showEmbedQuickGuide && (
+              <div className="pt-4 mt-auto border-t border-gray-100 rounded-md bg-gray-50/80 p-3 text-xs text-gray-600 space-y-2">
+                <p className="font-medium text-gray-800">Quick steps</p>
+                <ol className="list-decimal list-inside space-y-1.5 leading-relaxed">
+                  <li>Copy the code above.</li>
+                  <li>Paste it into your site (HTML block, theme section, or page builder “Custom HTML”).</li>
+                  <li>
+                    The store opens inside the frame; change <code className="bg-white px-0.5 rounded">height</code>{' '}
+                    if needed (e.g. 700–900px).
+                  </li>
+                </ol>
+                <p className="text-gray-500 pt-1">
+                  When Meta Pixel or Website embed is enabled for your store, shortcuts to Ads and advanced embed
+                  settings appear here.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

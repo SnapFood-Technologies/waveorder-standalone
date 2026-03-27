@@ -1,7 +1,8 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { prisma } from '@/lib/prisma'
+import { businessSlugFilter } from '@/lib/storefront-slug'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
 import { trackPageView } from '@/lib/trackPageView'
 
@@ -11,8 +12,8 @@ interface PageProps {
 
 async function getPageData(slug: string, pageSlug: string, headersList?: Headers) {
   try {
-    const business = await prisma.business.findUnique({
-      where: { slug },
+    const business = await prisma.business.findFirst({
+      where: { slug: businessSlugFilter(slug) },
       select: {
         id: true,
         name: true,
@@ -147,6 +148,11 @@ export default async function LegalPage({ params }: PageProps) {
   }
 
   const { business, page, footerPages } = data
+
+  if (business.slug !== slug) {
+    redirect(`/${business.slug}/${pageSlug}`)
+  }
+
   const primaryColor = business.primaryColor || '#10b981'
   const translations = getStorefrontTranslations(business.storefrontLanguage)
 
@@ -156,7 +162,7 @@ export default async function LegalPage({ params }: PageProps) {
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <a
-            href={`/${slug}`}
+            href={`/${business.slug}`}
             className="inline-flex items-center text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors group"
           >
             <svg 

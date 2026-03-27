@@ -277,25 +277,29 @@ model EmailVerification {
 }
 
 model Business {
-  id                          String             @id @default(auto()) @map("_id") @db.ObjectId
-  name                        String
-  slug                        String             @unique
-  description                 String?
-  logo                        String?
-  coverImage                  String?
-  phone                       String?
-  email                       String?
-  address                     String?
-  country                     String? // ISO country code (e.g., "AL", "GR", "US")
-  storeLatitude               Float?
-  storeLongitude              Float?
-  website                     String?
-  whatsappNumber              String
-  whatsappDirectNotifications Boolean            @default(false) // If true, send order notifications via Twilio instead of wa.me redirect
-  businessType                BusinessType       @default(RESTAURANT)
-  industry                    String? // Optional industry categorization (e.g., "Food & Beverage", "Hardware & Construction")
-  subscriptionPlan            SubscriptionPlan   @default(STARTER)
-  subscriptionStatus          SubscriptionStatus @default(ACTIVE)
+  id                               String             @id @default(auto()) @map("_id") @db.ObjectId
+  name                             String
+  slug                             String             @unique
+  description                      String?
+  logo                             String?
+  coverImage                       String?
+  phone                            String?
+  email                            String?
+  address                          String?
+  country                          String? // ISO country code (e.g., "AL", "GR", "US")
+  storeLatitude                    Float?
+  storeLongitude                   Float?
+  website                          String?
+  whatsappNumber                   String
+  whatsappDirectNotifications      Boolean            @default(false) // If true, send order notifications via Twilio instead of wa.me redirect
+  /// When true (and direct notifications on), after order: WaveOrder notifies store + customer gets follow-up wa.me link
+  orderWhatsAppMixEnabled          Boolean            @default(false)
+  /// Merchant-editable template; placeholders: {orderNumber}, {businessName}, {orderId}
+  orderWhatsAppMixFollowUpTemplate String?
+  businessType                     BusinessType       @default(RESTAURANT)
+  industry                         String? // Optional industry categorization (e.g., "Food & Beverage", "Hardware & Construction")
+  subscriptionPlan                 SubscriptionPlan   @default(STARTER)
+  subscriptionStatus               SubscriptionStatus @default(ACTIVE)
 
   // Trial tracking (business-level)
   trialEndsAt DateTime?
@@ -312,6 +316,9 @@ model Business {
   happyHourEndTime         String? // End time in HH:mm format (e.g., "23:59")
   happyHourDiscountPercent Float? // Discount percentage (e.g., 20 for 20% off)
   happyHourProductIds      String[] // Product IDs that get the discount
+
+  /// When true, storefront catalog filters products by visitor country (visibleCountryCodes / hiddenCountryCodes on Product)
+  countryBasedCatalogEnabled Boolean @default(false)
 
   // SERVICES business type: which request options are enabled (only used when businessType === SERVICES)
   serviceAllowAppointmentBooking Boolean? @default(true)
@@ -558,6 +565,11 @@ model Business {
   // Meta Pixel (SuperAdmin enables) - Client-side tracking for Meta/Facebook Ads
   metaPixelEnabled Boolean @default(false)
   metaPixelId      String? // Business's Meta Pixel ID (configured in Admin > Marketing > Ads)
+
+  // Website embed (SuperAdmin enables) - Link/button snippets for merchant's own site; Marketing → Embedded
+  websiteEmbedEnabled      Boolean @default(false)
+  /// Last saved UTM + button options from Admin → Marketing → Embedded (JSON)
+  websiteEmbedSettingsJson Json?
 
   // Legal Pages / Store Policies (SuperAdmin enables)
   legalPagesEnabled    Boolean @default(false) // When enabled, business admin can create and manage legal pages
@@ -1246,6 +1258,11 @@ model Product {
   // Marketplace/Multi-business support - businesses that can also sell this product
   connectedBusinesses String[] @db.ObjectId
 
+  /// ISO 3166-1 alpha-2, uppercase (e.g. ES, GR). Empty = visible in all countries (subject to hiddenCountryCodes).
+  visibleCountryCodes String[] @default([])
+  /// If visitor country is in this list, product is hidden (exclude wins over empty visible list).
+  hiddenCountryCodes  String[] @default([])
+
   inventoryActivities InventoryActivity[]
 
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
@@ -1816,6 +1833,9 @@ model VisitorSession {
   content   String? // utm_content: ad variation
   placement String? // Custom placement parameter
 
+  // True when landing URL included embed_waveorder=1 (WaveOrder-generated embed link)
+  fromWebsiteEmbed Boolean @default(false)
+
   // Referrer Information
   referrer     String? // HTTP referer header
   referrerHost String? // Parsed hostname from referrer
@@ -1849,6 +1869,7 @@ model VisitorSession {
   @@index([businessId, source])
   @@index([businessId, medium])
   @@index([businessId, campaign])
+  @@index([businessId, fromWebsiteEmbed])
   @@index([visitedAt])
 }
 
@@ -2194,6 +2215,7 @@ enum TicketType {
   FEATURE_REQUEST
   BUG_REPORT
   WHATSAPP_TEMPLATES // WhatsApp templates / Broadcast setup - contact WaveOrder for help
+  WHATSAPP_ORDER_CHANNEL // New order WhatsApp channel (direct vs customer link vs mix) — contact WaveOrder to change
 }
 
 enum NotificationType {

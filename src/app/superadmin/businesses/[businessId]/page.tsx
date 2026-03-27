@@ -47,7 +47,8 @@ import {
   Zap,
   Lightbulb,
   Send,
-  Receipt
+  Receipt,
+  Eye
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
@@ -75,7 +76,10 @@ interface BusinessDetails {
   currency: string
   whatsappNumber: string
   whatsappDirectNotifications?: boolean
+  orderWhatsAppMixEnabled?: boolean
+  orderWhatsAppMixFollowUpTemplate?: string | null
   happyHourEnabled?: boolean
+  countryBasedCatalogEnabled?: boolean
   showSearchAnalytics?: boolean
   showCostPrice?: boolean
   showProductionPlanning?: boolean
@@ -167,6 +171,8 @@ interface BusinessDetails {
   externalBrandIds?: any
   connectedBusinesses?: string[]
   aiAssistantEnabled?: boolean
+  websiteEmbedEnabled?: boolean
+  websiteEmbedUsage?: { visits: number; lastVisitAt: string | null }
   whatsappFlowsEnabled?: boolean
   whatsappFlowsUsage?: { conversations: number; messagesThisMonth?: number; lastActivityAt?: string | null }
   aiUsage?: {
@@ -967,6 +973,42 @@ export default function BusinessDetailsPage() {
             </div>
           </div>
 
+          {/* Website embed usage */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Globe className="w-5 h-5 text-teal-600" />
+                Website embed
+              </h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <Eye className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">{business.websiteEmbedUsage?.visits ?? 0}</p>
+                <p className="text-xs text-gray-500">Visits from embed</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <Clock className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm font-bold text-gray-900">
+                  {business.websiteEmbedUsage?.lastVisitAt
+                    ? formatDate(business.websiteEmbedUsage.lastVisitAt)
+                    : 'Never'}
+                </p>
+                <p className="text-xs text-gray-500">Last activity</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4 text-center md:col-span-2">
+                <Zap className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm font-bold text-gray-900">
+                  {business.websiteEmbedEnabled ? 'Enabled' : 'Disabled'}
+                </p>
+                <p className="text-xs text-gray-500">SuperAdmin</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-3">
+              Counts visits where the storefront URL included <code className="bg-gray-100 px-1 rounded">embed_waveorder=1</code> (links generated from Admin → Marketing → Embedded).
+            </p>
+          </div>
+
           {/* Storefront Settings */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -1647,6 +1689,8 @@ export default function BusinessDetailsPage() {
             <HappyHourSettingsSection business={business} onUpdate={fetchBusinessDetails} />
           )}
 
+          <CountryBasedCatalogSection business={business} onUpdate={fetchBusinessDetails} />
+
           {/* Search Analytics Settings */}
           <SearchAnalyticsSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
@@ -1689,6 +1733,7 @@ export default function BusinessDetailsPage() {
 
           {/* Affiliate System Settings */}
           <AffiliateSystemSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+          <WebsiteEmbedSettingsSection business={business} onUpdate={fetchBusinessDetails} />
           <TeamPaymentTrackingSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
           {/* Remember Customer Settings */}
@@ -2079,31 +2124,53 @@ function WhatsAppSettingsSection({
 }) {
   const [saving, setSaving] = useState(false)
   const [directNotifications, setDirectNotifications] = useState(business.whatsappDirectNotifications || false)
+  const [mixEnabled, setMixEnabled] = useState(business.orderWhatsAppMixEnabled || false)
 
-  const handleToggle = async () => {
-    const newValue = !directNotifications
+  useEffect(() => {
+    setDirectNotifications(business.whatsappDirectNotifications || false)
+    setMixEnabled(business.orderWhatsAppMixEnabled || false)
+  }, [business.whatsappDirectNotifications, business.orderWhatsAppMixEnabled])
+
+  const patchWhatsApp = async (body: Record<string, boolean>) => {
     setSaving(true)
-    
     try {
       const res = await fetch(`/api/superadmin/businesses/${business.id}/whatsapp-settings`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ whatsappDirectNotifications: newValue })
+        body: JSON.stringify(body),
       })
-      
       if (res.ok) {
-        setDirectNotifications(newValue)
-        toast.success(newValue ? 'Direct notifications enabled' : 'Direct notifications disabled')
+        const data = await res.json()
+        if (data.business?.whatsappDirectNotifications !== undefined) {
+          setDirectNotifications(data.business.whatsappDirectNotifications)
+        }
+        if (data.business?.orderWhatsAppMixEnabled !== undefined) {
+          setMixEnabled(data.business.orderWhatsAppMixEnabled)
+        }
+        toast.success('WhatsApp settings updated')
         onUpdate()
       } else {
         const data = await res.json()
         toast.error(data.message || 'Failed to update setting')
       }
-    } catch (error) {
+    } catch {
       toast.error('Error updating setting')
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleDirectToggle = () => {
+    const newValue = !directNotifications
+    patchWhatsApp({ whatsappDirectNotifications: newValue })
+  }
+
+  const handleMixToggle = () => {
+    if (!directNotifications) {
+      toast.error('Enable direct new-order WhatsApp delivery first')
+      return
+    }
+    patchWhatsApp({ orderWhatsAppMixEnabled: !mixEnabled })
   }
 
   return (
@@ -2116,15 +2183,15 @@ function WhatsAppSettingsSection({
       <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
         <div className="flex-1">
           <p className="text-sm font-medium text-gray-900">
-            Direct {business.businessType === 'SERVICES' ? 'Service request & appointment' : (business.businessType === 'SALON' ? 'Appointment' : 'Order')} Notifications (Twilio)
+            Direct {business.businessType === 'SERVICES' ? 'service request & appointment' : (business.businessType === 'SALON' ? 'appointment' : 'order')} notifications (WaveOrder → your WhatsApp)
           </p>
           <p className="text-xs text-gray-500 mt-1">
-            When enabled, {business.businessType === 'SERVICES' ? 'service requests and appointments' : (business.businessType === 'SALON' ? 'appointments' : 'orders')} are sent directly to the business via Twilio WhatsApp API.
-            When disabled, customers use the traditional wa.me link.
+            When enabled, WaveOrder sends new {business.businessType === 'SERVICES' ? 'requests and bookings' : (business.businessType === 'SALON' ? 'bookings' : 'orders')} to your store WhatsApp number automatically. When disabled, the customer opens WhatsApp with a pre-filled message (customer starts the chat).
           </p>
         </div>
         <button
-          onClick={handleToggle}
+          type="button"
+          onClick={handleDirectToggle}
           disabled={saving}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
             directNotifications ? 'bg-teal-600' : 'bg-gray-200'
@@ -2137,11 +2204,34 @@ function WhatsAppSettingsSection({
           />
         </button>
       </div>
+
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mt-3">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Mix: direct notify + customer follow-up link</p>
+          <p className="text-xs text-gray-500 mt-1">
+            After checkout, WaveOrder still notifies your WhatsApp as above, and the customer also gets a follow-up WhatsApp link (message template is editable in Admin → Settings → Notifications). Only available when direct delivery above is on.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleMixToggle}
+          disabled={saving || !directNotifications}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+            mixEnabled ? 'bg-teal-600' : 'bg-gray-200'
+          } ${saving || !directNotifications ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              mixEnabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
       
       {directNotifications && (
         <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
           <p className="text-xs text-green-700">
-            <span className="font-medium">Active:</span> {business.businessType === 'SERVICES' ? 'Service requests and appointments' : (business.businessType === 'SALON' ? 'Appointments' : 'Orders')} will be sent automatically to {business.whatsappNumber} via Twilio.
+            <span className="font-medium">Direct delivery on:</span> {business.businessType === 'SERVICES' ? 'Service requests and appointments' : (business.businessType === 'SALON' ? 'Appointments' : 'Orders')} are sent to {business.whatsappNumber} by WaveOrder when customers submit.
           </p>
         </div>
       )}
@@ -2149,7 +2239,7 @@ function WhatsAppSettingsSection({
       {!directNotifications && (
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
-            <span className="font-medium">Traditional Flow:</span> Customers will be redirected to WhatsApp to send their order manually.
+            <span className="font-medium">Customer-initiated chat:</span> After checkout, the customer is sent to WhatsApp with a pre-filled message; your store is not notified by WaveOrder on WhatsApp for that step.
           </p>
         </div>
       )}
@@ -2238,6 +2328,15 @@ function WaveOrderFlowsUsageCard({
             <MessageSquare className="w-4 h-4 mr-1" />
             View Flows Usage
           </Link>
+          {business.countryBasedCatalogEnabled && (
+            <Link
+              href={`/superadmin/businesses/${businessId}/country-catalog`}
+              className="inline-flex items-center px-3 py-1.5 text-sm text-teal-600 hover:text-teal-700 font-medium border border-teal-200 rounded-lg hover:bg-teal-50 transition-colors"
+            >
+              <Globe className="w-4 h-4 mr-1" />
+              Country catalog
+            </Link>
+          )}
         </div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -2412,6 +2511,121 @@ function WaveOrderFlowsSettingsSection({
           </p>
         </div>
       )}
+    </div>
+  )
+}
+
+// Country-based catalog (SuperAdmin enables; merchant edits products)
+function CountryBasedCatalogSection({
+  business,
+  onUpdate
+}: {
+  business: BusinessDetails
+  onUpdate: () => void
+}) {
+  const [saving, setSaving] = useState(false)
+  const [enabled, setEnabled] = useState(business.countryBasedCatalogEnabled || false)
+  const [stats, setStats] = useState<{
+    distinctCountryCodes: number
+    productsWithAnyCountryRule: number
+  } | null>(null)
+
+  useEffect(() => {
+    if (!enabled) {
+      setStats(null)
+      return
+    }
+    let cancelled = false
+    fetch(`/api/superadmin/businesses/${business.id}/catalog/countries`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (!cancelled && d?.summary) setStats(d.summary)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [enabled, business.id])
+
+  useEffect(() => {
+    setEnabled(business.countryBasedCatalogEnabled || false)
+  }, [business.countryBasedCatalogEnabled])
+
+  const handleToggle = async () => {
+    const newValue = !enabled
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/settings`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ countryBasedCatalogEnabled: newValue })
+      })
+      if (res.ok) {
+        setEnabled(newValue)
+        toast.success(
+          newValue ? 'Country-based catalog enabled for this business' : 'Country-based catalog disabled'
+        )
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch {
+      toast.error('Error updating setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <Globe className="w-5 h-5 mr-2 text-teal-600" />
+        Country-based catalog
+      </h3>
+      <p className="text-sm text-gray-600 mb-4">
+        When enabled, the storefront can filter products by visitor country. Merchants set ISO country lists per
+        product in Admin → Products. Use <span className="font-mono text-xs">?cc=GR</span> or cookie{' '}
+        <span className="font-mono text-xs">wo_visitor_country</span> for QA.
+      </p>
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable for this business</p>
+          <p className="text-xs text-gray-500 mt-1">Off = identical catalog behavior to before (no filtering).</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleToggle}
+          disabled={saving}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+            enabled ? 'bg-teal-600' : 'bg-gray-200'
+          } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              enabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      {enabled && stats && (
+        <div className="mt-4 p-3 bg-teal-50 border border-teal-100 rounded-lg text-xs text-teal-900">
+          <span className="font-medium">Summary:</span> {stats.distinctCountryCodes} country code
+          {stats.distinctCountryCodes === 1 ? '' : 's'}, {stats.productsWithAnyCountryRule} product
+          {stats.productsWithAnyCountryRule === 1 ? '' : 's'} with rules.
+        </div>
+      )}
+      <div className="mt-4 flex flex-col gap-2">
+        <Link
+          href={`/superadmin/businesses/${business.id}/country-catalog`}
+          className="text-sm text-teal-600 hover:text-teal-700 font-medium inline-flex items-center gap-1"
+        >
+          View country catalog stats <ExternalLink className="w-3.5 h-3.5" />
+        </Link>
+        <p className="text-xs text-gray-500">
+          Merchants manage assignments in Admin → Products → Country Based (when the feature is on).
+        </p>
+      </div>
     </div>
   )
 }
@@ -3712,6 +3926,93 @@ function AffiliateSystemSettingsSection({
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
             <span className="font-medium">Disabled:</span> Affiliate system feature not available to this business.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Website embed (SuperAdmin toggle only)
+function WebsiteEmbedSettingsSection({
+  business,
+  onUpdate,
+}: {
+  business: BusinessDetails
+  onUpdate: () => void
+}) {
+  const [saving, setSaving] = useState(false)
+  const [embedEnabled, setEmbedEnabled] = useState(business.websiteEmbedEnabled || false)
+
+  useEffect(() => {
+    setEmbedEnabled(business.websiteEmbedEnabled || false)
+  }, [business.websiteEmbedEnabled])
+
+  const handleToggle = async () => {
+    const newValue = !embedEnabled
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/feature-flags`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ websiteEmbedEnabled: newValue }),
+      })
+      if (res.ok) {
+        setEmbedEnabled(newValue)
+        toast.success(newValue ? 'Website embed enabled' : 'Website embed disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch (error) {
+      console.error('Error toggling website embed:', error)
+      toast.error('Failed to update setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <Globe className="w-5 h-5 mr-2 text-teal-600" />
+        Website embed
+      </h3>
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable website embed</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, this business sees Admin → Marketing → Embedded: order link, HTML snippet, and script for a floating button. Visits are tagged with{' '}
+            <code className="bg-gray-100 px-1 rounded">embed_waveorder=1</code> for analytics.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleToggle}
+          disabled={saving}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+            embedEnabled ? 'bg-teal-600' : 'bg-gray-200'
+          } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              embedEnabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      {embedEnabled && (
+        <div className="mt-3 p-3 bg-teal-50 border border-teal-200 rounded-lg">
+          <p className="text-xs text-teal-700">
+            <span className="font-medium">Enabled:</span> Merchants can copy embed code from Marketing → Embedded. Usage (visits from embed) appears in the card above.
+          </p>
+        </div>
+      )}
+      {!embedEnabled && (
+        <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">Disabled:</span> Embedded marketing and embed analytics are hidden for this business.
           </p>
         </div>
       )}

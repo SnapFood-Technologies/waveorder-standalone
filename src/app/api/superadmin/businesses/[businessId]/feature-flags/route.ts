@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logSystemEvent, getActualRequestUrl } from '@/lib/systemLog'
 
 // GET - Fetch feature flags for a business
 export async function GET(
@@ -43,6 +44,7 @@ export async function GET(
         enableAffiliateSystem: true,
         enableTeamPaymentTracking: true,
         legalPagesEnabled: true,
+        websiteEmbedEnabled: true,
         currency: true,
         storefrontLanguage: true,
         language: true
@@ -114,6 +116,24 @@ export async function GET(
       }
     }
 
+    let websiteEmbedSummary: { visits: number; lastVisitAt: string | null } | null = null
+    if (business.websiteEmbedEnabled) {
+      const [embedVisits, lastEmbed] = await Promise.all([
+        prisma.visitorSession.count({
+          where: { businessId, fromWebsiteEmbed: true }
+        }),
+        prisma.visitorSession.findFirst({
+          where: { businessId, fromWebsiteEmbed: true },
+          orderBy: { visitedAt: 'desc' },
+          select: { visitedAt: true }
+        })
+      ])
+      websiteEmbedSummary = {
+        visits: embedVisits,
+        lastVisitAt: lastEmbed?.visitedAt?.toISOString() ?? null
+      }
+    }
+
     return NextResponse.json({
       success: true,
       business: {
@@ -130,11 +150,13 @@ export async function GET(
         internalExpensesEnabled: business.internalExpensesEnabled,
         enableAffiliateSystem: business.enableAffiliateSystem,
         enableTeamPaymentTracking: business.enableTeamPaymentTracking,
-        legalPagesEnabled: business.legalPagesEnabled
+        legalPagesEnabled: business.legalPagesEnabled,
+        websiteEmbedEnabled: business.websiteEmbedEnabled
       },
       summary: {
         delivery: deliverySummary,
-        team: teamSummary
+        team: teamSummary,
+        websiteEmbed: websiteEmbedSummary
       }
     })
   } catch (error) {
@@ -170,7 +192,7 @@ export async function PATCH(
     const { businessId } = await params
     const body = await request.json()
 
-    const { enableManualTeamCreation, enableDeliveryManagement, invoiceReceiptSelectionEnabled, packagingTrackingEnabled, internalInvoiceEnabled, internalExpensesEnabled, enableAffiliateSystem, enableTeamPaymentTracking, legalPagesEnabled } = body
+    const { enableManualTeamCreation, enableDeliveryManagement, invoiceReceiptSelectionEnabled, packagingTrackingEnabled, internalInvoiceEnabled, internalExpensesEnabled, enableAffiliateSystem, enableTeamPaymentTracking, legalPagesEnabled, websiteEmbedEnabled } = body
 
     // Validate business exists
     const business = await prisma.business.findUnique({
@@ -210,6 +232,9 @@ export async function PATCH(
     if (legalPagesEnabled !== undefined) {
       updateData.legalPagesEnabled = legalPagesEnabled === true
     }
+    if (websiteEmbedEnabled !== undefined) {
+      updateData.websiteEmbedEnabled = websiteEmbedEnabled === true
+    }
 
     // Update business
     const updatedBusiness = await prisma.business.update({
@@ -226,7 +251,8 @@ export async function PATCH(
         internalExpensesEnabled: true,
         enableAffiliateSystem: true,
         enableTeamPaymentTracking: true,
-        legalPagesEnabled: true
+        legalPagesEnabled: true,
+        websiteEmbedEnabled: true
       }
     })
 
@@ -258,6 +284,30 @@ export async function PATCH(
     if (legalPagesEnabled !== undefined) {
       messages.push(`Legal Pages ${updatedBusiness.legalPagesEnabled ? 'enabled' : 'disabled'}`)
     }
+    if (websiteEmbedEnabled !== undefined) {
+      messages.push(`Website embed ${updatedBusiness.websiteEmbedEnabled ? 'enabled' : 'disabled'}`)
+    }
+
+    if (websiteEmbedEnabled !== undefined) {
+      await logSystemEvent({
+        logType: 'admin_action',
+        severity: 'info',
+        endpoint: `/api/superadmin/businesses/${businessId}/feature-flags`,
+        method: 'PATCH',
+        url: getActualRequestUrl(request),
+        businessId,
+        slug: business.slug,
+        errorMessage: `Website embed ${updatedBusiness.websiteEmbedEnabled ? 'enabled' : 'disabled'} for ${business.name} by ${session.user.email}`,
+        metadata: {
+          action: 'website_embed_feature_flag',
+          businessName: business.name,
+          businessSlug: business.slug,
+          previousValue: business.websiteEmbedEnabled,
+          newValue: updatedBusiness.websiteEmbedEnabled,
+          updatedBy: session.user.email,
+        },
+      })
+    }
 
     return NextResponse.json({
       success: true,
@@ -271,7 +321,8 @@ export async function PATCH(
         internalExpensesEnabled: updatedBusiness.internalExpensesEnabled,
         enableAffiliateSystem: updatedBusiness.enableAffiliateSystem,
         enableTeamPaymentTracking: updatedBusiness.enableTeamPaymentTracking,
-        legalPagesEnabled: updatedBusiness.legalPagesEnabled
+        legalPagesEnabled: updatedBusiness.legalPagesEnabled,
+        websiteEmbedEnabled: updatedBusiness.websiteEmbedEnabled
       }
     })
   } catch (error) {

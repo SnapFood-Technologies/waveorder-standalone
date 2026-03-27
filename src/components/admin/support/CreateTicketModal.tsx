@@ -17,7 +17,7 @@ export function CreateTicketModal({ businessId, onClose, onTicketCreated, initia
   const [formData, setFormData] = useState({
     subject: '',
     description: '',
-    type: (initialType && ['GENERAL', 'TECHNICAL', 'BILLING', 'FEATURE_REQUEST', 'BUG_REPORT', 'WHATSAPP_TEMPLATES'].includes(initialType) ? initialType : 'GENERAL') as string,
+    type: (initialType && ['GENERAL', 'TECHNICAL', 'BILLING', 'FEATURE_REQUEST', 'BUG_REPORT', 'WHATSAPP_TEMPLATES', 'WHATSAPP_ORDER_CHANNEL'].includes(initialType) ? initialType : 'GENERAL') as string,
     priority: 'MEDIUM'
   })
   const [error, setError] = useState('')
@@ -63,7 +63,8 @@ export function CreateTicketModal({ businessId, onClose, onTicketCreated, initia
     { value: 'BILLING', label: 'Billing & Payment' },
     { value: 'FEATURE_REQUEST', label: 'Feature Request' },
     { value: 'BUG_REPORT', label: 'Bug Report' },
-    { value: 'WHATSAPP_TEMPLATES', label: 'WhatsApp templates / Broadcast setup' }
+    { value: 'WHATSAPP_TEMPLATES', label: 'WhatsApp templates / Broadcast setup' },
+    { value: 'WHATSAPP_ORDER_CHANNEL', label: 'New order WhatsApp channel (direct / customer link / mix)' }
   ]
 
   const getPriorityOptions = () => [

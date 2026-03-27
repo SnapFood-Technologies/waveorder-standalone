@@ -13,7 +13,9 @@
     "db:seed": "tsx prisma/seed.ts",
     "populate:naia-postal": "tsx scripts/populate-postal-pricing-naia-studio.ts",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:ui": "vitest --ui",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",
@@ -72,6 +74,7 @@
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.0",
+    "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.0.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20.19.16",
@@ -81,6 +84,7 @@
     "@types/stripe": "^8.0.416",
     "@types/uuid": "^11.0.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/ui": "2.1.9",
     "eslint": "^9",
     "eslint-config-next": "15.5.7",
     "jsdom": "^25.0.1",

@@ -8,8 +8,12 @@ import {
 } from '@/lib/superadmin-email-notification'
 import { sendCustomerOrderPlacedEmail } from '@/lib/customer-email-notification'
 import { normalizePhoneNumber, phoneNumbersMatch } from '@/lib/phone-utils'
+import { isStorefrontPhoneComplete } from '@/lib/storefront-phone'
+import { businessSlugFilter } from '@/lib/storefront-slug'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 import { sendOrderNotification as sendTwilioOrderNotification, isTwilioConfigured } from '@/lib/twilio'
+import { buildWaMeUrlWithText } from '@/lib/whatsapp-wa-me-url'
+import { buildCustomerFollowUpWhatsappUrl } from '@/lib/whatsapp-mix-followup'
 import * as Sentry from '@sentry/nextjs'
 
 // Helper function to calculate distance between two points
@@ -965,9 +969,9 @@ export async function POST(
     Sentry.setTag('api_type', 'storefront')
     Sentry.setTag('method', 'POST')
 
-    // Find business and check if it's closed
-    const business = await prisma.business.findUnique({
-      where: { slug, isActive: true },
+    // Find business and check if it's closed (slug match is case-insensitive)
+    const business = await prisma.business.findFirst({
+      where: { slug: businessSlugFilter(slug), isActive: true },
       select: {
         id: true,
         name: true,
@@ -978,6 +982,8 @@ export async function POST(
         address: true,
         whatsappNumber: true,
         whatsappDirectNotifications: true,
+        orderWhatsAppMixEnabled: true,
+        orderWhatsAppMixFollowUpTemplate: true,
         orderNumberFormat: true,
         website: true,
         deliveryEnabled: true,
@@ -994,6 +1000,8 @@ export async function POST(
         translateContentToBusinessLanguage: true,
         enableAffiliateSystem: true,
         timezone: true,
+        minimumOrder: true,
+        invoiceMinimumOrderValue: true,
         deliveryZones: {
           where: { isActive: true },
           orderBy: { maxDistance: 'asc' }
@@ -1111,6 +1119,13 @@ export async function POST(
       return NextResponse.json({ error: 'Customer phone is required' }, { status: 400 })
     }
 
+    if (!isStorefrontPhoneComplete(customerPhone.trim())) {
+      Sentry.setTag('error_type', 'validation_error')
+      Sentry.setTag('status_code', '400')
+      logValidationError('Invalid phone number format')
+      return NextResponse.json({ error: 'Invalid phone number format' }, { status: 400 })
+    }
+
     if (!items || !Array.isArray(items) || items.length === 0) {
       Sentry.setTag('error_type', 'validation_error')
       Sentry.setTag('status_code', '400')
@@ -1147,9 +1162,70 @@ export async function POST(
       if (business.businessType !== 'RETAIL' && (!latitude || !longitude)) {
       return NextResponse.json({ error: 'Delivery address and coordinates required' }, { status: 400 })
       }
-      // For RETAIL businesses, require postal pricing selection
-      if (business.businessType === 'RETAIL' && !postalPricingId) {
-        return NextResponse.json({ error: 'Please select a delivery method' }, { status: 400 })
+      // For RETAIL businesses, require country, city, and postal pricing selection
+      if (business.businessType === 'RETAIL') {
+        if (!countryCode?.trim()) {
+          return NextResponse.json({ error: 'Please select a country' }, { status: 400 })
+        }
+        if (!city?.trim()) {
+          return NextResponse.json({ error: 'Please select a city' }, { status: 400 })
+        }
+        if (!postalPricingId) {
+          return NextResponse.json({ error: 'Please select a delivery method' }, { status: 400 })
+        }
+      }
+
+      const minimumOrder = business.minimumOrder ?? 0
+      const subtotalNum = Number(subtotal)
+      if (Number.isNaN(subtotalNum)) {
+        Sentry.setTag('error_type', 'validation_error')
+        Sentry.setTag('status_code', '400')
+        logValidationError('Invalid subtotal')
+        return NextResponse.json({ error: 'Valid subtotal is required' }, { status: 400 })
+      }
+      if (subtotalNum < minimumOrder) {
+        Sentry.setTag('error_type', 'validation_error')
+        Sentry.setTag('status_code', '400')
+        logValidationError('Order subtotal below minimum for delivery')
+        return NextResponse.json(
+          {
+            error: 'Order does not meet minimum amount for delivery',
+            minimumOrder
+          },
+          { status: 400 }
+        )
+      }
+    }
+
+    if (invoiceType === 'INVOICE') {
+      const totalNum = Number(total)
+      if (Number.isNaN(totalNum)) {
+        Sentry.setTag('error_type', 'validation_error')
+        Sentry.setTag('status_code', '400')
+        logValidationError('Invalid order total for invoice')
+        return NextResponse.json({ error: 'Valid order total is required' }, { status: 400 })
+      }
+      if (
+        business.invoiceMinimumOrderValue != null &&
+        totalNum < business.invoiceMinimumOrderValue
+      ) {
+        Sentry.setTag('error_type', 'validation_error')
+        Sentry.setTag('status_code', '400')
+        logValidationError('Order total below minimum for invoice')
+        return NextResponse.json(
+          {
+            error: 'Order total does not meet minimum for invoice selection',
+            invoiceMinimumOrderValue: business.invoiceMinimumOrderValue
+          },
+          { status: 400 }
+        )
+      }
+      const afm = invoiceAfm != null ? String(invoiceAfm).trim() : ''
+      if (afm.length !== 9 || !/^\d{9}$/.test(afm)) {
+        Sentry.setTag('error_type', 'validation_error')
+        Sentry.setTag('status_code', '400')
+        logValidationError('Invalid invoice tax ID (AFM)')
+        return NextResponse.json({ error: 'Valid tax ID (AFM) with 9 digits is required for invoice' }, { status: 400 })
       }
     }
 
@@ -1401,14 +1477,7 @@ export async function POST(
     }
 
     // Enhanced customer creation/retrieval logic with normalized phone matching
-    // Normalize the incoming phone number for matching
     const normalizedPhone = normalizePhoneNumber(customerPhone)
-    
-    if (!normalizedPhone || normalizedPhone.length < 10) {
-      Sentry.setTag('error_type', 'validation_error')
-      Sentry.setTag('status_code', '400')
-      return NextResponse.json({ error: 'Invalid phone number format' }, { status: 400 })
-    }
 
     // Find customer by matching normalized phone numbers
     // Get all customers for this business and match by normalized phone
@@ -2412,9 +2481,26 @@ try {
       }
     }
 
+    let customerFollowUpWhatsappUrl: string | undefined
+    if (
+      useDirectNotification &&
+      twilioMessageSent &&
+      business.orderWhatsAppMixEnabled
+    ) {
+      customerFollowUpWhatsappUrl = buildCustomerFollowUpWhatsappUrl(
+        business.whatsappNumber,
+        business.orderWhatsAppMixFollowUpTemplate,
+        {
+          orderNumber: order.orderNumber,
+          businessName: business.name,
+          orderId: order.id,
+        }
+      )
+    }
+
     // Return response based on notification type
     if (useDirectNotification && twilioMessageSent) {
-      // Direct notification sent successfully - no wa.me redirect needed
+      // Direct notification sent successfully - optional mix follow-up URL for customer
       return NextResponse.json({
         success: true,
         orderId: order.id,
@@ -2423,7 +2509,10 @@ try {
         deliveryZone,
         deliveryDistance,
         directNotification: true,
-        message: 'Order sent! The business has been notified.'
+        message: 'Order sent! The business has been notified.',
+        ...(customerFollowUpWhatsappUrl
+          ? { customerFollowUpWhatsappUrl }
+          : {}),
       })
     } else {
       // Use traditional wa.me redirect (either by preference or as fallback)
@@ -2435,7 +2524,7 @@ try {
         deliveryZone,
         deliveryDistance,
         directNotification: false,
-        whatsappUrl: `https://wa.me/${formatWhatsAppNumber(business.whatsappNumber)}?text=${encodeURIComponent(whatsappMessage)}`
+        whatsappUrl: buildWaMeUrlWithText(business.whatsappNumber, whatsappMessage),
       })
     }
 
@@ -2743,33 +2832,6 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
   return message
 }
 
-function formatWhatsAppNumber(phoneNumber: string): string {
-  // Remove all non-numeric characters
-  const cleanNumber = phoneNumber.replace(/[^0-9]/g, '')
-  
-  // WhatsApp API expects numbers without + prefix
-  // But we need to ensure it's a valid international format
-  if (cleanNumber.startsWith('1') && cleanNumber.length === 11) {
-    // US number: +1XXXXXXXXXX -> 1XXXXXXXXXX
-    return cleanNumber
-  } else if (cleanNumber.startsWith('355') && cleanNumber.length >= 11) {
-    // Albanian number: +355XXXXXXXXX -> 355XXXXXXXXX
-    return cleanNumber
-  } else if (cleanNumber.startsWith('30') && cleanNumber.length >= 12) {
-    // Greek number: +30XXXXXXXXXX -> 30XXXXXXXXXX
-    return cleanNumber
-  } else if (cleanNumber.startsWith('39') && cleanNumber.length >= 11) {
-    // Italian number: +39XXXXXXXXX -> 39XXXXXXXXX
-    return cleanNumber
-  } else if (cleanNumber.startsWith('34') && cleanNumber.length >= 11) {
-    // Spanish number: +34XXXXXXXXX -> 34XXXXXXXXX
-    return cleanNumber
-  }
-  
-  // For other countries, just return the clean number
-  return cleanNumber
-}
-
 function getCurrencySymbol(currency: string) {
   switch (currency) {
     case 'USD': return '$'
@@ -2791,9 +2853,9 @@ export async function PATCH(
     const { slug } = await context.params
     const { customerLat, customerLng } = await request.json()
 
-    // Find business
-    const business = await prisma.business.findUnique({
-      where: { slug, isActive: true },
+    // Find business (case-insensitive slug)
+    const business = await prisma.business.findFirst({
+      where: { slug: businessSlugFilter(slug), isActive: true },
       select: { id: true, isTemporarilyClosed: true }
     })
 
