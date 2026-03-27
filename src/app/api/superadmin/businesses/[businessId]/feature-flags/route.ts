@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logSystemEvent, getActualRequestUrl } from '@/lib/systemLog'
 
 // GET - Fetch feature flags for a business
 export async function GET(
@@ -282,6 +283,30 @@ export async function PATCH(
     }
     if (legalPagesEnabled !== undefined) {
       messages.push(`Legal Pages ${updatedBusiness.legalPagesEnabled ? 'enabled' : 'disabled'}`)
+    }
+    if (websiteEmbedEnabled !== undefined) {
+      messages.push(`Website embed ${updatedBusiness.websiteEmbedEnabled ? 'enabled' : 'disabled'}`)
+    }
+
+    if (websiteEmbedEnabled !== undefined) {
+      await logSystemEvent({
+        logType: 'admin_action',
+        severity: 'info',
+        endpoint: `/api/superadmin/businesses/${businessId}/feature-flags`,
+        method: 'PATCH',
+        url: getActualRequestUrl(request),
+        businessId,
+        slug: business.slug,
+        errorMessage: `Website embed ${updatedBusiness.websiteEmbedEnabled ? 'enabled' : 'disabled'} for ${business.name} by ${session.user.email}`,
+        metadata: {
+          action: 'website_embed_feature_flag',
+          businessName: business.name,
+          businessSlug: business.slug,
+          previousValue: business.websiteEmbedEnabled,
+          newValue: updatedBusiness.websiteEmbedEnabled,
+          updatedBy: session.user.email,
+        },
+      })
     }
 
     return NextResponse.json({

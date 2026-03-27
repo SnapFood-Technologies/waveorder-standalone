@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Code2, Copy, Check, ExternalLink, Info } from 'lucide-react'
+import { Code2, Copy, Check, ExternalLink, Info, Save } from 'lucide-react'
 import { useBusiness } from '@/contexts/BusinessContext'
 import { buildWebsiteEmbedOrderUrl, getPublicSiteBaseUrl } from '@/lib/website-embed-url'
 import { canViewAnalytics } from '@/lib/permissions'
@@ -42,6 +42,8 @@ export default function EmbeddedMarketingManagement({ businessId }: Props) {
   const [size, setSize] = useState<'sm' | 'md' | 'lg'>('md')
 
   const [copied, setCopied] = useState<'url' | 'html' | 'script' | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [saveMessage, setSaveMessage] = useState<string | null>(null)
 
   useEffect(() => {
     const load = async () => {
@@ -60,6 +62,22 @@ export default function EmbeddedMarketingManagement({ businessId }: Props) {
         }
         setEmbedAllowed(true)
         setSlug(s)
+
+        const embedRes = await fetch(`/api/admin/stores/${businessId}/settings/website-embed`)
+        if (embedRes.ok) {
+          const embedData = await embedRes.json()
+          const st = embedData.settings as WebsiteEmbedSettingsJson | undefined
+          if (st) {
+            setUtmSource(st.utmSource ?? '')
+            setUtmMedium(st.utmMedium ?? '')
+            setUtmCampaign(st.utmCampaign ?? '')
+            if (st.buttonLabel) setButtonLabel(st.buttonLabel)
+            if (st.bgColor) setBgColor(st.bgColor)
+            if (st.textColor) setTextColor(st.textColor)
+            if (typeof st.rounded === 'boolean') setRounded(st.rounded)
+            if (st.size === 'sm' || st.size === 'md' || st.size === 'lg') setSize(st.size)
+          }
+        }
       } catch {
         router.replace(`/admin/stores/${businessId}/marketing`)
       } finally {
@@ -68,6 +86,40 @@ export default function EmbeddedMarketingManagement({ businessId }: Props) {
     }
     load()
   }, [businessId, router])
+
+  const saveSettings = async () => {
+    setSaving(true)
+    setSaveMessage(null)
+    try {
+      const res = await fetch(`/api/admin/stores/${businessId}/settings/website-embed`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          settings: {
+            utmSource,
+            utmMedium,
+            utmCampaign,
+            buttonLabel,
+            bgColor,
+            textColor,
+            rounded,
+            size,
+          },
+        }),
+      })
+      const data = await res.json().catch(() => ({}))
+      if (res.ok) {
+        setSaveMessage('Saved. Your settings will load here next time.')
+        setTimeout(() => setSaveMessage(null), 4000)
+      } else {
+        setSaveMessage(data.message || 'Could not save')
+      }
+    } catch {
+      setSaveMessage('Could not save')
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const baseUrl = getPublicSiteBaseUrl()
 
@@ -103,6 +155,7 @@ export default function EmbeddedMarketingManagement({ businessId }: Props) {
       await navigator.clipboard.writeText(text)
       setCopied(kind)
       setTimeout(() => setCopied(null), 2000)
+      logWebsiteEmbedCopy({ businessId, slug, copyKind: kind })
     } catch {
       /* ignore */
     }
@@ -135,14 +188,32 @@ export default function EmbeddedMarketingManagement({ businessId }: Props) {
           <span>/</span>
           <span className="text-gray-900 font-medium">Embedded</span>
         </div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-          <Code2 className="w-7 h-7 text-teal-600" />
-          Website embed
-        </h1>
-        <p className="text-gray-600 mt-1">
-          Build a tagged order link and embed a floating button or plain link on your site. Traffic is tagged with{' '}
-          <code className="bg-gray-100 px-1 rounded text-sm">embed_waveorder=1</code> (not your UTM source).
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <Code2 className="w-7 h-7 text-teal-600" />
+              Website embed
+            </h1>
+            <p className="text-gray-600 mt-1">
+              Build a tagged order link and embed a floating button or plain link on your site. Traffic is tagged with{' '}
+              <code className="bg-gray-100 px-1 rounded text-sm">embed_waveorder=1</code> (not your UTM source).
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={saveSettings}
+            disabled={saving}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 text-sm font-medium shrink-0"
+          >
+            <Save className="w-4 h-4" />
+            {saving ? 'Saving…' : 'Save configuration'}
+          </button>
+        </div>
+        {saveMessage && (
+          <p className={`text-sm mt-2 ${saveMessage.startsWith('Saved') ? 'text-teal-800' : 'text-red-600'}`}>
+            {saveMessage}
+          </p>
+        )}
       </div>
 
       {showAnalyticsNote ? (

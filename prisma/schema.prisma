@@ -564,7 +564,9 @@ model Business {
   metaPixelId      String? // Business's Meta Pixel ID (configured in Admin > Marketing > Ads)
 
   // Website embed (SuperAdmin enables) - Link/button snippets for merchant's own site; Marketing → Embedded
-  websiteEmbedEnabled Boolean @default(false)
+  websiteEmbedEnabled      Boolean @default(false)
+  /// Last saved UTM + button options from Admin → Marketing → Embedded (JSON)
+  websiteEmbedSettingsJson Json?
 
   // Legal Pages / Store Policies (SuperAdmin enables)
   legalPagesEnabled    Boolean @default(false) // When enabled, business admin can create and manage legal pages

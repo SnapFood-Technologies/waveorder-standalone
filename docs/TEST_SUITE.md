@@ -24,8 +24,8 @@ yarn vitest run \
 
 | Metric | Value |
 |--------|------:|
-| Test files | 15 |
-| Tests (cases) | 63 |
+| Test files | 17 |
+| Tests (cases) | 69 |
 
 ---
 
@@ -193,6 +193,30 @@ Plain-language behavior. Use this to map failures (file + test name) to product 
 
 ---
 
+### 16. `whatsapp-mix-followup.test.ts` (3 tests)
+
+*Added: 27 Mar 2026*
+
+**Purpose:** **WhatsApp mix** follow-up message for customers after checkout: template placeholders and `wa.me` URL with encoded text.
+
+**Covers:** Default template + `{orderNumber}` / `{businessName}` / `{orderId}` substitution; custom template string; `buildCustomerFollowUpWhatsappUrl` produces `https://wa.me/...` with encoded message (uses `whatsapp-wa-me-url`).
+
+**Implementation:** `src/lib/whatsapp-mix-followup.ts` (and `src/lib/whatsapp-wa-me-url.ts` for number formatting / URL).
+
+---
+
+### 17. `website-embed-settings.test.ts` (3 tests)
+
+*Added: 27 Mar 2026*
+
+**Purpose:** **Marketing → Embedded** saved configuration: merge stored JSON with defaults and ignore invalid values.
+
+**Covers:** Null stored → defaults; partial merge; invalid `size` falls back to default.
+
+**Implementation:** `src/lib/website-embed-settings.ts`
+
+---
+
 ## Product area map
 
 | Area | Test files |
@@ -202,7 +226,8 @@ Plain-language behavior. Use this to map failures (file + test name) to product 
 | Business admin / team | 6 |
 | WaveOrder Flows (WhatsApp + canvas) | 8–13 |
 | Twilio inbound webhook | 14 |
-| Marketing / website embed | 15 |
+| Marketing / website embed | 15, 17 |
+| WhatsApp mix (order follow-up) | 16 |
 
 ---
 
@@ -233,6 +258,8 @@ Plain-language behavior. Use this to map failures (file + test name) to product 
 | `TriggerNode.test.tsx` | `src/components/admin/whatsapp-flows/flow-nodes/TriggerNode.tsx` |
 | `twilio/incoming.test.ts` | `src/app/api/webhooks/twilio/incoming/route.ts` |
 | `website-embed-url.test.ts` | `src/lib/website-embed-url.ts` |
+| `website-embed-settings.test.ts` | `src/lib/website-embed-settings.ts` |
+| `whatsapp-mix-followup.test.ts` | `src/lib/whatsapp-mix-followup.ts` |
 
 ---
 
