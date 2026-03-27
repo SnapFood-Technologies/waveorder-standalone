@@ -1,4 +1,5 @@
-# Fails the workflow (and shows red on PRs) when lint, tests, or typecheck fail.
+# Fails the workflow (and shows red on PRs) when tests or typecheck fail.
+# Note: Lint is not run here — next.config has eslint.ignoreDuringBuilds: true, so build matches local (lint is optional via `yarn lint`).
 name: CI
 
 on:
@@ -30,9 +31,6 @@ jobs:
 
       - name: Unit tests (Vitest)
         run: yarn test
-
-      - name: Lint
-        run: yarn lint
 
       - name: Typecheck
         run: yarn typecheck

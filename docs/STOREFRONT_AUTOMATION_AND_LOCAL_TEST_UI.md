@@ -36,12 +36,12 @@ For the **full test inventory** (all 18 files, 94 cases, including non-storefron
 
 - **Workflow:** [`.github/workflows/ci.yml`](../.github/workflows/ci.yml)
 - **Triggers:** `pull_request`, and `push` to **`stage`** and **`main`**.
-- **Steps:** checkout → Node 22 + Yarn cache → `yarn install --frozen-lockfile` → `npx prisma generate` → **`yarn test`** → **`yarn lint`** → **`yarn typecheck`** (`tsc --noEmit`).
+- **Steps:** checkout → Node 22 + Yarn cache → `yarn install --frozen-lockfile` → `npx prisma generate` → **`yarn test`** → **`yarn typecheck`** (`tsc --noEmit`). (Lint is not a CI gate; same idea as `eslint.ignoreDuringBuilds` on build.)
 - Any failing step fails the job (red checks on PRs).
 
 ### 2.3 `typecheck` script
 
-- **`package.json`:** `"typecheck": "tsc --noEmit"` so TypeScript is checked in CI alongside tests and lint.
+- **`package.json`:** `"typecheck": "tsc --noEmit"` so TypeScript is checked in CI alongside tests.
 
 ### 2.4 Extra: Tests panel UI for local development
 

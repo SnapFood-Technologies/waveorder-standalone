@@ -12,7 +12,7 @@ Automated tests run with **Vitest** (`yarn test` / `npm test`). They run in **de
 | `yarn vitest run <path> …` | Run specific test file(s) |
 | `yarn typecheck` | TypeScript check (`tsc --noEmit`) — also run in CI |
 
-**CI:** Pull requests and pushes to `stage` / `main` run `.github/workflows/ci.yml`: install → `prisma generate` → `yarn test` → `yarn lint` → `yarn typecheck`. If any step fails, the workflow fails (red checks).
+**CI:** Pull requests and pushes to `stage` / `main` run `.github/workflows/ci.yml`: install → `prisma generate` → `yarn test` → `yarn typecheck`. (ESLint is skipped during `next build` via `eslint.ignoreDuringBuilds`; run `yarn lint` locally when you want it.)
 
 **DOM matchers:** `vitest.setup.ts` imports `@testing-library/jest-dom/vitest`. `@vitest/ui` is pinned to Vitest 2.x in `package.json` (see [Storefront automation + local test UI](./STOREFRONT_AUTOMATION_AND_LOCAL_TEST_UI.md)).
 
