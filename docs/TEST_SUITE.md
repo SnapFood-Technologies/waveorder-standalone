@@ -24,8 +24,8 @@ yarn vitest run \
 
 | Metric | Value |
 |--------|------:|
-| Test files | 14 |
-| Tests (cases) | 56 |
+| Test files | 15 |
+| Tests (cases) | 63 |
 
 ---
 
@@ -181,6 +181,18 @@ Plain-language behavior. Use this to map failures (file + test name) to product 
 
 ---
 
+### 15. `website-embed-url.test.ts` (7 tests)
+
+*Added: 27 Mar 2026*
+
+**Purpose:** **Website embed** storefront URLs: fingerprint query param and optional UTM tags; public site base URL for snippets.
+
+**Covers:** `embed_waveorder=1` and slug path; trailing slash on base URL; `utm_source` / `utm_medium` / `utm_campaign` when set; blank UTM fields omitted; slug encoding; default base URL when `NEXT_PUBLIC_BASE_URL` unset; trailing slash stripped from env.
+
+**Implementation:** `src/lib/website-embed-url.ts`
+
+---
+
 ## Product area map
 
 | Area | Test files |
@@ -190,6 +202,7 @@ Plain-language behavior. Use this to map failures (file + test name) to product 
 | Business admin / team | 6 |
 | WaveOrder Flows (WhatsApp + canvas) | 8–13 |
 | Twilio inbound webhook | 14 |
+| Marketing / website embed | 15 |
 
 ---
 
@@ -219,6 +232,7 @@ Plain-language behavior. Use this to map failures (file + test name) to product 
 | `whatsapp-utils.test.ts` | `src/lib/whatsapp-utils.ts` |
 | `TriggerNode.test.tsx` | `src/components/admin/whatsapp-flows/flow-nodes/TriggerNode.tsx` |
 | `twilio/incoming.test.ts` | `src/app/api/webhooks/twilio/incoming/route.ts` |
+| `website-embed-url.test.ts` | `src/lib/website-embed-url.ts` |
 
 ---
 
