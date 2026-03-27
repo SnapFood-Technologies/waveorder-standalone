@@ -3677,6 +3677,23 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         setDeliveryError(null)
         setCalculatedDeliveryFee(storeData.deliveryFee)
       
+        // Fire Meta Pixel Purchase event (if pixel is loaded)
+        if (typeof window !== 'undefined' && window.fbq) {
+          window.fbq('track', 'Purchase', {
+            value: cartTotal,
+            currency: storeData.currency || 'EUR',
+            content_name: storeData.name,
+            order_id: result.orderId,
+          })
+        }
+
+        // Push order_success param to URL for Meta custom conversion matching
+        if (typeof window !== 'undefined' && result.orderId) {
+          const url = new URL(window.location.href)
+          url.searchParams.set('order_success', result.orderId)
+          window.history.replaceState({}, '', url.toString())
+        }
+
         // Show enhanced success message
         setOrderSuccessMessage({
           visible: true,
