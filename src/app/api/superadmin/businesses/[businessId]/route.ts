@@ -340,6 +340,21 @@ export async function GET(
       lastActivityAt: lastConversation?.lastMessageAt?.toISOString() ?? null
     }
 
+    const [websiteEmbedVisits, lastWebsiteEmbedVisit] = await Promise.all([
+      prisma.visitorSession.count({
+        where: { businessId, fromWebsiteEmbed: true }
+      }),
+      prisma.visitorSession.findFirst({
+        where: { businessId, fromWebsiteEmbed: true },
+        orderBy: { visitedAt: 'desc' },
+        select: { visitedAt: true }
+      })
+    ])
+    const websiteEmbedUsage = {
+      visits: websiteEmbedVisits,
+      lastVisitAt: lastWebsiteEmbedVisit?.visitedAt?.toISOString() ?? null
+    }
+
     // Internal Invoice usage stats (when feature enabled)
     let invoiceUsage: { total: number; lastGeneratedAt: string | null } | undefined
     if (business.internalInvoiceEnabled) {
@@ -503,7 +518,9 @@ export async function GET(
         aiUsage,
         whatsappFlowsEnabled,
         whatsappFlowsUsage,
-        invoiceUsage
+        invoiceUsage,
+        websiteEmbedEnabled: business.websiteEmbedEnabled ?? false,
+        websiteEmbedUsage
       }
     })
   } catch (error) {

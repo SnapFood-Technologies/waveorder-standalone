@@ -53,7 +53,8 @@ import {
   Shield,
   FileText,
   Receipt,
-  DollarSign
+  DollarSign,
+  Code2
 } from 'lucide-react'
 import { useBusiness } from '@/contexts/BusinessContext'
 
@@ -112,6 +113,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [legalPagesEnabled, setLegalPagesEnabled] = useState(false)
   const [aiAssistantEnabled, setAiAssistantEnabled] = useState(false)
   const [metaPixelEnabled, setMetaPixelEnabled] = useState(false)
+  const [websiteEmbedEnabled, setWebsiteEmbedEnabled] = useState(false)
   const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
   const [storeCount, setStoreCount] = useState(1)
   const [stores, setStores] = useState<Array<{ id: string; name: string; slug: string; logo: string | null }>>([])
@@ -161,6 +163,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setLegalPagesEnabled(data.business?.legalPagesEnabled || false)
           setAiAssistantEnabled(data.business?.aiAssistantEnabled || false)
           setMetaPixelEnabled(data.business?.metaPixelEnabled || false)
+          setWebsiteEmbedEnabled(data.business?.websiteEmbedEnabled || false)
           // Set user role from response (if available) or fetch separately
           if (data.userRole) {
             setUserRole(data.userRole)
@@ -379,15 +382,28 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
       // @ts-ignore
       requiredPlan: 'STARTER' as Plan
     },
-    // Marketing: when metaPixelEnabled, show General + Ads; otherwise single link
+    // Marketing: submenu when Meta Ads and/or website embed (SuperAdmin) is enabled
     // @ts-ignore
-    ...(metaPixelEnabled ? [{
+    ...(metaPixelEnabled || websiteEmbedEnabled ? [{
       name: 'Marketing',
       icon: Megaphone,
       requiredPlan: 'STARTER' as Plan,
       children: [
         { name: 'General', href: `${baseUrl}/marketing`, icon: Megaphone, requiredPlan: 'STARTER' as Plan },
-        { name: 'Ads', href: `${baseUrl}/marketing/ads`, icon: TrendingUp, requiredPlan: 'STARTER' as Plan }
+        // @ts-ignore
+        ...(metaPixelEnabled ? [{
+          name: 'Ads',
+          href: `${baseUrl}/marketing/ads`,
+          icon: TrendingUp,
+          requiredPlan: 'STARTER' as Plan
+        }] : []),
+        // @ts-ignore
+        ...(websiteEmbedEnabled ? [{
+          name: 'Embedded',
+          href: `${baseUrl}/marketing/embedded`,
+          icon: Code2,
+          requiredPlan: 'STARTER' as Plan
+        }] : []),
       ]
     }] : [{
       name: 'Marketing',
@@ -738,12 +754,12 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
     }
   }, [isOpen])
 
-  // Auto-expand Marketing when on marketing/ads and metaPixelEnabled
+  // Auto-expand Marketing when on a marketing sub-route and submenu is shown
   useEffect(() => {
-    if (metaPixelEnabled && pathname?.includes('/marketing')) {
+    if ((metaPixelEnabled || websiteEmbedEnabled) && pathname?.includes('/marketing')) {
       setExpandedItems(prev => (prev.includes('Marketing') ? prev : [...prev, 'Marketing']))
     }
-  }, [metaPixelEnabled, pathname])
+  }, [metaPixelEnabled, websiteEmbedEnabled, pathname])
 
   const renderNavigationItem = (item: NavigationItem) => {
     const available = isFeatureAvailable(item.requiredPlan)

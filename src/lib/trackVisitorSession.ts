@@ -63,6 +63,9 @@ export async function trackVisitorSession(
     const searchParams = new URL(url).searchParams
     const utmParams = extractUTMParams(searchParams)
     const productShareId = searchParams.get('ps') || undefined // Product share tracking
+    const embedRaw = searchParams.get('embed_waveorder')
+    const fromWebsiteEmbed =
+      embedRaw === '1' || embedRaw?.toLowerCase() === 'true'
 
     // Parse referrer data
     const referrerData = extractReferrerData(referrer)
@@ -108,6 +111,7 @@ export async function trackVisitorSession(
         term: utmParams.term || undefined,
         content: utmParams.content || undefined,
         placement: utmParams.placement || undefined,
+        fromWebsiteEmbed,
         // Referrer
         referrer: referrerData.referrer || undefined,
         referrerHost: referrerData.referrerHost || undefined,

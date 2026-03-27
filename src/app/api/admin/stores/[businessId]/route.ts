@@ -148,6 +148,7 @@ export async function GET(
         metaCatalogExportEnabled: true, // For Meta Commerce Manager export
         metaPixelEnabled: true, // For Meta Pixel (Ads tracking)
         metaPixelId: true,
+        websiteEmbedEnabled: true,
         
         // Inventory display
         showStockBadge: true,

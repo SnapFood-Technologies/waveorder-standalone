@@ -559,6 +559,9 @@ model Business {
   metaPixelEnabled Boolean @default(false)
   metaPixelId      String? // Business's Meta Pixel ID (configured in Admin > Marketing > Ads)
 
+  // Website embed (SuperAdmin enables) - Link/button snippets for merchant's own site; Marketing → Embedded
+  websiteEmbedEnabled Boolean @default(false)
+
   // Legal Pages / Store Policies (SuperAdmin enables)
   legalPagesEnabled    Boolean @default(false) // When enabled, business admin can create and manage legal pages
   legalPagesCtaEnabled Boolean @default(false) // Admin: Show informative CTA above search bar
@@ -1816,6 +1819,9 @@ model VisitorSession {
   content   String? // utm_content: ad variation
   placement String? // Custom placement parameter
 
+  // True when landing URL included embed_waveorder=1 (WaveOrder-generated embed link)
+  fromWebsiteEmbed Boolean @default(false)
+
   // Referrer Information
   referrer     String? // HTTP referer header
   referrerHost String? // Parsed hostname from referrer
@@ -1849,6 +1855,7 @@ model VisitorSession {
   @@index([businessId, source])
   @@index([businessId, medium])
   @@index([businessId, campaign])
+  @@index([businessId, fromWebsiteEmbed])
   @@index([visitedAt])
 }
 

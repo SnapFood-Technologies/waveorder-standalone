@@ -47,7 +47,8 @@ import {
   Zap,
   Lightbulb,
   Send,
-  Receipt
+  Receipt,
+  Eye
 } from 'lucide-react'
 import Link from 'next/link'
 import { AuthMethodIcon } from '@/components/superadmin/AuthMethodIcon'
@@ -167,6 +168,8 @@ interface BusinessDetails {
   externalBrandIds?: any
   connectedBusinesses?: string[]
   aiAssistantEnabled?: boolean
+  websiteEmbedEnabled?: boolean
+  websiteEmbedUsage?: { visits: number; lastVisitAt: string | null }
   whatsappFlowsEnabled?: boolean
   whatsappFlowsUsage?: { conversations: number; messagesThisMonth?: number; lastActivityAt?: string | null }
   aiUsage?: {
@@ -967,6 +970,42 @@ export default function BusinessDetailsPage() {
             </div>
           </div>
 
+          {/* Website embed usage */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
+              <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <Globe className="w-5 h-5 text-teal-600" />
+                Website embed
+              </h2>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <Eye className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                <p className="text-2xl font-bold text-gray-900">{business.websiteEmbedUsage?.visits ?? 0}</p>
+                <p className="text-xs text-gray-500">Visits from embed</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4 text-center">
+                <Clock className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm font-bold text-gray-900">
+                  {business.websiteEmbedUsage?.lastVisitAt
+                    ? formatDate(business.websiteEmbedUsage.lastVisitAt)
+                    : 'Never'}
+                </p>
+                <p className="text-xs text-gray-500">Last activity</p>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4 text-center md:col-span-2">
+                <Zap className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm font-bold text-gray-900">
+                  {business.websiteEmbedEnabled ? 'Enabled' : 'Disabled'}
+                </p>
+                <p className="text-xs text-gray-500">SuperAdmin</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500 mt-3">
+              Counts visits where the storefront URL included <code className="bg-gray-100 px-1 rounded">embed_waveorder=1</code> (links generated from Admin → Marketing → Embedded).
+            </p>
+          </div>
+
           {/* Storefront Settings */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -1689,6 +1728,7 @@ export default function BusinessDetailsPage() {
 
           {/* Affiliate System Settings */}
           <AffiliateSystemSettingsSection business={business} onUpdate={fetchBusinessDetails} />
+          <WebsiteEmbedSettingsSection business={business} onUpdate={fetchBusinessDetails} />
           <TeamPaymentTrackingSettingsSection business={business} onUpdate={fetchBusinessDetails} />
 
           {/* Remember Customer Settings */}
@@ -3712,6 +3752,93 @@ function AffiliateSystemSettingsSection({
         <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
           <p className="text-xs text-gray-600">
             <span className="font-medium">Disabled:</span> Affiliate system feature not available to this business.
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Website embed (SuperAdmin toggle only)
+function WebsiteEmbedSettingsSection({
+  business,
+  onUpdate,
+}: {
+  business: BusinessDetails
+  onUpdate: () => void
+}) {
+  const [saving, setSaving] = useState(false)
+  const [embedEnabled, setEmbedEnabled] = useState(business.websiteEmbedEnabled || false)
+
+  useEffect(() => {
+    setEmbedEnabled(business.websiteEmbedEnabled || false)
+  }, [business.websiteEmbedEnabled])
+
+  const handleToggle = async () => {
+    const newValue = !embedEnabled
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${business.id}/feature-flags`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ websiteEmbedEnabled: newValue }),
+      })
+      if (res.ok) {
+        setEmbedEnabled(newValue)
+        toast.success(newValue ? 'Website embed enabled' : 'Website embed disabled')
+        onUpdate()
+      } else {
+        const data = await res.json()
+        toast.error(data.message || 'Failed to update setting')
+      }
+    } catch (error) {
+      console.error('Error toggling website embed:', error)
+      toast.error('Failed to update setting')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <Globe className="w-5 h-5 mr-2 text-teal-600" />
+        Website embed
+      </h3>
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-900">Enable website embed</p>
+          <p className="text-xs text-gray-500 mt-1">
+            When enabled, this business sees Admin → Marketing → Embedded: order link, HTML snippet, and script for a floating button. Visits are tagged with{' '}
+            <code className="bg-gray-100 px-1 rounded">embed_waveorder=1</code> for analytics.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleToggle}
+          disabled={saving}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 ${
+            embedEnabled ? 'bg-teal-600' : 'bg-gray-200'
+          } ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+              embedEnabled ? 'translate-x-6' : 'translate-x-1'
+            }`}
+          />
+        </button>
+      </div>
+      {embedEnabled && (
+        <div className="mt-3 p-3 bg-teal-50 border border-teal-200 rounded-lg">
+          <p className="text-xs text-teal-700">
+            <span className="font-medium">Enabled:</span> Merchants can copy embed code from Marketing → Embedded. Usage (visits from embed) appears in the card above.
+          </p>
+        </div>
+      )}
+      {!embedEnabled && (
+        <div className="mt-3 p-3 bg-gray-100 border border-gray-200 rounded-lg">
+          <p className="text-xs text-gray-600">
+            <span className="font-medium">Disabled:</span> Embedded marketing and embed analytics are hidden for this business.
           </p>
         </div>
       )}
