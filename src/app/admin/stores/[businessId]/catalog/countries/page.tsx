@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
-import { Globe, Package, Loader2, ExternalLink, Settings2 } from 'lucide-react'
+import { Globe, Package, Loader2, ExternalLink, Settings2, BookOpen } from 'lucide-react'
 import { CatalogCountryManageModal, type CatalogProductLite } from '@/components/admin/catalog/CatalogCountryManageModal'
+import { CatalogCountryGuideModal } from '@/components/admin/catalog/CatalogCountryGuideModal'
 import { CATALOG_COUNTRY_OPTIONS } from '@/lib/catalog-country-options'
 
 type CountryRow = {
@@ -38,6 +39,7 @@ export default function CatalogCountriesPage({
     countryCode: string
     mode: 'visible' | 'hidden'
   } | null>(null)
+  const [guideOpen, setGuideOpen] = useState(false)
 
   const load = useCallback(async () => {
     if (!businessId) return
@@ -93,7 +95,8 @@ export default function CatalogCountriesPage({
         </p>
       </div>
 
-      {!enabled && (
+      {/* Only after load: enabled defaults false, so don't flash "not enabled" while fetching */}
+      {!loading && !error && !enabled && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 px-5 py-4 lg:px-6 text-sm text-amber-900">
           Country-based catalog is not enabled yet. Ask WaveOrder SuperAdmin to enable it on this business, then
           return here.
@@ -123,38 +126,38 @@ export default function CatalogCountriesPage({
         </div>
       )}
 
-      {!loading && !error && enabled && !hasAnyRules && (
-        <div className="bg-white rounded-xl border border-gray-200 text-center px-6 py-14 sm:py-16 lg:px-8">
-          <div className="max-w-lg mx-auto space-y-5">
-            <Package className="w-14 h-14 text-teal-500 mx-auto" aria-hidden />
-            <div className="space-y-2">
-              <p className="text-gray-900 font-semibold text-lg">No country rules yet</p>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Add products and set countries on each product, or start with a new product and choose visible or
-                excluded countries.
-              </p>
+      {!loading && !error && enabled && (
+        <>
+          {!hasAnyRules ? (
+            <div className="bg-white rounded-xl border border-gray-200 text-center px-6 py-14 sm:py-16 lg:px-8">
+              <div className="max-w-lg mx-auto space-y-5">
+                <Package className="w-14 h-14 text-teal-500 mx-auto" aria-hidden />
+                <div className="space-y-2">
+                  <p className="text-gray-900 font-semibold text-lg">No country rules yet</p>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    Add products and set countries on each product, or start with a new product and choose visible or
+                    excluded countries.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center pt-1">
+                  <Link
+                    href={`/admin/stores/${businessId}/products/new`}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-lg font-medium text-sm hover:bg-teal-700 transition-colors"
+                  >
+                    Create a product
+                    <ExternalLink className="w-4 h-4" />
+                  </Link>
+                  <Link
+                    href={`/admin/stores/${businessId}/products`}
+                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 border border-gray-300 bg-white text-gray-800 rounded-lg font-medium text-sm hover:bg-gray-50 transition-colors"
+                  >
+                    Go to products list
+                  </Link>
+                </div>
+              </div>
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center items-stretch sm:items-center pt-1">
-              <Link
-                href={`/admin/stores/${businessId}/products/new`}
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-lg font-medium text-sm hover:bg-teal-700 transition-colors"
-              >
-                Create a product
-                <ExternalLink className="w-4 h-4" />
-              </Link>
-              <Link
-                href={`/admin/stores/${businessId}/products`}
-                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 border border-gray-300 bg-white text-gray-800 rounded-lg font-medium text-sm hover:bg-gray-50 transition-colors"
-              >
-                Go to products list
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {!loading && !error && enabled && hasAnyRules && (
-        <div className="space-y-6">
+          ) : (
+            <div className="space-y-6">
           <section className="bg-white rounded-xl border border-gray-200 overflow-hidden">
             <div className="px-5 lg:px-6 py-4 bg-teal-50 border-b border-teal-100">
               <h2 className="font-semibold text-teal-900 flex items-center gap-2">
@@ -244,8 +247,37 @@ export default function CatalogCountriesPage({
               </div>
             )}
           </section>
-        </div>
+            </div>
+          )}
+
+          <div className="rounded-xl border border-teal-200 bg-gradient-to-br from-teal-50/90 to-white px-5 py-5 lg:px-6 lg:py-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex gap-4 min-w-0">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-100 text-teal-700">
+                  <BookOpen className="h-5 w-5" aria-hidden />
+                </div>
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900">Need help with country rules?</p>
+                  <p className="text-sm text-gray-600 mt-1 leading-relaxed">
+                    If you are not sure how to set <span className="font-medium text-gray-800">Shown in</span> vs{' '}
+                    <span className="font-medium text-gray-800">Excluded</span>, open our step-by-step guide — it covers
+                    excluding countries, showing only in selected regions, and combining both.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setGuideOpen(true)}
+                className="shrink-0 inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-lg font-medium text-sm hover:bg-teal-700 transition-colors shadow-sm"
+              >
+                View guide
+              </button>
+            </div>
+          </div>
+        </>
       )}
+
+      <CatalogCountryGuideModal open={guideOpen} onClose={() => setGuideOpen(false)} />
 
       {modal && (
         <CatalogCountryManageModal
