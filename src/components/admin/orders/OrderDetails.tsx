@@ -35,6 +35,7 @@ import Link from 'next/link'
 import { useImpersonation } from '@/lib/impersonation'
 import toast from 'react-hot-toast'
 import { fetchAndDownloadInvoicePdf } from '@/lib/generateInvoicePdf'
+import { isOrderEligibleForInternalInvoice } from '@/lib/internal-order-invoice'
 
 interface OrderDetailsProps {
   businessId: string
@@ -2221,28 +2222,50 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {!(
-                    (order.status === 'DELIVERED' ||
-                      (order.status === 'PICKED_UP' && (order.type === 'PICKUP' || order.type === 'DINE_IN'))) &&
-                    order.paymentStatus === 'PAID'
-                  ) && (
-                    <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                      <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
-                      <p className="text-sm text-amber-800">
-                        This order has not reached a final status yet (e.g. Delivered/Picked Up with payment confirmed). You can still generate an invoice, but you may need to regenerate it once the order is completed and paid.
-                      </p>
-                    </div>
-                  )}
-                  <button
-                    onClick={() => setShowGenerateInvoiceModal(true)}
-                    className="w-full flex items-center px-4 py-3 border border-teal-300 rounded-lg hover:bg-teal-50 transition-colors text-teal-700"
-                  >
-                    <FileText className="w-5 h-5 mr-3 text-teal-600 flex-shrink-0" />
-                    <div className="text-left">
-                      <div className="text-sm font-medium">Generate Invoice</div>
-                      <div className="text-xs text-gray-600">Create internal invoice for this order</div>
-                    </div>
-                  </button>
+                  {(() => {
+                    const canGenerateInvoice = isOrderEligibleForInternalInvoice({
+                      status: order.status,
+                      paymentStatus: order.paymentStatus,
+                      type: order.type
+                    })
+                    return (
+                      <>
+                        {!canGenerateInvoice && (
+                          <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                            <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-amber-800">
+                              Internal invoices can only be created when payment is <strong>PAID</strong> and the order is{' '}
+                              <strong>DELIVERED</strong> (delivery) or <strong>PICKED_UP</strong> (pickup / dine-in). Update
+                              the order first, then generate the invoice.
+                            </p>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          disabled={!canGenerateInvoice}
+                          onClick={() => {
+                            if (!canGenerateInvoice) return
+                            setShowGenerateInvoiceModal(true)
+                          }}
+                          className={`w-full flex items-center px-4 py-3 border rounded-lg transition-colors ${
+                            canGenerateInvoice
+                              ? 'border-teal-300 hover:bg-teal-50 text-teal-700'
+                              : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                          }`}
+                        >
+                          <FileText className="w-5 h-5 mr-3 flex-shrink-0" />
+                          <div className="text-left">
+                            <div className="text-sm font-medium">Generate Invoice</div>
+                            <div className="text-xs text-gray-600">
+                              {canGenerateInvoice
+                                ? 'Create internal invoice for this order'
+                                : 'Available when order is completed and paid'}
+                            </div>
+                          </div>
+                        </button>
+                      </>
+                    )
+                  })()}
                 </div>
               )}
             </div>

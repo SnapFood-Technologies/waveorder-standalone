@@ -51,7 +51,8 @@ import { getStorefrontTranslations } from '@/utils/storefront-translations'
 import { logStorefrontWhatsAppOrderRedirect } from '@/lib/client-system-log'
 import {
   persistCatalogVisitorCookie,
-  readCatalogVisitorIsoFromBrowser
+  readCatalogVisitorIsoFromBrowser,
+  readInitialCatalogVisitorIso
 } from '@/lib/storefront-catalog-visitor'
 import {
   canSubmitStorefrontOrder,
@@ -2070,7 +2071,9 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const searchParams = useSearchParams()
 
   /** Resolved ISO2 for country-based catalog (query ?cc / ?visitorCountry, then cookie). */
-  const [catalogVisitorIso, setCatalogVisitorIso] = useState<string | null>(null)
+  const [catalogVisitorIso, setCatalogVisitorIso] = useState<string | null>(() =>
+    readInitialCatalogVisitorIso(!!storeData.countryBasedCatalogEnabled, searchParams)
+  )
 
   useEffect(() => {
     if (!storeData.countryBasedCatalogEnabled) {
