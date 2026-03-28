@@ -29,12 +29,13 @@ export function productVisibleForVisitorCountry(
 /**
  * Merge Prisma where for MongoDB country catalog.
  *
- * Show product unless: (allowlist is non-empty AND does not include V) OR (hidden includes V).
+ * Match `productVisibleForVisitorCountry`: show unless visitor is in hidden, or (non-empty visible
+ * list and visitor not in visible). Worldwide = empty / missing / null visible list.
  *
- * We use this **inverted** form instead of `OR: [isEmpty, has V]` because on Mongo, `isEmpty: true`
- * often does **not** match documents where `visibleCountryCodes` is missing or null — those products
- * were incorrectly excluded for every visitor. Here, `isEmpty: false` is false for [] / missing / null,
- * so the inner AND fails and the product stays visible (worldwide).
+ * **Positive OR** for the allowlist leg: Prisma MongoDB `isEmpty` / inverted-NOT forms do not reliably
+ * match legacy documents where `visibleCountryCodes` was never written. `StringNullableListFilter`
+ * supports `equals: null` and `isEmpty` / `equals: []` so we explicitly OR visitor-in-list with
+ * “no restriction” shapes (empty array, null, empty, isEmpty true).
  */
 export function mergeProductWhereVisitorCountry(
   productWhere: Record<string, unknown>,
@@ -47,12 +48,12 @@ export function mergeProductWhereVisitorCountry(
   const countryClause = {
     AND: [
       {
-        NOT: {
-          AND: [
-            { visibleCountryCodes: { isEmpty: false } },
-            { NOT: { visibleCountryCodes: { has: v } } }
-          ]
-        }
+        OR: [
+          { visibleCountryCodes: { has: v } },
+          { visibleCountryCodes: { isEmpty: true } },
+          { visibleCountryCodes: { equals: [] } },
+          { visibleCountryCodes: { equals: null } }
+        ]
       },
       { NOT: { hiddenCountryCodes: { has: v } } }
     ]
