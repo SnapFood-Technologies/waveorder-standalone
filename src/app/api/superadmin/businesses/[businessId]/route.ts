@@ -340,6 +340,21 @@ export async function GET(
       lastActivityAt: lastConversation?.lastMessageAt?.toISOString() ?? null
     }
 
+    const [websiteEmbedVisits, lastWebsiteEmbedVisit] = await Promise.all([
+      prisma.visitorSession.count({
+        where: { businessId, fromWebsiteEmbed: true }
+      }),
+      prisma.visitorSession.findFirst({
+        where: { businessId, fromWebsiteEmbed: true },
+        orderBy: { visitedAt: 'desc' },
+        select: { visitedAt: true }
+      })
+    ])
+    const websiteEmbedUsage = {
+      visits: websiteEmbedVisits,
+      lastVisitAt: lastWebsiteEmbedVisit?.visitedAt?.toISOString() ?? null
+    }
+
     // Internal Invoice usage stats (when feature enabled)
     let invoiceUsage: { total: number; lastGeneratedAt: string | null } | undefined
     if (business.internalInvoiceEnabled) {
@@ -398,6 +413,8 @@ export async function GET(
         currency: business.currency,
         whatsappNumber: business.whatsappNumber,
         whatsappDirectNotifications: business.whatsappDirectNotifications,
+        orderWhatsAppMixEnabled: business.orderWhatsAppMixEnabled ?? false,
+        orderWhatsAppMixFollowUpTemplate: business.orderWhatsAppMixFollowUpTemplate ?? null,
         happyHourEnabled: business.happyHourEnabled,
         showSearchAnalytics: business.showSearchAnalytics,
         showCostPrice: business.showCostPrice,
@@ -411,6 +428,7 @@ export async function GET(
         enableAffiliateSystem: business.enableAffiliateSystem,
         enableTeamPaymentTracking: business.enableTeamPaymentTracking ?? false,
         legalPagesEnabled: business.legalPagesEnabled,
+        countryBasedCatalogEnabled: business.countryBasedCatalogEnabled ?? false,
         address: business.address,
         email: business.email,
         phone: business.phone,
@@ -503,7 +521,9 @@ export async function GET(
         aiUsage,
         whatsappFlowsEnabled,
         whatsappFlowsUsage,
-        invoiceUsage
+        invoiceUsage,
+        websiteEmbedEnabled: business.websiteEmbedEnabled ?? false,
+        websiteEmbedUsage
       }
     })
   } catch (error) {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { businessSlugFilter } from '@/lib/storefront-slug'
 
 // GET - Get countries for storefront (filtered by business shipping settings)
 export async function GET(request: NextRequest) {
@@ -16,9 +17,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ data: countries })
     }
 
-    // Get business by slug with shippingCountries and country
-    const business = await prisma.business.findUnique({
-      where: { slug },
+    // Get business by slug with shippingCountries and country (case-insensitive)
+    const business = await prisma.business.findFirst({
+      where: { slug: businessSlugFilter(slug) },
       select: { 
         id: true,
         country: true,

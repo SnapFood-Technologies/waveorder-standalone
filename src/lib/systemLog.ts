@@ -7,7 +7,7 @@ const globalForPrisma = global as unknown as { prisma: PrismaClient }
 const prisma = globalForPrisma.prisma || new PrismaClient()
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
-export type LogType = 'storefront_404' | 'storefront_error' | 'products_error' | 'system_error' | 'storefront_success' | 'order_created' | 'order_error' | 'order_validation_error' | 'appointment_created' | 'appointment_error' | 'appointment_validation_error' | 'service_request_created' | 'service_request_error' | 'trial_error' | 'trial_started' | 'subscription_error' | 'admin_action' | 'billing_panel_action' | 'team_action' | 'product_created' | 'product_updated' | 'onboarding_step_completed' | 'onboarding_step_error' | 'onboarding_completed' | 'integration_api_call' | 'user_registered' | 'user_login' | 'subscription_changed' | 'password_reset_requested' | 'password_reset_completed' | 'password_reset_error' | 'order_status_changed' | 'appointment_status_changed' | 'twilio_message_sent' | 'twilio_message_error' | 'whatsapp_flow_message_in' | 'whatsapp_flow_message_out' | 'whatsapp_flow_error' | 'whatsapp_broadcast_sent' | 'whatsapp_broadcast_error' | 'whatsapp_ai_reply' | 'whatsapp_ai_error'
+export type LogType = 'storefront_404' | 'storefront_error' | 'products_error' | 'system_error' | 'storefront_success' | 'storefront_order_whatsapp_redirect' | 'website_embed_settings_saved' | 'website_embed_copy' | 'order_created' | 'order_error' | 'order_validation_error' | 'appointment_created' | 'appointment_error' | 'appointment_validation_error' | 'service_request_created' | 'service_request_error' | 'trial_error' | 'trial_started' | 'subscription_error' | 'admin_action' | 'billing_panel_action' | 'team_action' | 'product_created' | 'product_updated' | 'onboarding_step_completed' | 'onboarding_step_error' | 'onboarding_completed' | 'integration_api_call' | 'user_registered' | 'user_login' | 'subscription_changed' | 'password_reset_requested' | 'password_reset_completed' | 'password_reset_error' | 'order_status_changed' | 'appointment_status_changed' | 'twilio_message_sent' | 'twilio_message_error' | 'whatsapp_flow_message_in' | 'whatsapp_flow_message_out' | 'whatsapp_flow_error' | 'whatsapp_broadcast_sent' | 'whatsapp_broadcast_error' | 'whatsapp_ai_reply' | 'whatsapp_ai_error'
 export type LogSeverity = 'error' | 'warning' | 'info'
 
 interface SystemLogData {
@@ -76,17 +76,32 @@ export function getActualRequestUrl(request: Request, fallbackPath = '/'): strin
  * Log system events (errors, 404s, etc.)
  * Runs async in background to not block requests
  */
+/**
+ * Client POST /api/log/client — must not be dropped by bot/private-IP heuristics in logSystemEvent.
+ * WhatsApp in-app browsers include "WhatsApp" in the user agent, which matched isBot() and blocked
+ * storefront_order_whatsapp_redirect logs.
+ */
+export const LOG_TYPES_SKIP_BOT_PRIVATE_IP_FILTER: readonly LogType[] = [
+  'storefront_order_whatsapp_redirect',
+  'website_embed_copy',
+]
+
+function isClientAttributedMetricLog(logType: LogType): boolean {
+  return (LOG_TYPES_SKIP_BOT_PRIVATE_IP_FILTER as readonly string[]).includes(logType)
+}
+
 export async function logSystemEvent(data: SystemLogData): Promise<void> {
   try {
     const { ipAddress, userAgent } = data
-    
-    // Skip bot/crawler traffic for error logs (but log 404s from bots)
-    if (data.logType !== 'storefront_404' && userAgent && isBot(userAgent)) {
+    const skipBotPrivateFilters = isClientAttributedMetricLog(data.logType)
+
+    // Skip bot/crawler traffic for error logs (but log 404s from bots). Never skip client metrics above.
+    if (!skipBotPrivateFilters && data.logType !== 'storefront_404' && userAgent && isBot(userAgent)) {
       return
     }
-    
-    // Skip private/bot IPs for error logs (but log 404s)
-    if (data.logType !== 'storefront_404' && ipAddress && isPrivateIP(ipAddress)) {
+
+    // Skip private IPs for error logs (but log 404s). Never skip client metrics (local dev / VPN still useful).
+    if (!skipBotPrivateFilters && data.logType !== 'storefront_404' && ipAddress && isPrivateIP(ipAddress)) {
       return
     }
 

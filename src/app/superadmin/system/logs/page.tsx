@@ -30,7 +30,11 @@ import {
   CreditCard,
   Puzzle,
   ShieldAlert,
-  MessageSquare
+  MessageSquare,
+  Code2,
+  MessageCircle,
+  Loader2,
+  Database
 } from 'lucide-react'
 
 interface SystemLog {
@@ -106,6 +110,16 @@ interface LogsResponse {
     scannerTraffic?: {
       total: number
       note: string
+    }
+    websiteEmbedStats?: {
+      settingsSaved: number
+      codeCopied: number
+      settingsSaved7d: number
+      codeCopied7d: number
+    }
+    whatsappOrderRedirectStats?: {
+      total: number
+      last7Days: number
     }
   }
 }
@@ -193,6 +207,11 @@ export default function SystemLogsPage() {
     setCurrentPage(1)
   }
 
+  /** First request: no stats yet — show full loading experience. */
+  const isInitialLoad = loading && !stats && !error
+  /** Pagination / filters / refresh: keep prior data visible while fetching. */
+  const isRefreshing = loading && !!stats
+
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'error':
@@ -211,6 +230,9 @@ export default function SystemLogsPage() {
       storefront_404: 'Storefront 404',
       storefront_error: 'Storefront Error',
       storefront_success: 'Storefront Success',
+      storefront_order_whatsapp_redirect: 'Storefront WhatsApp order redirect',
+      website_embed_settings_saved: 'Website embed settings saved',
+      website_embed_copy: 'Website embed copy',
       products_error: 'Products Error',
       order_created: 'Order Created',
       order_error: 'Order Error',
@@ -263,14 +285,74 @@ export default function SystemLogsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">System Logs</h1>
-        <p className="text-gray-600 mt-1">Monitor storefront errors, 404s, and system events</p>
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2 sm:gap-3">
+            <span className="inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-teal-100 shrink-0">
+              <Database className="w-5 h-5 sm:w-6 sm:h-6 text-teal-700" />
+            </span>
+            System Logs
+          </h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">
+            Monitor storefront errors, 404s, and system events
+          </p>
+        </div>
+        {isRefreshing && (
+          <div className="flex items-center gap-2 rounded-lg border border-teal-200 bg-teal-50/90 px-3 py-2 text-sm text-teal-900">
+            <Loader2 className="w-4 h-4 animate-spin shrink-0 text-teal-600" />
+            <span>Refreshing data…</span>
+          </div>
+        )}
       </div>
+
+      {/* Initial load: patience + context (heavy API; similar idea to Wavemind financial) */}
+      {isInitialLoad && (
+        <div className="bg-gradient-to-br from-teal-50 via-cyan-50 to-slate-50 rounded-xl border border-teal-200/80 shadow-sm overflow-hidden">
+          <div className="p-8 sm:p-10 text-center">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl shadow-sm border border-teal-100 mb-5">
+              <BarChart3 className="w-8 h-8 text-teal-600 animate-pulse" />
+            </div>
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-2">
+              Preparing your system logs
+            </h2>
+            <p className="text-gray-600 text-sm sm:text-base max-w-xl mx-auto leading-relaxed">
+              We’re aggregating totals, analytics, and the event table from the database. Large datasets
+              can take a little while — please stay on this page.
+            </p>
+            <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-2 text-sm text-teal-800">
+              <span className="inline-flex items-center gap-2 font-medium">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Processing…
+              </span>
+              <span className="inline-flex items-center gap-2 text-teal-700/90">
+                <span className="hidden sm:inline">·</span>
+                <span>Scanning counts, distributions, and recent rows</span>
+              </span>
+            </div>
+          </div>
+          <div className="px-4 sm:px-8 pb-8">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={i}
+                  className="h-20 rounded-lg bg-white/70 border border-teal-100/80 animate-pulse"
+                />
+              ))}
+            </div>
+            <p className="text-center text-xs text-gray-500 mt-4">
+              Tip: after the first load finishes, filters and pagination stay responsive; refresh may take a moment too.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Statistics Cards */}
       {stats && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div
+          className={`grid grid-cols-1 md:grid-cols-5 gap-4 transition-opacity duration-200 ${
+            isRefreshing ? 'opacity-60' : 'opacity-100'
+          }`}
+        >
           <div className="bg-white rounded-lg border border-gray-200 p-4">
             <div className="flex items-center justify-between">
               <div>
@@ -369,10 +451,15 @@ export default function SystemLogsPage() {
             )}
             <button
               onClick={fetchLogs}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900"
+              disabled={loading}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <RefreshCw className="w-4 h-4" />
-              Refresh
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin text-teal-600" />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
+              {loading ? 'Loading…' : 'Refresh'}
             </button>
           </div>
         </div>
@@ -391,6 +478,9 @@ export default function SystemLogsPage() {
                   <option value="storefront_success">Storefront Success</option>
                   <option value="storefront_404">Storefront 404</option>
                   <option value="storefront_error">Storefront Error</option>
+                  <option value="storefront_order_whatsapp_redirect">Storefront WhatsApp order redirect</option>
+                  <option value="website_embed_settings_saved">Website embed settings saved</option>
+                  <option value="website_embed_copy">Website embed copy</option>
                   <option value="products_error">Products Error</option>
                 </optgroup>
                 <optgroup label="Orders &amp; Appointments">
@@ -498,11 +588,34 @@ export default function SystemLogsPage() {
       </div>
 
       {/* Logs Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        {loading ? (
-          <div className="p-12 text-center">
-            <RefreshCw className="w-8 h-8 animate-spin text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">Loading logs...</p>
+      <div
+        className={`bg-white rounded-lg border border-gray-200 overflow-hidden relative transition-shadow ${
+          isRefreshing ? 'ring-2 ring-teal-100 shadow-sm' : ''
+        }`}
+      >
+        {isRefreshing && (
+          <div
+            className="absolute top-0 left-0 right-0 h-0.5 bg-teal-100 overflow-hidden z-20"
+            aria-hidden
+          >
+            <div className="h-full w-1/3 bg-teal-500 animate-pulse rounded-r" />
+          </div>
+        )}
+        {loading && !stats ? (
+          <div className="p-6 sm:p-8">
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-700 mb-4">
+              <Loader2 className="w-4 h-4 animate-spin text-teal-600" />
+              Building the log table…
+            </div>
+            <div className="space-y-2">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div
+                  key={i}
+                  className="h-12 rounded-lg bg-gradient-to-r from-gray-100 via-gray-50 to-gray-100 animate-pulse"
+                  style={{ animationDelay: `${i * 50}ms` }}
+                />
+              ))}
+            </div>
           </div>
         ) : error ? (
           <div className="p-12 text-center">
@@ -515,7 +628,7 @@ export default function SystemLogsPage() {
               Retry
             </button>
           </div>
-        ) : logs.length === 0 ? (
+        ) : !loading && logs.length === 0 ? (
           <div className="p-12 text-center">
             <FileText className="w-8 h-8 text-gray-400 mx-auto mb-4" />
             <p className="text-gray-600">No logs found</p>
@@ -672,7 +785,11 @@ export default function SystemLogsPage() {
 
       {/* Analytics Section */}
       {analytics && (
-        <div className="space-y-6">
+        <div
+          className={`space-y-6 transition-opacity duration-200 ${
+            isRefreshing ? 'opacity-60' : 'opacity-100'
+          }`}
+        >
           <div>
             <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-teal-600" />
@@ -886,6 +1003,79 @@ export default function SystemLogsPage() {
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Website embed (admin Marketing → Embedded: save + copy snippet) */}
+            {analytics.websiteEmbedStats && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <Code2 className="w-5 h-5 text-cyan-600" />
+                    Website embed
+                  </h3>
+                  <span className="text-2xl font-bold text-gray-900">
+                    {(
+                      analytics.websiteEmbedStats.settingsSaved +
+                      analytics.websiteEmbedStats.codeCopied
+                    ).toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">
+                  Marketing → Embedded: save configuration and copy embed code. Headline is all-time total events.
+                </p>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-gray-600">Settings saved</span>
+                    <span className="text-sm font-medium text-gray-900">
+                      {analytics.websiteEmbedStats.settingsSaved.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm text-gray-600">Code copied</span>
+                    <span className="text-sm font-medium text-gray-900">
+                      {analytics.websiteEmbedStats.codeCopied.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <p className="text-xs text-gray-500">
+                    Last 7 days:{' '}
+                    <span className="font-medium text-gray-700">
+                      {analytics.websiteEmbedStats.settingsSaved7d.toLocaleString()} saves
+                    </span>
+                    {' · '}
+                    <span className="font-medium text-gray-700">
+                      {analytics.websiteEmbedStats.codeCopied7d.toLocaleString()} copies
+                    </span>
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Storefront WhatsApp order redirect (checkout → wa.me) */}
+            {analytics.whatsappOrderRedirectStats && (
+              <div className="bg-white rounded-lg border border-gray-200 p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5 text-emerald-600" />
+                    WhatsApp order redirects
+                  </h3>
+                  <span className="text-2xl font-bold text-gray-900">
+                    {analytics.whatsappOrderRedirectStats.total.toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mb-3">
+                  Logged when a customer is sent to WhatsApp after placing an order (storefront checkout flow).
+                </p>
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <p className="text-sm text-gray-600">
+                    Last 7 days:{' '}
+                    <span className="font-semibold text-emerald-700">
+                      {analytics.whatsappOrderRedirectStats.last7Days.toLocaleString()}
+                    </span>
+                  </p>
+                </div>
               </div>
             )}
           </div>

@@ -42,10 +42,10 @@ export async function POST(request: NextRequest) {
       referrer,
       url: url || referrer || '',
       metadata: {
+        transport: 'client',
         ...metadata,
         userId: session?.user?.id,
         userEmail: session?.user?.email,
-        source: 'client'
       }
     })
 

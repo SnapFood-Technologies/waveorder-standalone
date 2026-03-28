@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { syncProductToOmniGateway } from '@/lib/omnigateway'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
+import { normalizeCountryCodeList } from '@/lib/visitor-country-catalog'
 
 
 export async function GET(
@@ -95,6 +96,9 @@ export async function PUT(
       }
     }
 
+    const visibleCountryCodes = normalizeCountryCodeList(productData.visibleCountryCodes)
+    const hiddenCountryCodes = normalizeCountryCodeList(productData.hiddenCountryCodes)
+
     const product = await prisma.product.update({
       where: { id: productId },
       data: {
@@ -118,7 +122,9 @@ export async function PUT(
         featured: productData.featured,
         metaTitle: productData.metaTitle || null,
         metaDescription: productData.metaDescription || null,
-        categoryId: productData.categoryId
+        categoryId: productData.categoryId,
+        ...(visibleCountryCodes !== undefined && { visibleCountryCodes }),
+        ...(hiddenCountryCodes !== undefined && { hiddenCountryCodes })
       },
       include: {
         category: true,
@@ -239,19 +245,41 @@ export async function PATCH(
       return NextResponse.json({ message: access.error }, { status: access.status })
     }
 
-    const updates = await request.json()
+    const body = await request.json()
+    const data: Record<string, unknown> = {}
+    if (typeof body.isActive === 'boolean') data.isActive = body.isActive
+    if (typeof body.featured === 'boolean') data.featured = body.featured
+    const vis = normalizeCountryCodeList(body.visibleCountryCodes)
+    const hid = normalizeCountryCodeList(body.hiddenCountryCodes)
+    if (vis !== undefined) data.visibleCountryCodes = vis
+    if (hid !== undefined) data.hiddenCountryCodes = hid
+
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json({ message: 'No valid fields to update' }, { status: 400 })
+    }
 
     const product = await prisma.product.updateMany({
       where: {
         id: productId,
         businessId
       },
-      data: updates
+      data
     })
 
     if (product.count === 0) {
       return NextResponse.json({ message: 'Product not found' }, { status: 404 })
     }
+
+    const updatedProduct = await prisma.product.findFirst({
+      where: { id: productId, businessId },
+      select: {
+        id: true,
+        name: true,
+        sku: true,
+        visibleCountryCodes: true,
+        hiddenCountryCodes: true
+      }
+    })
 
     // Log product update (admin, partial/PATCH)
     const host = request.headers.get('host') || request.headers.get('x-forwarded-host')
@@ -275,7 +303,10 @@ export async function PATCH(
       }
     })
 
-    return NextResponse.json({ message: 'Product updated successfully' })
+    return NextResponse.json({
+      message: 'Product updated successfully',
+      product: updatedProduct
+    })
 
   } catch (error) {
     console.error('Error updating product:', error)

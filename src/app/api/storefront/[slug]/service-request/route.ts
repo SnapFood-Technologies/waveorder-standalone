@@ -2,6 +2,7 @@
 // Notifies business same as salon bookings: email + wa.me or direct Twilio based on superadmin setting.
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { businessSlugFilter } from '@/lib/storefront-slug'
 import { sendServiceRequestEmailNotification } from '@/lib/orderNotificationService'
 import { sendSuperAdminServiceRequestNotification } from '@/lib/superadmin-email-notification'
 import {
@@ -30,8 +31,8 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid slug' }, { status: 400 })
     }
 
-    const business = await prisma.business.findUnique({
-      where: { slug, isActive: true, setupWizardCompleted: true },
+    const business = await prisma.business.findFirst({
+      where: { slug: businessSlugFilter(slug), isActive: true, setupWizardCompleted: true },
       select: { id: true, businessType: true }
     })
 

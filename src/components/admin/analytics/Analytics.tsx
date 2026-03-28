@@ -27,7 +27,8 @@ import {
   Lock,
   Loader2,
   Scissors,
-  Briefcase
+  Briefcase,
+  Globe
 } from 'lucide-react'
 import { DateRangeFilter } from '../dashboard/DateRangeFilter'
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts'
@@ -73,7 +74,12 @@ export default function Analytics({ businessId }: AnalyticsProps) {
   const { isPro } = useSubscription()
   const { addParams } = useImpersonation(businessId)
   const [data, setData] = useState<any>(null)
-  const [business, setBusiness] = useState<any>({ currency: 'USD', subscriptionPlan: '', businessType: 'RESTAURANT' })
+  const [business, setBusiness] = useState<any>({
+    currency: 'USD',
+    subscriptionPlan: '',
+    businessType: 'RESTAURANT',
+    websiteEmbedEnabled: false
+  })
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
   const [dateRange, setDateRange] = useState({
@@ -91,15 +97,22 @@ export default function Analytics({ businessId }: AnalyticsProps) {
     fetchSearchAnalytics()
   }, [businessId, dateRange])
 
+  useEffect(() => {
+    if (!business.websiteEmbedEnabled && activeTab === 'website-embed') {
+      setActiveTab('overview')
+    }
+  }, [business.websiteEmbedEnabled, activeTab])
+
   const fetchBusinessData = async () => {
     try {
       const response = await fetch(`/api/admin/stores/${businessId}`)
       if (response.ok) {
         const result = await response.json()
-        setBusiness({ 
+        setBusiness({
           currency: result.business.currency,
           subscriptionPlan: result.business.subscriptionPlan,
-          businessType: result.business.businessType || 'RESTAURANT'
+          businessType: result.business.businessType || 'RESTAURANT',
+          websiteEmbedEnabled: result.business.websiteEmbedEnabled === true
         })
       }
     } catch (error) {
@@ -231,6 +244,9 @@ export default function Analytics({ businessId }: AnalyticsProps) {
     { id: 'products', label: isSalon ? 'Services' : 'Products', icon: business.businessType === 'SALON' ? Scissors : business.businessType === 'SERVICES' ? Briefcase : Package },
     { id: 'time', label: 'Time Analysis', icon: Clock },
     { id: 'customers', label: 'Customers', icon: Users },
+    ...(business.websiteEmbedEnabled
+      ? [{ id: 'website-embed', label: 'Website embed', icon: Globe }]
+      : []),
     { id: 'search', label: 'Search', icon: Search },
   ]
 
@@ -919,6 +935,61 @@ export default function Analytics({ businessId }: AnalyticsProps) {
               </p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Website embed tab (Marketing → Embedded; only when feature enabled) */}
+      {activeTab === 'website-embed' && business.websiteEmbedEnabled && (
+        <div className="space-y-6">
+          <div className="bg-teal-50 border border-teal-200 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <Info className="w-5 h-5 text-teal-600 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-teal-800">
+                <p className="font-medium mb-1">Website embed traffic</p>
+                <p>
+                  Counts visits where the storefront URL included{' '}
+                  <code className="bg-teal-100 px-1 rounded text-xs">embed_waveorder=1</code> (links from Marketing → Embedded).
+                  Metrics below use the selected date range at the top of this page.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {data.websiteEmbed ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white p-6 rounded-lg border border-gray-200">
+                <Globe className="w-5 h-5 text-teal-600 mb-2" />
+                <p className="text-2xl font-bold text-gray-900">
+                  {formatNumber(data.websiteEmbed.visits)}
+                </p>
+                <p className="text-sm text-gray-600">Visits from embed</p>
+              </div>
+              <div className="bg-white p-6 rounded-lg border border-gray-200">
+                <Clock className="w-5 h-5 text-teal-600 mb-2" />
+                <p className="text-xl font-bold text-gray-900">
+                  {data.websiteEmbed.lastVisitAt
+                    ? new Date(data.websiteEmbed.lastVisitAt).toLocaleString(undefined, {
+                        dateStyle: 'medium',
+                        timeStyle: 'short'
+                      })
+                    : '—'}
+                </p>
+                <p className="text-sm text-gray-600">Last embed visit in this period</p>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white p-8 rounded-lg border border-gray-200 text-center text-gray-600">
+              <p>Embed metrics are not available.</p>
+            </div>
+          )}
+
+          <Link
+            href={addParams(`/admin/stores/${businessId}/marketing/embedded`)}
+            className="inline-flex items-center text-teal-600 font-medium text-sm hover:underline"
+          >
+            Open Marketing → Embedded
+            <ArrowRight className="w-4 h-4 ml-1" />
+          </Link>
         </div>
       )}
 

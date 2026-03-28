@@ -35,6 +35,7 @@ import Link from 'next/link'
 import { useImpersonation } from '@/lib/impersonation'
 import toast from 'react-hot-toast'
 import { fetchAndDownloadInvoicePdf } from '@/lib/generateInvoicePdf'
+import { isOrderEligibleForInternalInvoice } from '@/lib/internal-order-invoice'
 
 interface OrderDetailsProps {
   businessId: string
@@ -2174,11 +2175,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
           )}
 
           {/* Internal Invoice - Generate or View */}
-          {internalInvoiceEnabled && (order.invoice || (
-            (order.status === 'DELIVERED' ||
-              (order.status === 'PICKED_UP' && (order.type === 'PICKUP' || order.type === 'DINE_IN'))) &&
-            order.paymentStatus === 'PAID'
-          )) && (
+          {internalInvoiceEnabled && (
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4 flex items-center">
                 <FileText className="w-5 h-5 mr-2 text-teal-600" />
@@ -2224,16 +2221,63 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                   </div>
                 </div>
               ) : (
-                <button
-                  onClick={() => setShowGenerateInvoiceModal(true)}
-                  className="w-full flex items-center px-4 py-3 border border-teal-300 rounded-lg hover:bg-teal-50 transition-colors text-teal-700"
-                >
-                  <FileText className="w-5 h-5 mr-3 text-teal-600 flex-shrink-0" />
-                  <div className="text-left">
-                    <div className="text-sm font-medium">Generate Invoice</div>
-                    <div className="text-xs text-gray-600">Create internal invoice for this order</div>
-                  </div>
-                </button>
+                <div className="space-y-3">
+                  {(() => {
+                    const canGenerateInvoice = isOrderEligibleForInternalInvoice({
+                      status: order.status,
+                      paymentStatus: order.paymentStatus
+                    })
+                    const showUnpaidCaution =
+                      canGenerateInvoice && order.paymentStatus !== 'PAID'
+                    return (
+                      <>
+                        {showUnpaidCaution && (
+                          <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                            <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-amber-800">
+                              Payment is <strong>not</strong> marked as PAID. You can still generate an internal invoice for
+                              your records — confirm the amounts and status are correct before you issue it.
+                            </p>
+                          </div>
+                        )}
+                        {!canGenerateInvoice && (
+                          <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-red-800">
+                              Internal invoices cannot be created for cancelled, returned, or refunded orders, or when
+                              payment is refunded.
+                            </p>
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          disabled={!canGenerateInvoice}
+                          onClick={() => {
+                            if (!canGenerateInvoice) return
+                            setShowGenerateInvoiceModal(true)
+                          }}
+                          className={`w-full flex items-center px-4 py-3 border rounded-lg transition-colors ${
+                            canGenerateInvoice
+                              ? 'border-teal-300 hover:bg-teal-50 text-teal-700'
+                              : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                          }`}
+                        >
+                          <FileText className="w-5 h-5 mr-3 flex-shrink-0" />
+                          <div className="text-left">
+                            <div className="text-sm font-medium">Generate Invoice</div>
+                            <div className="text-xs text-gray-600">
+                              {canGenerateInvoice
+                                ? showUnpaidCaution
+                                  ? 'Internal document — verify before issuing if payment is not PAID'
+                                  : 'Create internal invoice for this order'
+                                : 'Not available for cancelled / returned / refunded orders or refunded payment'}
+                            </div>
+                          </div>
+                        </button>
+                      </>
+                    )
+                  })()}
+                </div>
               )}
             </div>
           )}
@@ -2416,6 +2460,11 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
             <p className="text-sm text-gray-600 mb-4">
               Create an internal invoice for order #{order.orderNumber}. This document is for your records only and is not a tax invoice.
             </p>
+            {order.paymentStatus !== 'PAID' && (
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
+                Payment is not PAID on this order. Only confirm if you intentionally need this internal document.
+              </div>
+            )}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">Note (optional)</label>
               <textarea

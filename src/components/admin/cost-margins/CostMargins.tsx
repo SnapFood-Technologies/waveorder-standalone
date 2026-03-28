@@ -28,9 +28,11 @@ import {
   HelpCircle,
   ArrowRight,
   Percent,
-  BarChart3
+  BarChart3,
+  ExternalLink
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
+import Link from 'next/link'
 import { fetchAndDownloadSupplierPaymentsReportPdf } from '@/lib/generateSupplierPaymentsReportPdf'
 
 interface CostMarginsProps {
@@ -51,6 +53,7 @@ interface Product {
   category: { id: string; name: string } | null
   margin: number | null
   profit: number | null
+  lastOrder: { id: string; orderNumber: string; createdAt: string } | null
 }
 
 interface SupplierPayment {
@@ -653,6 +656,7 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
                       <th className="text-right py-3 px-4 text-sm font-medium text-gray-600">Margin %</th>
                       <th className="text-right py-3 px-4 text-sm font-medium text-gray-600">Profit/Unit</th>
                       <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Supplier</th>
+                      <th className="text-left py-3 px-4 text-sm font-medium text-gray-600">Last Order</th>
                       <th className="text-center py-3 px-4 text-sm font-medium text-gray-600">Actions</th>
                     </tr>
                   </thead>
@@ -740,6 +744,20 @@ export default function CostMargins({ businessId }: CostMarginsProps) {
                             <span className={`text-sm ${product.supplierName ? 'text-gray-900' : 'text-gray-400'}`}>
                               {product.supplierName || 'Not set'}
                             </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4">
+                          {product.lastOrder ? (
+                            <Link
+                              href={`/admin/stores/${businessId}/orders/${product.lastOrder.id}`}
+                              className="inline-flex items-center gap-1 text-sm text-teal-600 hover:text-teal-800 font-medium"
+                              title={`Order ${product.lastOrder.orderNumber}`}
+                            >
+                              {product.lastOrder.orderNumber}
+                              <ExternalLink className="w-3 h-3" />
+                            </Link>
+                          ) : (
+                            <span className="text-sm text-gray-400">No orders</span>
                           )}
                         </td>
                         <td className="py-3 px-4 text-center">

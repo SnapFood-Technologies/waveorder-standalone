@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { NextRequest } from 'next/server'
 
 /**
  * Phase 1: Webhook validation tests.
@@ -10,7 +11,7 @@ describe('Twilio incoming webhook', () => {
     const { POST } = await import('@/app/api/webhooks/twilio/incoming/route')
     const formData = new FormData()
     formData.set('To', 'whatsapp:+15551234567')
-    const request = new Request('http://localhost/api/webhooks/twilio/incoming', {
+    const request = new NextRequest('http://localhost/api/webhooks/twilio/incoming', {
       method: 'POST',
       body: formData
     })
@@ -24,7 +25,7 @@ describe('Twilio incoming webhook', () => {
     const { POST } = await import('@/app/api/webhooks/twilio/incoming/route')
     const formData = new FormData()
     formData.set('From', 'whatsapp:+15559876543')
-    const request = new Request('http://localhost/api/webhooks/twilio/incoming', {
+    const request = new NextRequest('http://localhost/api/webhooks/twilio/incoming', {
       method: 'POST',
       body: formData
     })

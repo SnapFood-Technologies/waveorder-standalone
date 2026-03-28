@@ -231,6 +231,15 @@ onlyStockAvailable: string
      directStep3: string
      youCanCloseThisPage: string
 
+     // Mix: Twilio direct + customer follow-up WhatsApp URL
+     orderSentMixTitle: string
+     orderSentMixLine1: string
+     orderSentMixLine2: string
+     mixNextSteps: string
+     mixStep1: string
+     mixStep2: string
+     mixStep3: string
+
      // Salon Appointment Success Message
      appointmentBooked: string
      appointmentNumber: string
@@ -588,6 +597,15 @@ onlyStockAvailable: "Only {stock} available",
   directStep2: "They will prepare your order",
   directStep3: "You'll be contacted for any updates",
   youCanCloseThisPage: "You can safely close this page",
+
+  orderSentMixTitle: "Order placed",
+  orderSentMixLine1: "Order number: {orderNumber}. The store has your details and will contact you.",
+  orderSentMixLine2:
+    "In a few seconds, WhatsApp may open with a follow-up message. You do not have to send it — only if you want to message the store yourself.",
+  mixNextSteps: "What happens next",
+  mixStep1: "The store received your order and will contact you.",
+  mixStep2: "If WhatsApp opens, you can send the follow-up or close it — your choice.",
+  mixStep3: "The store can still reach you with updates either way.",
 
   // Salon Appointment Success Message
   appointmentBooked: "Appointment Booked!",
@@ -953,6 +971,16 @@ onlyStockAvailable: "Vetëm {stock} të disponueshme",
     directStep3: "Do të kontaktoheni për çdo përditësim",
     youCanCloseThisPage: "Mund ta mbyllni këtë faqe me siguri",
 
+    orderSentMixTitle: "Porosia u regjistrua",
+    orderSentMixLine1:
+      "Numri i porosisë: {orderNumber}. Dyqani i ka të dhënat e tua dhe do të të kontaktojë.",
+    orderSentMixLine2:
+      "Pas disa sekondash, WhatsApp mund të hapet me një mesazh. Nuk je i detyruar ta dërgosh — vetëm nëse do të shkruash vetë te dyqani.",
+    mixNextSteps: "Çfarë ndodh më pas",
+    mixStep1: "Dyqani e mori porosinë tënde dhe do të të kontaktojë.",
+    mixStep2: "Nëse WhatsApp hapet, mund ta dërgosh mesazhin ose ta mbyllësh — zgjedhja jote.",
+    mixStep3: "Dyqani mund të të dërgojë përditësime gjithsesi.",
+
     // Salon Appointment Success Message
     appointmentBooked: "Takimi u Rezervua!",
     appointmentNumber: "Numri i Takimit",
@@ -1315,6 +1343,16 @@ addDeliveryAddress: "Shto adresën e dërgesës",
   directStep2: "Prepararán tu pedido",
   directStep3: "Te contactarán para cualquier actualización",
   youCanCloseThisPage: "Puedes cerrar esta página de forma segura",
+
+  orderSentMixTitle: "Pedido realizado",
+  orderSentMixLine1:
+    "Número de pedido: {orderNumber}. La tienda tiene tus datos y se pondrá en contacto contigo.",
+  orderSentMixLine2:
+    "En unos segundos, WhatsApp puede abrirse con un mensaje de seguimiento. No tienes que enviarlo; solo si quieres escribir tú a la tienda.",
+  mixNextSteps: "Qué ocurre ahora",
+  mixStep1: "La tienda recibió tu pedido y se pondrá en contacto contigo.",
+  mixStep2: "Si se abre WhatsApp, puedes enviar el seguimiento o cerrarlo; tú decides.",
+  mixStep3: "La tienda puede seguir enviándote actualizaciones de todos modos.",
 
   // Salon Appointment Success Message
   appointmentBooked: "¡Cita Reservada!",
@@ -1680,6 +1718,16 @@ addDeliveryAddress: "Shto adresën e dërgesës",
   directStep2: "Θα ετοιμάσουν την παραγγελία σας",
   directStep3: "Θα επικοινωνήσουν μαζί σας για ενημερώσεις",
   youCanCloseThisPage: "Μπορείτε να κλείσετε αυτή τη σελίδα με ασφάλεια",
+
+  orderSentMixTitle: "Η παραγγελία καταχωρήθηκε",
+  orderSentMixLine1:
+    "Αριθμός παραγγελίας: {orderNumber}. Το κατάστημα έχει τα στοιχεία σας και θα επικοινωνήσει μαζί σας.",
+  orderSentMixLine2:
+    "Σε λίγα δευτερόλεπτα, το WhatsApp μπορεί να ανοίξει με μήνυμα παρακολούθησης. Δεν είστε υποχρεωμένοι να το στείλετε — μόνο αν θέλετε να στείλετε εσείς στο κατάστημα.",
+  mixNextSteps: "Τι συμβαίνει στη συνέχεια",
+  mixStep1: "Το κατάστημα έλαβε την παραγγελία σας και θα επικοινωνήσει μαζί σας.",
+  mixStep2: "Αν ανοίξει το WhatsApp, μπορείτε να στείλετε το μήνυμα παρακολούθησης ή να το κλείσετε — επιλογή σας.",
+  mixStep3: "Το κατάστημα μπορεί να σας ενημερώνει πάντως.",
 
   // Salon Appointment Success Message
   appointmentBooked: "Το Ραντεβού Κλείστηκε!",

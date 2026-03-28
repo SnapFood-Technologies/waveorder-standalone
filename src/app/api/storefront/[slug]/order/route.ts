@@ -1,5 +1,5 @@
 // app/api/storefront/[slug]/order/route.ts
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendOrderNotification } from '@/lib/orderNotificationService'
 import {
@@ -8,8 +8,15 @@ import {
 } from '@/lib/superadmin-email-notification'
 import { sendCustomerOrderPlacedEmail } from '@/lib/customer-email-notification'
 import { normalizePhoneNumber, phoneNumbersMatch } from '@/lib/phone-utils'
+import { isStorefrontPhoneComplete } from '@/lib/storefront-phone'
+import { businessSlugFilter } from '@/lib/storefront-slug'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 import { sendOrderNotification as sendTwilioOrderNotification, isTwilioConfigured } from '@/lib/twilio'
+import { buildWaMeUrlWithText } from '@/lib/whatsapp-wa-me-url'
+import {
+  buildCustomerFollowUpWhatsappUrl,
+  resolveMixFollowUpLanguage,
+} from '@/lib/whatsapp-mix-followup'
 import * as Sentry from '@sentry/nextjs'
 
 // Helper function to calculate distance between two points
@@ -965,9 +972,9 @@ export async function POST(
     Sentry.setTag('api_type', 'storefront')
     Sentry.setTag('method', 'POST')
 
-    // Find business and check if it's closed
-    const business = await prisma.business.findUnique({
-      where: { slug, isActive: true },
+    // Find business and check if it's closed (slug match is case-insensitive)
+    const business = await prisma.business.findFirst({
+      where: { slug: businessSlugFilter(slug), isActive: true },
       select: {
         id: true,
         name: true,
@@ -978,6 +985,8 @@ export async function POST(
         address: true,
         whatsappNumber: true,
         whatsappDirectNotifications: true,
+        orderWhatsAppMixEnabled: true,
+        orderWhatsAppMixFollowUpTemplate: true,
         orderNumberFormat: true,
         website: true,
         deliveryEnabled: true,
@@ -994,6 +1003,8 @@ export async function POST(
         translateContentToBusinessLanguage: true,
         enableAffiliateSystem: true,
         timezone: true,
+        minimumOrder: true,
+        invoiceMinimumOrderValue: true,
         deliveryZones: {
           where: { isActive: true },
           orderBy: { maxDistance: 'asc' }
@@ -1111,6 +1122,13 @@ export async function POST(
       return NextResponse.json({ error: 'Customer phone is required' }, { status: 400 })
     }
 
+    if (!isStorefrontPhoneComplete(customerPhone.trim())) {
+      Sentry.setTag('error_type', 'validation_error')
+      Sentry.setTag('status_code', '400')
+      logValidationError('Invalid phone number format')
+      return NextResponse.json({ error: 'Invalid phone number format' }, { status: 400 })
+    }
+
     if (!items || !Array.isArray(items) || items.length === 0) {
       Sentry.setTag('error_type', 'validation_error')
       Sentry.setTag('status_code', '400')
@@ -1147,9 +1165,70 @@ export async function POST(
       if (business.businessType !== 'RETAIL' && (!latitude || !longitude)) {
       return NextResponse.json({ error: 'Delivery address and coordinates required' }, { status: 400 })
       }
-      // For RETAIL businesses, require postal pricing selection
-      if (business.businessType === 'RETAIL' && !postalPricingId) {
-        return NextResponse.json({ error: 'Please select a delivery method' }, { status: 400 })
+      // For RETAIL businesses, require country, city, and postal pricing selection
+      if (business.businessType === 'RETAIL') {
+        if (!countryCode?.trim()) {
+          return NextResponse.json({ error: 'Please select a country' }, { status: 400 })
+        }
+        if (!city?.trim()) {
+          return NextResponse.json({ error: 'Please select a city' }, { status: 400 })
+        }
+        if (!postalPricingId) {
+          return NextResponse.json({ error: 'Please select a delivery method' }, { status: 400 })
+        }
+      }
+
+      const minimumOrder = business.minimumOrder ?? 0
+      const subtotalNum = Number(subtotal)
+      if (Number.isNaN(subtotalNum)) {
+        Sentry.setTag('error_type', 'validation_error')
+        Sentry.setTag('status_code', '400')
+        logValidationError('Invalid subtotal')
+        return NextResponse.json({ error: 'Valid subtotal is required' }, { status: 400 })
+      }
+      if (subtotalNum < minimumOrder) {
+        Sentry.setTag('error_type', 'validation_error')
+        Sentry.setTag('status_code', '400')
+        logValidationError('Order subtotal below minimum for delivery')
+        return NextResponse.json(
+          {
+            error: 'Order does not meet minimum amount for delivery',
+            minimumOrder
+          },
+          { status: 400 }
+        )
+      }
+    }
+
+    if (invoiceType === 'INVOICE') {
+      const totalNum = Number(total)
+      if (Number.isNaN(totalNum)) {
+        Sentry.setTag('error_type', 'validation_error')
+        Sentry.setTag('status_code', '400')
+        logValidationError('Invalid order total for invoice')
+        return NextResponse.json({ error: 'Valid order total is required' }, { status: 400 })
+      }
+      if (
+        business.invoiceMinimumOrderValue != null &&
+        totalNum < business.invoiceMinimumOrderValue
+      ) {
+        Sentry.setTag('error_type', 'validation_error')
+        Sentry.setTag('status_code', '400')
+        logValidationError('Order total below minimum for invoice')
+        return NextResponse.json(
+          {
+            error: 'Order total does not meet minimum for invoice selection',
+            invoiceMinimumOrderValue: business.invoiceMinimumOrderValue
+          },
+          { status: 400 }
+        )
+      }
+      const afm = invoiceAfm != null ? String(invoiceAfm).trim() : ''
+      if (afm.length !== 9 || !/^\d{9}$/.test(afm)) {
+        Sentry.setTag('error_type', 'validation_error')
+        Sentry.setTag('status_code', '400')
+        logValidationError('Invalid invoice tax ID (AFM)')
+        return NextResponse.json({ error: 'Valid tax ID (AFM) with 9 digits is required for invoice' }, { status: 400 })
       }
     }
 
@@ -1401,14 +1480,7 @@ export async function POST(
     }
 
     // Enhanced customer creation/retrieval logic with normalized phone matching
-    // Normalize the incoming phone number for matching
     const normalizedPhone = normalizePhoneNumber(customerPhone)
-    
-    if (!normalizedPhone || normalizedPhone.length < 10) {
-      Sentry.setTag('error_type', 'validation_error')
-      Sentry.setTag('status_code', '400')
-      return NextResponse.json({ error: 'Invalid phone number format' }, { status: 400 })
-    }
 
     // Find customer by matching normalized phone numbers
     // Get all customers for this business and match by normalized phone
@@ -2061,142 +2133,149 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
     console.error('Customer order placed email failed:', emailError)
   }
 
-  // Send order notification email to business
-try {
-  // First, get business notification settings
-  const businessWithNotifications = await prisma.business.findUnique({
-    where: { id: business.id },
-    select: {
-      orderNotificationsEnabled: true,
-      orderNotificationEmail: true,
-      email: true
-    }
-  })
+  // Business order email + SuperAdmin copy: run after the HTTP response is sent (non-blocking),
+  // in parallel. Twilio + JSON response below are unchanged — avoids API/UX regressions.
+  after(async () => {
+    await Promise.allSettled([
+      (async () => {
+        try {
+          // First, get business notification settings
+          const businessWithNotifications = await prisma.business.findUnique({
+            where: { id: business.id },
+            select: {
+              orderNotificationsEnabled: true,
+              orderNotificationEmail: true,
+              email: true
+            }
+          })
 
-  if (businessWithNotifications?.orderNotificationsEnabled) {
-    // Get order items with product details for email
-    const orderItemsForEmail = await prisma.orderItem.findMany({
-      where: { orderId: order.id },
-      include: {
-        product: { select: { name: true } },
-        variant: { select: { name: true } }
-      }
-    })
+          if (businessWithNotifications?.orderNotificationsEnabled) {
+            // Get order items with product details for email
+            const orderItemsForEmail = await prisma.orderItem.findMany({
+              where: { orderId: order.id },
+              include: {
+                product: { select: { name: true } },
+                variant: { select: { name: true } }
+              }
+            })
 
-    // Fetch postal pricing details if it exists (for RETAIL businesses)
-    let postalPricingDetails: any = null
-    // @ts-ignore - postalPricingId field will be available after Prisma generate
-    const orderPostalPricingId = (order as any).postalPricingId
-    if (business.businessType === 'RETAIL' && orderPostalPricingId) {
-      try {
-        // @ts-ignore - PostalPricing model will be available after Prisma generate
-        const postalPricing = await (prisma as any).postalPricing.findUnique({
-          where: { id: orderPostalPricingId },
-          include: {
-            postal: {
-              select: {
-                name: true,
-                nameAl: true,
-                nameEl: true,
-                deliveryTime: true,
-                deliveryTimeAl: true,
-                deliveryTimeEl: true
+            // Fetch postal pricing details if it exists (for RETAIL businesses)
+            let postalPricingDetails: any = null
+            // @ts-ignore - postalPricingId field will be available after Prisma generate
+            const orderPostalPricingId = (order as any).postalPricingId
+            if (business.businessType === 'RETAIL' && orderPostalPricingId) {
+              try {
+                // @ts-ignore - PostalPricing model will be available after Prisma generate
+                const postalPricing = await (prisma as any).postalPricing.findUnique({
+                  where: { id: orderPostalPricingId },
+                  include: {
+                    postal: {
+                      select: {
+                        name: true,
+                        nameAl: true,
+                        nameEl: true,
+                        deliveryTime: true,
+                        deliveryTimeAl: true,
+                        deliveryTimeEl: true
+                      }
+                    }
+                  }
+                })
+
+                if (postalPricing) {
+                  const isAlbanian = business.language === 'sq' || business.language === 'al'
+                  const isGreek = business.language === 'el'
+                  postalPricingDetails = {
+                    name: isAlbanian
+                      ? (postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service')
+                      : isGreek
+                        ? (postalPricing.postal?.nameEl || postalPricing.postal?.name || 'Postal Service')
+                        : (postalPricing.postal?.name || 'Postal Service'),
+                    nameEn: postalPricing.postal?.name || 'Postal Service',
+                    nameAl: postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service',
+                    nameEl: postalPricing.postal?.nameEl || postalPricing.postal?.name || 'Postal Service',
+                    deliveryTime: isAlbanian
+                      ? (postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null)
+                      : isGreek
+                        ? (postalPricing.deliveryTimeEl || postalPricing.postal?.deliveryTimeEl || postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null)
+                        : (postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || null),
+                    price: postalPricing.price
+                  }
+                }
+              } catch (error) {
+                console.error('Error fetching postal pricing details for email:', error)
               }
             }
-          }
-        })
 
-        if (postalPricing) {
-          const isAlbanian = business.language === 'sq' || business.language === 'al'
-          const isGreek = business.language === 'el'
-          postalPricingDetails = {
-            name: isAlbanian
-              ? (postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service')
-              : isGreek
-                ? (postalPricing.postal?.nameEl || postalPricing.postal?.name || 'Postal Service')
-                : (postalPricing.postal?.name || 'Postal Service'),
-            nameEn: postalPricing.postal?.name || 'Postal Service',
-            nameAl: postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service',
-            nameEl: postalPricing.postal?.nameEl || postalPricing.postal?.name || 'Postal Service',
-            deliveryTime: isAlbanian
-              ? (postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null)
-              : isGreek
-                ? (postalPricing.deliveryTimeEl || postalPricing.postal?.deliveryTimeEl || postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null)
-                : (postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || null),
-            price: postalPricing.price
+            // Call the order notification service
+            await sendOrderNotification(
+              {
+                id: order.id,
+                orderNumber: order.orderNumber,
+                status: order.status,
+                type: order.type,
+                total: order.total,
+                deliveryAddress: order.deliveryAddress,
+                deliveryTime: order.deliveryTime ? order.deliveryTime.toISOString() : null,
+                notes: order.notes,
+                customer: { name: customer.name, phone: customer.phone },
+                items: orderItemsForEmail,
+                businessId: business.id,
+                postalPricingDetails: postalPricingDetails,
+                countryCode: countryCode || null,
+                city: city || null,
+                postalCode: postalCode || null,
+                invoiceType: (order as any).invoiceType || null // Invoice/Receipt selection (for Greek storefronts)
+              },
+              {
+                name: business.name,
+                orderNotificationsEnabled: businessWithNotifications.orderNotificationsEnabled,
+                orderNotificationEmail: businessWithNotifications.orderNotificationEmail,
+                email: businessWithNotifications.email,
+                currency: business.currency,
+                businessType: business.businessType,
+                language: business.language,
+                timezone: business.timezone || 'UTC'
+              }
+            )
           }
+        } catch (emailError) {
+          // Don't fail order creation if email fails
+          Sentry.captureException(emailError, {
+            tags: {
+              operation: 'send_order_notification',
+              businessId: business.id,
+            },
+            extra: {
+              orderId: order.id,
+              orderNumber: order.orderNumber,
+            },
+          })
+          console.error('Order notification email failed:', emailError)
         }
-      } catch (error) {
-        console.error('Error fetching postal pricing details for email:', error)
-      }
-    }
-
-    // Call the order notification service
-    await sendOrderNotification(
-      {
-        id: order.id,
-        orderNumber: order.orderNumber,
-        status: order.status,
-        type: order.type,
-        total: order.total,
-        deliveryAddress: order.deliveryAddress,
-        deliveryTime: order.deliveryTime ? order.deliveryTime.toISOString() : null,
-        notes: order.notes,
-        customer: { name: customer.name, phone: customer.phone },
-        items: orderItemsForEmail,
-        businessId: business.id,
-        postalPricingDetails: postalPricingDetails,
-        countryCode: countryCode || null,
-        city: city || null,
-        postalCode: postalCode || null,
-        invoiceType: (order as any).invoiceType || null // Invoice/Receipt selection (for Greek storefronts)
-      },
-      {
-        name: business.name,
-        orderNotificationsEnabled: businessWithNotifications.orderNotificationsEnabled,
-        orderNotificationEmail: businessWithNotifications.orderNotificationEmail,
-        email: businessWithNotifications.email,
-        currency: business.currency,
-        businessType: business.businessType,
-        language: business.language,
-        timezone: business.timezone || 'UTC'
-      }
-    )
-  }
-  } catch (emailError) {
-    // Don't fail order creation if email fails
-    Sentry.captureException(emailError, {
-      tags: {
-        operation: 'send_order_notification',
-        businessId: business.id,
-      },
-      extra: {
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-      },
-    })
-    console.error('Order notification email failed:', emailError)
-  }
-
-  // SuperAdmin copy notifications (independent of admin settings)
-  try {
-    const isSalon = business.businessType === 'SALON' || business.businessType === 'SERVICES'
-    if (isSalon) {
-      await sendSuperAdminBookingNotification(business.id, {
-        orderNumber: order.orderNumber,
-        appointmentDateTime: order.deliveryTime || order.createdAt
-      })
-    } else {
-      await sendSuperAdminOrderNotification(business.id, {
-        orderNumber: order.orderNumber,
-        total: order.total,
-        currency: business.currency,
-        createdAt: order.createdAt
-      })
-    }
-  } catch (superAdminErr) {
-    console.error('SuperAdmin notification email failed:', superAdminErr)
-  }
+      })(),
+      (async () => {
+        try {
+          // SuperAdmin copy notifications (independent of admin settings)
+          if (isSalon) {
+            await sendSuperAdminBookingNotification(business.id, {
+              orderNumber: order.orderNumber,
+              appointmentDateTime: order.deliveryTime || order.createdAt
+            })
+          } else {
+            await sendSuperAdminOrderNotification(business.id, {
+              orderNumber: order.orderNumber,
+              total: order.total,
+              currency: business.currency,
+              createdAt: order.createdAt
+            })
+          }
+        } catch (superAdminErr) {
+          console.error('SuperAdmin notification email failed:', superAdminErr)
+        }
+      })(),
+    ])
+  })
 
     // Format WhatsApp message with enhanced pickup/delivery support
     const whatsappMessage = formatWhatsAppOrder({
@@ -2412,9 +2491,32 @@ try {
       }
     }
 
+    let customerFollowUpWhatsappUrl: string | undefined
+    if (
+      useDirectNotification &&
+      twilioMessageSent &&
+      business.orderWhatsAppMixEnabled
+    ) {
+      customerFollowUpWhatsappUrl = buildCustomerFollowUpWhatsappUrl(
+        business.whatsappNumber,
+        business.orderWhatsAppMixFollowUpTemplate,
+        {
+          orderNumber: order.orderNumber,
+          businessName: business.name,
+          orderId: order.id,
+        },
+        {
+          language: resolveMixFollowUpLanguage(
+            business.language,
+            business.translateContentToBusinessLanguage
+          ),
+        }
+      )
+    }
+
     // Return response based on notification type
     if (useDirectNotification && twilioMessageSent) {
-      // Direct notification sent successfully - no wa.me redirect needed
+      // Direct notification sent successfully - optional mix follow-up URL for customer
       return NextResponse.json({
         success: true,
         orderId: order.id,
@@ -2423,7 +2525,10 @@ try {
         deliveryZone,
         deliveryDistance,
         directNotification: true,
-        message: 'Order sent! The business has been notified.'
+        message: 'Order sent! The business has been notified.',
+        ...(customerFollowUpWhatsappUrl
+          ? { customerFollowUpWhatsappUrl }
+          : {}),
       })
     } else {
       // Use traditional wa.me redirect (either by preference or as fallback)
@@ -2435,7 +2540,7 @@ try {
         deliveryZone,
         deliveryDistance,
         directNotification: false,
-        whatsappUrl: `https://wa.me/${formatWhatsAppNumber(business.whatsappNumber)}?text=${encodeURIComponent(whatsappMessage)}`
+        whatsappUrl: buildWaMeUrlWithText(business.whatsappNumber, whatsappMessage),
       })
     }
 
@@ -2743,33 +2848,6 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
   return message
 }
 
-function formatWhatsAppNumber(phoneNumber: string): string {
-  // Remove all non-numeric characters
-  const cleanNumber = phoneNumber.replace(/[^0-9]/g, '')
-  
-  // WhatsApp API expects numbers without + prefix
-  // But we need to ensure it's a valid international format
-  if (cleanNumber.startsWith('1') && cleanNumber.length === 11) {
-    // US number: +1XXXXXXXXXX -> 1XXXXXXXXXX
-    return cleanNumber
-  } else if (cleanNumber.startsWith('355') && cleanNumber.length >= 11) {
-    // Albanian number: +355XXXXXXXXX -> 355XXXXXXXXX
-    return cleanNumber
-  } else if (cleanNumber.startsWith('30') && cleanNumber.length >= 12) {
-    // Greek number: +30XXXXXXXXXX -> 30XXXXXXXXXX
-    return cleanNumber
-  } else if (cleanNumber.startsWith('39') && cleanNumber.length >= 11) {
-    // Italian number: +39XXXXXXXXX -> 39XXXXXXXXX
-    return cleanNumber
-  } else if (cleanNumber.startsWith('34') && cleanNumber.length >= 11) {
-    // Spanish number: +34XXXXXXXXX -> 34XXXXXXXXX
-    return cleanNumber
-  }
-  
-  // For other countries, just return the clean number
-  return cleanNumber
-}
-
 function getCurrencySymbol(currency: string) {
   switch (currency) {
     case 'USD': return '$'
@@ -2791,9 +2869,9 @@ export async function PATCH(
     const { slug } = await context.params
     const { customerLat, customerLng } = await request.json()
 
-    // Find business
-    const business = await prisma.business.findUnique({
-      where: { slug, isActive: true },
+    // Find business (case-insensitive slug)
+    const business = await prisma.business.findFirst({
+      where: { slug: businessSlugFilter(slug), isActive: true },
       select: { id: true, isTemporarilyClosed: true }
     })
 
