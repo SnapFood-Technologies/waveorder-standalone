@@ -21,6 +21,10 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react'
+import {
+  getDefaultMixFollowUpTemplate,
+  resolveMixFollowUpLanguage,
+} from '@/lib/whatsapp-mix-followup'
 
 interface OrderNotificationSettingsProps {
   businessId: string
@@ -78,6 +82,8 @@ interface Business {
   currency: string
   timeFormat?: string
   businessType?: string
+  language?: string
+  translateContentToBusinessLanguage?: boolean
 }
 
 interface Pagination {
