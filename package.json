@@ -12,6 +12,7 @@
     "db:generate": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",
     "populate:naia-postal": "tsx scripts/populate-postal-pricing-naia-studio.ts",
+    "backfill:product-country-codes": "tsx scripts/backfill-product-country-codes.ts",
     "test": "vitest run",
     "test:ui": "vitest --ui",
     "test:watch": "vitest",
