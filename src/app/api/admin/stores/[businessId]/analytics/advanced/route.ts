@@ -35,6 +35,11 @@ export async function GET(
 
     endDate.setHours(23, 59, 59, 999)
 
+    const businessFlags = await prisma.business.findUnique({
+      where: { id: businessId },
+      select: { websiteEmbedEnabled: true }
+    })
+
     // Fetch BOTH old Analytics data AND new VisitorSession data
     // Old Analytics table (legacy data)
     const oldAnalytics = await prisma.analytics.findMany({
@@ -444,8 +449,33 @@ export async function GET(
       percentage: totalPlacementVisitors > 0 ? parseFloat(((stats.visitors / totalPlacementVisitors) * 100).toFixed(1)) : 0
     })).sort((a, b) => b.visitors - a.visitors)
 
+    let websiteEmbed: { visits: number; lastVisitAt: string | null } | null = null
+    if (businessFlags?.websiteEmbedEnabled) {
+      const embedWhere = {
+        businessId,
+        fromWebsiteEmbed: true,
+        visitedAt: {
+          gte: startDate,
+          lte: endDate
+        }
+      }
+      const [websiteEmbedVisits, lastEmbedSession] = await Promise.all([
+        prisma.visitorSession.count({ where: embedWhere }),
+        prisma.visitorSession.findFirst({
+          where: embedWhere,
+          orderBy: { visitedAt: 'desc' },
+          select: { visitedAt: true }
+        })
+      ])
+      websiteEmbed = {
+        visits: websiteEmbedVisits,
+        lastVisitAt: lastEmbedSession?.visitedAt?.toISOString() ?? null
+      }
+    }
+
     return NextResponse.json({
       data: {
+        websiteEmbed,
         overview: {
           totalViews,
           uniqueVisitors: uniqueVisitors,
