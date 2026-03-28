@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest'
-import { renderMixFollowUpMessage, buildCustomerFollowUpWhatsappUrl } from '@/lib/whatsapp-mix-followup'
+import {
+  renderMixFollowUpMessage,
+  buildCustomerFollowUpWhatsappUrl,
+  resolveMixFollowUpLanguage,
+  getDefaultMixFollowUpTemplate,
+} from '@/lib/whatsapp-mix-followup'
 
 describe('whatsapp-mix-followup', () => {
   it('renders default template with placeholders', () => {
@@ -11,6 +16,33 @@ describe('whatsapp-mix-followup', () => {
     expect(msg).toContain('#42')
     expect(msg).toContain('Test Cafe')
     expect(msg).toContain('WaveOrder')
+    expect(msg).toContain('Quick follow-up')
+  })
+
+  it('renders Greek default when language is el and template empty', () => {
+    const msg = renderMixFollowUpMessage(
+      null,
+      {
+        orderNumber: 99,
+        businessName: 'Naia Studio',
+        orderId: 'x',
+      },
+      { language: 'el' }
+    )
+    expect(msg).toContain('#99')
+    expect(msg).toContain('Naia Studio')
+    expect(msg).toContain('παραγγελία')
+    expect(msg).toContain('WaveOrder')
+  })
+
+  it('resolveMixFollowUpLanguage maps gr to el and respects translate flag', () => {
+    expect(resolveMixFollowUpLanguage('gr', true)).toBe('el')
+    expect(resolveMixFollowUpLanguage('el', true)).toBe('el')
+    expect(resolveMixFollowUpLanguage('el', false)).toBe('en')
+  })
+
+  it('getDefaultMixFollowUpTemplate falls back to English for unknown codes', () => {
+    expect(getDefaultMixFollowUpTemplate('xx')).toContain('Quick follow-up')
   })
 
   it('uses custom template when provided', () => {

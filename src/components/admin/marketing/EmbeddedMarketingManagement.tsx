@@ -3,12 +3,19 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Code2, Copy, Check, ExternalLink, Info, Save } from 'lucide-react'
+import { Code2, Copy, Check, ExternalLink, Eye, Info, Save } from 'lucide-react'
 import { useBusiness } from '@/contexts/BusinessContext'
 import { buildWebsiteEmbedOrderUrl, getPublicSiteBaseUrl } from '@/lib/website-embed-url'
 import type { WebsiteEmbedSettingsJson } from '@/lib/website-embed-settings'
 import { logWebsiteEmbedCopy } from '@/lib/client-system-log'
 import { canViewAnalytics } from '@/lib/permissions'
+
+/** Matches `public/embed.js` floating button sizing */
+const EMBED_FLOAT_SIZES = {
+  sm: { padding: '10px 14px', fontSize: '14px' },
+  md: { padding: '12px 18px', fontSize: '16px' },
+  lg: { padding: '14px 22px', fontSize: '18px' }
+} as const
 
 interface Props {
   businessId: string
@@ -329,6 +336,81 @@ export default function EmbeddedMarketingManagement({ businessId }: Props) {
               <input type="checkbox" checked={rounded} onChange={(e) => setRounded(e.target.checked)} className="rounded" />
               <span className="text-sm font-medium text-gray-800">Rounded pill (off = square corners)</span>
             </label>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg border border-gray-200 p-6 space-y-4">
+        <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+          <Eye className="w-5 h-5 text-teal-600 shrink-0" aria-hidden />
+          Live preview
+        </h2>
+        <p className="text-sm text-gray-600">
+          Updates as you change label, colors, size, and shape. The floating card matches{' '}
+          <code className="bg-gray-100 px-1 rounded text-xs">embed.js</code>; the inline card matches the HTML snippet (fixed
+          padding like the generated link).
+        </p>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Floating button (script embed)</p>
+            <div className="relative rounded-xl border border-gray-200 bg-gradient-to-b from-gray-100 to-slate-200/90 overflow-hidden min-h-[220px]">
+              <div
+                className="pointer-events-none absolute inset-0 opacity-[0.2]"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(to right, rgb(148 163 184 / 0.35) 1px, transparent 1px), linear-gradient(to bottom, rgb(148 163 184 / 0.35) 1px, transparent 1px)',
+                  backgroundSize: '20px 20px'
+                }}
+              />
+              <p className="absolute top-3 left-3 text-xs text-slate-600 font-medium z-[1]">Your website</p>
+              <a
+                href={orderUrl || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="absolute bottom-6 right-6 z-[2] font-semibold no-underline inline-block"
+                style={{
+                  fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                  fontWeight: 600,
+                  background: bgColor,
+                  color: textColor,
+                  borderRadius: rounded ? 9999 : 4,
+                  padding: EMBED_FLOAT_SIZES[size].padding,
+                  fontSize: EMBED_FLOAT_SIZES[size].fontSize,
+                  lineHeight: 1.2,
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.2)',
+                  cursor: 'pointer'
+                }}
+                onClick={(e) => {
+                  if (!orderUrl) e.preventDefault()
+                }}
+              >
+                {buttonLabel}
+              </a>
+            </div>
+          </div>
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Inline button (HTML snippet)</p>
+            <div className="rounded-xl border border-gray-200 bg-white flex flex-wrap items-center justify-center min-h-[220px] p-6">
+              <a
+                href={orderUrl || '#'}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block font-semibold no-underline"
+                style={{
+                  padding: '12px 18px',
+                  background: bgColor,
+                  color: textColor,
+                  fontFamily: 'sans-serif',
+                  fontWeight: 600,
+                  borderRadius: rounded ? '9999px' : '4px'
+                }}
+                onClick={(e) => {
+                  if (!orderUrl) e.preventDefault()
+                }}
+              >
+                {buttonLabel}
+              </a>
+            </div>
           </div>
         </div>
       </div>

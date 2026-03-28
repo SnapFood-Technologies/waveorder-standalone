@@ -62,7 +62,15 @@ export async function GET(
 
     const wherePeriod = { businessId, createdAt: { gte: startDate, lte: endDate } }
 
-    const [messages, totalCount, tokenAgg] = await Promise.all([
+    const [
+      messages,
+      totalCount,
+      tokenAgg,
+      sessionGroups,
+      totalUserMessages,
+      thumbsUpCount,
+      thumbsDownCount
+    ] = await Promise.all([
       prisma.aiChatMessage.findMany({
         where: wherePeriod,
         orderBy: { createdAt: 'desc' },
@@ -82,10 +90,21 @@ export async function GET(
       prisma.aiChatMessage.aggregate({
         where: { ...wherePeriod, role: 'assistant', tokensUsed: { not: null } },
         _sum: { tokensUsed: true }
-      })
+      }),
+      prisma.aiChatMessage.groupBy({
+        by: ['sessionId'],
+        where: {
+          businessId,
+          createdAt: { gte: startDate, lte: endDate },
+          sessionId: { not: null }
+        }
+      }),
+      prisma.aiChatMessage.count({ where: { ...wherePeriod, role: 'user' } }),
+      prisma.aiChatMessage.count({ where: { ...wherePeriod, feedback: 'thumbs_up' } }),
+      prisma.aiChatMessage.count({ where: { ...wherePeriod, feedback: 'thumbs_down' } })
     ])
 
-    // Group by session for conversation view
+    // Group by session for conversation view (top questions: from loaded page only — cheap heuristic)
     const userMessages = messages.filter((m) => m.role === 'user')
     const topQuestions = new Map<string, number>()
     for (const m of userMessages) {
@@ -97,9 +116,9 @@ export async function GET(
       .sort((a, b) => b.count - a.count)
       .slice(0, 20)
 
-    const totalConversations = new Set(messages.map((m) => m.sessionId).filter(Boolean)).size
-    const thumbsUp = messages.filter((m) => m.feedback === 'thumbs_up').length
-    const thumbsDown = messages.filter((m) => m.feedback === 'thumbs_down').length
+    const totalConversations = sessionGroups.length
+    const thumbsUp = thumbsUpCount
+    const thumbsDown = thumbsDownCount
     const totalTokensUsed = tokenAgg._sum.tokensUsed ?? 0
 
     return NextResponse.json({
@@ -112,8 +131,8 @@ export async function GET(
         period,
         summary: {
           totalMessages: totalCount,
-          totalUserMessages: userMessages.length,
-          totalConversations: totalConversations || Math.ceil(userMessages.length / 2),
+          totalUserMessages,
+          totalConversations,
           topQuestions: topQuestionsList,
           thumbsUp,
           thumbsDown,

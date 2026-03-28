@@ -1,7 +1,7 @@
 // src/components/admin/settings/OrderNotificationSettings.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useImpersonation } from '@/lib/impersonation'
@@ -21,6 +21,10 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react'
+import {
+  getDefaultMixFollowUpTemplate,
+  resolveMixFollowUpLanguage,
+} from '@/lib/whatsapp-mix-followup'
 
 interface OrderNotificationSettingsProps {
   businessId: string
@@ -78,6 +82,8 @@ interface Business {
   currency: string
   timeFormat?: string
   businessType?: string
+  language?: string
+  translateContentToBusinessLanguage?: boolean
 }
 
 interface Pagination {
@@ -128,6 +134,16 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
   })
   
   const [business, setBusiness] = useState<Business>({ currency: 'USD', businessType: 'RESTAURANT' })
+  const mixFollowUpPlaceholder = useMemo(
+    () =>
+      getDefaultMixFollowUpTemplate(
+        resolveMixFollowUpLanguage(
+          business.language,
+          business.translateContentToBusinessLanguage
+        )
+      ),
+    [business.language, business.translateContentToBusinessLanguage]
+  )
   const [notifications, setNotifications] = useState<OrderNotification[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -192,7 +208,9 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
         setBusiness({ 
           currency: data.business.currency,
           timeFormat: data.business.timeFormat || '24',
-          businessType: data.business.businessType || 'RESTAURANT'
+          businessType: data.business.businessType || 'RESTAURANT',
+          language: data.business.language,
+          translateContentToBusinessLanguage: data.business.translateContentToBusinessLanguage,
         })
       } else {
         setError('Failed to load notification settings')
@@ -459,7 +477,7 @@ export function OrderNotificationSettings({ businessId }: OrderNotificationSetti
                 onChange={handleInputChange}
                 rows={4}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-teal-500"
-                placeholder="Quick follow-up on order #{orderNumber} via WaveOrder — {businessName}"
+                placeholder={mixFollowUpPlaceholder}
               />
             </div>
             <p className="text-sm">

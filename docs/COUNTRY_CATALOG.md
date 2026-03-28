@@ -4,6 +4,7 @@
 
 - **Business flag** `countryBasedCatalogEnabled` (default `false`): when off, storefront queries are unchanged and visitor country is not resolved (no extra latency).
 - **Product** `visibleCountryCodes` / `hiddenCountryCodes` (ISO 3166-1 alpha-2, uppercase). Empty `visibleCountryCodes` = visible everywhere (still subject to `hiddenCountryCodes`). If a visitor’s country is in `hiddenCountryCodes`, the product is hidden.
+- **Storefront DB filter** uses an inverted allowlist (`NOT (non-empty allowlist AND missing V)`) so MongoDB documents with missing/null/empty `visibleCountryCodes` still count as worldwide (Prisma `isEmpty: true` alone did not match missing fields).
 
 ## Visitor country resolution (server)
 
