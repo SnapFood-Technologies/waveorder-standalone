@@ -2225,18 +2225,27 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                   {(() => {
                     const canGenerateInvoice = isOrderEligibleForInternalInvoice({
                       status: order.status,
-                      paymentStatus: order.paymentStatus,
-                      type: order.type
+                      paymentStatus: order.paymentStatus
                     })
+                    const showUnpaidCaution =
+                      canGenerateInvoice && order.paymentStatus !== 'PAID'
                     return (
                       <>
-                        {!canGenerateInvoice && (
+                        {showUnpaidCaution && (
                           <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                             <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
                             <p className="text-sm text-amber-800">
-                              Internal invoices can only be created when payment is <strong>PAID</strong> and the order is{' '}
-                              <strong>DELIVERED</strong> (delivery) or <strong>PICKED_UP</strong> (pickup / dine-in). Update
-                              the order first, then generate the invoice.
+                              Payment is <strong>not</strong> marked as PAID. You can still generate an internal invoice for
+                              your records — confirm the amounts and status are correct before you issue it.
+                            </p>
+                          </div>
+                        )}
+                        {!canGenerateInvoice && (
+                          <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" />
+                            <p className="text-sm text-red-800">
+                              Internal invoices cannot be created for cancelled, returned, or refunded orders, or when
+                              payment is refunded.
                             </p>
                           </div>
                         )}
@@ -2258,8 +2267,10 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                             <div className="text-sm font-medium">Generate Invoice</div>
                             <div className="text-xs text-gray-600">
                               {canGenerateInvoice
-                                ? 'Create internal invoice for this order'
-                                : 'Available when order is completed and paid'}
+                                ? showUnpaidCaution
+                                  ? 'Internal document — verify before issuing if payment is not PAID'
+                                  : 'Create internal invoice for this order'
+                                : 'Not available for cancelled / returned / refunded orders or refunded payment'}
                             </div>
                           </div>
                         </button>
@@ -2449,6 +2460,11 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
             <p className="text-sm text-gray-600 mb-4">
               Create an internal invoice for order #{order.orderNumber}. This document is for your records only and is not a tax invoice.
             </p>
+            {order.paymentStatus !== 'PAID' && (
+              <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-900">
+                Payment is not PAID on this order. Only confirm if you intentionally need this internal document.
+              </div>
+            )}
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-2">Note (optional)</label>
               <textarea

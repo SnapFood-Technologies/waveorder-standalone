@@ -1,26 +1,26 @@
 /**
  * Internal invoice (OrderInvoice) — eligibility rules shared by API + admin UI.
- * PRD: only completed + paid orders; non-tax internal document.
+ * Non-tax internal document: allow for any order except blocked statuses; payment need not be PAID.
  */
 
-import type { OrderStatus, OrderType, PaymentStatus } from '@prisma/client'
+import type { OrderStatus, PaymentStatus } from '@prisma/client'
+
+/** Order cannot receive an internal invoice in these statuses. */
+const BLOCKED_ORDER_STATUSES_FOR_INTERNAL_INVOICE: OrderStatus[] = [
+  'CANCELLED',
+  'RETURNED',
+  'REFUNDED'
+]
 
 export const INTERNAL_INVOICE_INELIGIBLE_MESSAGE =
-  'Invoice can only be generated for completed, paid orders (DELIVERED or PICKED_UP + PAID)'
+  'Invoice cannot be generated for cancelled, returned, or refunded orders, or when payment is refunded'
 
-/** True when order may receive an internal invoice: PAID and terminal completion per order type. */
+/** True when order may receive an internal invoice (UI + API). */
 export function isOrderEligibleForInternalInvoice(order: {
   status: OrderStatus
   paymentStatus: PaymentStatus
-  type: OrderType
 }): boolean {
-  if (order.paymentStatus !== 'PAID') return false
-  if (order.status === 'DELIVERED') return true
-  if (
-    order.status === 'PICKED_UP' &&
-    (order.type === 'PICKUP' || order.type === 'DINE_IN')
-  ) {
-    return true
-  }
-  return false
+  if (BLOCKED_ORDER_STATUSES_FOR_INTERNAL_INVOICE.includes(order.status)) return false
+  if (order.paymentStatus === 'REFUNDED') return false
+  return true
 }
