@@ -3,6 +3,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { mergeSessionsAndOrphansForPagination } from '@/lib/superadmin-ai-chat-history-pagination'
+
+const msgSelect = {
+  id: true,
+  role: true,
+  content: true,
+  sessionId: true,
+  feedback: true,
+  tokensUsed: true,
+  createdAt: true,
+} as const
 
 export async function GET(
   request: NextRequest,
@@ -25,8 +36,8 @@ export async function GET(
         aiChatIcon: true,
         aiChatIconSize: true,
         aiChatName: true,
-        aiChatPosition: true
-      }
+        aiChatPosition: true,
+      },
     })
 
     if (!business) {
@@ -35,8 +46,11 @@ export async function GET(
 
     const { searchParams } = new URL(request.url)
     const period = searchParams.get('period') || 'month'
-    const limit = parseInt(searchParams.get('limit') || '100')
-    const page = parseInt(searchParams.get('page') || '1')
+    const sessionPage = Math.max(1, parseInt(searchParams.get('sessionPage') || '1', 10) || 1)
+    const sessionsPerPage = Math.min(
+      50,
+      Math.max(1, parseInt(searchParams.get('sessionsPerPage') || '15', 10) || 15)
+    )
 
     let startDate: Date
     const endDate = new Date()
@@ -63,51 +77,84 @@ export async function GET(
     const wherePeriod = { businessId, createdAt: { gte: startDate, lte: endDate } }
 
     const [
-      messages,
       totalCount,
       tokenAgg,
-      sessionGroups,
+      sessionGroupRows,
+      orphanMeta,
       totalUserMessages,
       thumbsUpCount,
-      thumbsDownCount
+      thumbsDownCount,
+      userMessagesForTopQuestions,
     ] = await Promise.all([
-      prisma.aiChatMessage.findMany({
-        where: wherePeriod,
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: (page - 1) * limit,
-        select: {
-          id: true,
-          role: true,
-          content: true,
-          sessionId: true,
-          feedback: true,
-          tokensUsed: true,
-          createdAt: true
-        }
-      }),
       prisma.aiChatMessage.count({ where: wherePeriod }),
       prisma.aiChatMessage.aggregate({
         where: { ...wherePeriod, role: 'assistant', tokensUsed: { not: null } },
-        _sum: { tokensUsed: true }
+        _sum: { tokensUsed: true },
       }),
-      // Distinct sessions in period (must not use only the paginated `messages` slice — that under-counted)
       prisma.aiChatMessage.groupBy({
         by: ['sessionId'],
-        where: {
-          businessId,
-          createdAt: { gte: startDate, lte: endDate },
-          sessionId: { not: null }
-        }
+        where: { ...wherePeriod, sessionId: { not: null } },
+        _max: { createdAt: true },
+      }),
+      prisma.aiChatMessage.findMany({
+        where: { ...wherePeriod, sessionId: null },
+        select: { id: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
       }),
       prisma.aiChatMessage.count({ where: { ...wherePeriod, role: 'user' } }),
       prisma.aiChatMessage.count({ where: { ...wherePeriod, feedback: 'thumbs_up' } }),
-      prisma.aiChatMessage.count({ where: { ...wherePeriod, feedback: 'thumbs_down' } })
+      prisma.aiChatMessage.count({ where: { ...wherePeriod, feedback: 'thumbs_down' } }),
+      prisma.aiChatMessage.findMany({
+        where: { ...wherePeriod, role: 'user' },
+        select: { content: true },
+        take: 5000,
+      }),
     ])
 
-    const userMessages = messages.filter((m) => m.role === 'user')
+    const sessionRows = sessionGroupRows.map((s) => ({
+      sessionId: s.sessionId!,
+      lastAt: s._max.createdAt ?? new Date(0),
+    }))
+
+    const merged = mergeSessionsAndOrphansForPagination(sessionRows, orphanMeta)
+    const totalConversations = merged.length
+    const totalSessionPages = Math.max(1, Math.ceil(merged.length / sessionsPerPage) || 1)
+    const safeSessionPage = Math.min(sessionPage, totalSessionPages)
+    const startIdx = (safeSessionPage - 1) * sessionsPerPage
+    const pageSlice = merged.slice(startIdx, startIdx + sessionsPerPage)
+
+    const pageSessionIds = pageSlice
+      .filter((x): x is { kind: 'session'; sessionId: string; lastAt: Date } => x.kind === 'session')
+      .map((x) => x.sessionId)
+    const pageOrphanIds = pageSlice
+      .filter((x): x is { kind: 'orphan'; messageId: string; lastAt: Date } => x.kind === 'orphan')
+      .map((x) => x.messageId)
+
+    const [sessionMessages, orphanMessages] = await Promise.all([
+      pageSessionIds.length > 0
+        ? prisma.aiChatMessage.findMany({
+            where: {
+              businessId,
+              createdAt: { gte: startDate, lte: endDate },
+              sessionId: { in: pageSessionIds },
+            },
+            orderBy: { createdAt: 'asc' },
+            select: msgSelect,
+          })
+        : Promise.resolve([]),
+      pageOrphanIds.length > 0
+        ? prisma.aiChatMessage.findMany({
+            where: { id: { in: pageOrphanIds } },
+            orderBy: { createdAt: 'asc' },
+            select: msgSelect,
+          })
+        : Promise.resolve([]),
+    ])
+
+    const messages = [...sessionMessages, ...orphanMessages]
+
     const topQuestions = new Map<string, number>()
-    for (const m of userMessages) {
+    for (const m of userMessagesForTopQuestions) {
       const q = m.content.trim().toLowerCase().slice(0, 100)
       topQuestions.set(q, (topQuestions.get(q) || 0) + 1)
     }
@@ -116,7 +163,6 @@ export async function GET(
       .sort((a, b) => b.count - a.count)
       .slice(0, 20)
 
-    const totalConversations = sessionGroups.length
     const thumbsUp = thumbsUpCount
     const thumbsDown = thumbsDownCount
     const totalTokensUsed = tokenAgg._sum.tokensUsed ?? 0
@@ -130,15 +176,19 @@ export async function GET(
           aiChatIcon: business.aiChatIcon || 'message',
           aiChatIconSize: business.aiChatIconSize || 'medium',
           aiChatName: business.aiChatName || 'AI Assistant',
-          aiChatPosition: business.aiChatPosition || 'left'
-        }
+          aiChatPosition: business.aiChatPosition || 'left',
+        },
       },
       data: {
         messages,
         totalCount,
-        page,
-        limit,
         period,
+        sessionPagination: {
+          page: safeSessionPage,
+          perPage: sessionsPerPage,
+          totalSessions: totalConversations,
+          totalPages: totalSessionPages,
+        },
         summary: {
           totalMessages: totalCount,
           totalUserMessages,
@@ -146,13 +196,13 @@ export async function GET(
           topQuestions: topQuestionsList,
           thumbsUp,
           thumbsDown,
-          totalTokensUsed
+          totalTokensUsed,
         },
         dateRange: {
           start: startDate.toISOString(),
-          end: endDate.toISOString()
-        }
-      }
+          end: endDate.toISOString(),
+        },
+      },
     })
   } catch (error) {
     console.error('Error fetching AI usage:', error)
