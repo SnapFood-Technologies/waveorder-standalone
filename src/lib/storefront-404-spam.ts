@@ -74,6 +74,9 @@ export const SPAM_PROBE_EXACT_SLUGS: readonly string[] = [
   'aws-codecommit',
   'balancer-manager',
   'careers_not_hosted',
+  // Scanner / probe noise (often show up in "most active stores" from 404 slug groupBy)
+  'known_hosts',
+  'js scanner',
 ]
 
 const spamExactSlugs = new Set([
@@ -192,6 +195,8 @@ const spamProbePatterns: RegExp[] = [
 export function isSpamSlug(s: string | null | undefined): boolean {
   if (!s) return false
   const lower = s.toLowerCase()
+  // URL-encoded path probes (e.g. %2f%2eenv for /.env) — not real store slugs.
+  if (lower.includes('%')) return true
   // Path-shaped "slugs" (e.g. /.git/config) are probes, not storefront segments.
   if (lower.includes('/')) return true
   if (lower.includes('.git')) return true

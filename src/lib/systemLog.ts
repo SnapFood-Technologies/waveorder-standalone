@@ -76,17 +76,32 @@ export function getActualRequestUrl(request: Request, fallbackPath = '/'): strin
  * Log system events (errors, 404s, etc.)
  * Runs async in background to not block requests
  */
+/**
+ * Client POST /api/log/client — must not be dropped by bot/private-IP heuristics in logSystemEvent.
+ * WhatsApp in-app browsers include "WhatsApp" in the user agent, which matched isBot() and blocked
+ * storefront_order_whatsapp_redirect logs.
+ */
+export const LOG_TYPES_SKIP_BOT_PRIVATE_IP_FILTER: readonly LogType[] = [
+  'storefront_order_whatsapp_redirect',
+  'website_embed_copy',
+]
+
+function isClientAttributedMetricLog(logType: LogType): boolean {
+  return (LOG_TYPES_SKIP_BOT_PRIVATE_IP_FILTER as readonly string[]).includes(logType)
+}
+
 export async function logSystemEvent(data: SystemLogData): Promise<void> {
   try {
     const { ipAddress, userAgent } = data
-    
-    // Skip bot/crawler traffic for error logs (but log 404s from bots)
-    if (data.logType !== 'storefront_404' && userAgent && isBot(userAgent)) {
+    const skipBotPrivateFilters = isClientAttributedMetricLog(data.logType)
+
+    // Skip bot/crawler traffic for error logs (but log 404s from bots). Never skip client metrics above.
+    if (!skipBotPrivateFilters && data.logType !== 'storefront_404' && userAgent && isBot(userAgent)) {
       return
     }
-    
-    // Skip private/bot IPs for error logs (but log 404s)
-    if (data.logType !== 'storefront_404' && ipAddress && isPrivateIP(ipAddress)) {
+
+    // Skip private IPs for error logs (but log 404s). Never skip client metrics (local dev / VPN still useful).
+    if (!skipBotPrivateFilters && data.logType !== 'storefront_404' && ipAddress && isPrivateIP(ipAddress)) {
       return
     }
 
