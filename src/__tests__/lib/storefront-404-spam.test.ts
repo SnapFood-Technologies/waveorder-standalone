@@ -15,6 +15,9 @@ describe('isSpamSlug', () => {
       'aws-codecommit',
       'balancer-manager',
       'aWs-cOdEcOmMiT',
+      'known_hosts',
+      'JS Scanner',
+      '%2f%2eenv',
     ]) {
       expect(isSpamSlug(slug), slug).toBe(true)
     }

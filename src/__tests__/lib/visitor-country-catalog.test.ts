@@ -53,12 +53,12 @@ describe('mergeProductWhereVisitorCountry', () => {
     expect(and[0]).toMatchObject({
       AND: [
         {
-          NOT: {
-            AND: [
-              { visibleCountryCodes: { isEmpty: false } },
-              { NOT: { visibleCountryCodes: { has: 'GR' } } }
-            ]
-          }
+          OR: [
+            { visibleCountryCodes: { has: 'GR' } },
+            { visibleCountryCodes: { isEmpty: true } },
+            { visibleCountryCodes: { equals: [] } },
+            { visibleCountryCodes: { equals: null } }
+          ]
         },
         { NOT: { hiddenCountryCodes: { has: 'GR' } } }
       ]
