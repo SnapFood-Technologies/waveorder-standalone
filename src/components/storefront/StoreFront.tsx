@@ -44,7 +44,8 @@ import {
   Bell,
   Tag,
   Percent,
-  Megaphone
+  Megaphone,
+  MessageCircle
 } from 'lucide-react'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
 import { logStorefrontWhatsAppOrderRedirect } from '@/lib/client-system-log'
@@ -471,7 +472,8 @@ function OrderSuccessMessage({
   primaryColor, 
   translations,
   storeData,
-  directNotification = false
+  directNotification = false,
+  mixFollowUp = false
 }: {
   isVisible: boolean
   onClose: () => void
@@ -480,10 +482,71 @@ function OrderSuccessMessage({
   translations: any
   storeData: any
   directNotification?: boolean
+  /** Direct (Twilio) + customer follow-up wa.me redirect */
+  mixFollowUp?: boolean
 }) {
   if (!isVisible) return null
 
-  // Different content for direct notification (Twilio) vs traditional wa.me flow
+  const mixLine1 = (translations.orderSentMixLine1 || 'Order number: {orderNumber}. The store has your details and will contact you.').replace(
+    /\{orderNumber\}/g,
+    orderNumber
+  )
+
+  // Mix: Twilio notified store + follow-up WhatsApp opens shortly (optional send)
+  if (mixFollowUp) {
+    return (
+      <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md z-50">
+        <div className="bg-white border border-green-200 rounded-xl shadow-xl p-4 sm:p-6">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+              <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h4 className="font-bold text-gray-900 text-base sm:text-lg mb-2">
+                {translations.orderSentMixTitle || 'Order placed'}
+              </h4>
+              <div className="space-y-2 sm:space-y-3">
+                <p className="text-sm text-gray-700 leading-relaxed">{mixLine1}</p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {translations.orderSentMixLine2 ||
+                    'In a few seconds, WhatsApp may open with a follow-up message. You do not have to send it — only if you want to message the store yourself.'}
+                </p>
+                <div className="mt-3 p-3 bg-teal-50 rounded-lg border border-teal-200">
+                  <p className="text-sm text-teal-900 font-medium mb-1">
+                    {translations.mixNextSteps || 'What happens next'}
+                  </p>
+                  <div className="text-sm text-teal-800 space-y-1">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                      <span>{translations.mixStep1 || 'The store received your order and will contact you.'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MessageCircle className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                      <span>{translations.mixStep2 || 'If WhatsApp opens, you can send the follow-up or close it — your choice.'}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-teal-600 flex-shrink-0" />
+                      <span>{translations.mixStep3 || 'The store can still reach you with updates either way.'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 p-1 flex-shrink-0"
+              aria-label={translations.close || 'Close'}
+            >
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Direct-only (Twilio), no customer follow-up redirect
   if (directNotification) {
     return (
       <div className="fixed top-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md z-50">
@@ -2139,6 +2202,8 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
     visible: boolean
     orderNumber: string
     directNotification?: boolean
+    /** Twilio + mix follow-up wa.me */
+    mixFollowUp?: boolean
   } | null>(null)
 
   const [errorMessage, setErrorMessage] = useState<{
@@ -3698,7 +3763,8 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
         setOrderSuccessMessage({
           visible: true,
           orderNumber: result.orderNumber || '',
-          directNotification: result.directNotification || false
+          directNotification: result.directNotification || false,
+          mixFollowUp: !!(result.directNotification && result.customerFollowUpWhatsappUrl)
         })
         
         const redirectMs = 5000
@@ -5029,6 +5095,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       translations={translations}
       storeData={storeData}
       directNotification={orderSuccessMessage?.directNotification || false}
+      mixFollowUp={orderSuccessMessage?.mixFollowUp || false}
     />
 
 <ErrorMessage

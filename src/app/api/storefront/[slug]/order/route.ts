@@ -1,5 +1,5 @@
 // app/api/storefront/[slug]/order/route.ts
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendOrderNotification } from '@/lib/orderNotificationService'
 import {
@@ -2133,142 +2133,149 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
     console.error('Customer order placed email failed:', emailError)
   }
 
-  // Send order notification email to business
-try {
-  // First, get business notification settings
-  const businessWithNotifications = await prisma.business.findUnique({
-    where: { id: business.id },
-    select: {
-      orderNotificationsEnabled: true,
-      orderNotificationEmail: true,
-      email: true
-    }
-  })
+  // Business order email + SuperAdmin copy: run after the HTTP response is sent (non-blocking),
+  // in parallel. Twilio + JSON response below are unchanged — avoids API/UX regressions.
+  after(async () => {
+    await Promise.allSettled([
+      (async () => {
+        try {
+          // First, get business notification settings
+          const businessWithNotifications = await prisma.business.findUnique({
+            where: { id: business.id },
+            select: {
+              orderNotificationsEnabled: true,
+              orderNotificationEmail: true,
+              email: true
+            }
+          })
 
-  if (businessWithNotifications?.orderNotificationsEnabled) {
-    // Get order items with product details for email
-    const orderItemsForEmail = await prisma.orderItem.findMany({
-      where: { orderId: order.id },
-      include: {
-        product: { select: { name: true } },
-        variant: { select: { name: true } }
-      }
-    })
+          if (businessWithNotifications?.orderNotificationsEnabled) {
+            // Get order items with product details for email
+            const orderItemsForEmail = await prisma.orderItem.findMany({
+              where: { orderId: order.id },
+              include: {
+                product: { select: { name: true } },
+                variant: { select: { name: true } }
+              }
+            })
 
-    // Fetch postal pricing details if it exists (for RETAIL businesses)
-    let postalPricingDetails: any = null
-    // @ts-ignore - postalPricingId field will be available after Prisma generate
-    const orderPostalPricingId = (order as any).postalPricingId
-    if (business.businessType === 'RETAIL' && orderPostalPricingId) {
-      try {
-        // @ts-ignore - PostalPricing model will be available after Prisma generate
-        const postalPricing = await (prisma as any).postalPricing.findUnique({
-          where: { id: orderPostalPricingId },
-          include: {
-            postal: {
-              select: {
-                name: true,
-                nameAl: true,
-                nameEl: true,
-                deliveryTime: true,
-                deliveryTimeAl: true,
-                deliveryTimeEl: true
+            // Fetch postal pricing details if it exists (for RETAIL businesses)
+            let postalPricingDetails: any = null
+            // @ts-ignore - postalPricingId field will be available after Prisma generate
+            const orderPostalPricingId = (order as any).postalPricingId
+            if (business.businessType === 'RETAIL' && orderPostalPricingId) {
+              try {
+                // @ts-ignore - PostalPricing model will be available after Prisma generate
+                const postalPricing = await (prisma as any).postalPricing.findUnique({
+                  where: { id: orderPostalPricingId },
+                  include: {
+                    postal: {
+                      select: {
+                        name: true,
+                        nameAl: true,
+                        nameEl: true,
+                        deliveryTime: true,
+                        deliveryTimeAl: true,
+                        deliveryTimeEl: true
+                      }
+                    }
+                  }
+                })
+
+                if (postalPricing) {
+                  const isAlbanian = business.language === 'sq' || business.language === 'al'
+                  const isGreek = business.language === 'el'
+                  postalPricingDetails = {
+                    name: isAlbanian
+                      ? (postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service')
+                      : isGreek
+                        ? (postalPricing.postal?.nameEl || postalPricing.postal?.name || 'Postal Service')
+                        : (postalPricing.postal?.name || 'Postal Service'),
+                    nameEn: postalPricing.postal?.name || 'Postal Service',
+                    nameAl: postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service',
+                    nameEl: postalPricing.postal?.nameEl || postalPricing.postal?.name || 'Postal Service',
+                    deliveryTime: isAlbanian
+                      ? (postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null)
+                      : isGreek
+                        ? (postalPricing.deliveryTimeEl || postalPricing.postal?.deliveryTimeEl || postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null)
+                        : (postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || null),
+                    price: postalPricing.price
+                  }
+                }
+              } catch (error) {
+                console.error('Error fetching postal pricing details for email:', error)
               }
             }
-          }
-        })
 
-        if (postalPricing) {
-          const isAlbanian = business.language === 'sq' || business.language === 'al'
-          const isGreek = business.language === 'el'
-          postalPricingDetails = {
-            name: isAlbanian
-              ? (postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service')
-              : isGreek
-                ? (postalPricing.postal?.nameEl || postalPricing.postal?.name || 'Postal Service')
-                : (postalPricing.postal?.name || 'Postal Service'),
-            nameEn: postalPricing.postal?.name || 'Postal Service',
-            nameAl: postalPricing.postal?.nameAl || postalPricing.postal?.name || 'Postal Service',
-            nameEl: postalPricing.postal?.nameEl || postalPricing.postal?.name || 'Postal Service',
-            deliveryTime: isAlbanian
-              ? (postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null)
-              : isGreek
-                ? (postalPricing.deliveryTimeEl || postalPricing.postal?.deliveryTimeEl || postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || null)
-                : (postalPricing.deliveryTime || postalPricing.postal?.deliveryTime || postalPricing.deliveryTimeAl || postalPricing.postal?.deliveryTimeAl || null),
-            price: postalPricing.price
+            // Call the order notification service
+            await sendOrderNotification(
+              {
+                id: order.id,
+                orderNumber: order.orderNumber,
+                status: order.status,
+                type: order.type,
+                total: order.total,
+                deliveryAddress: order.deliveryAddress,
+                deliveryTime: order.deliveryTime ? order.deliveryTime.toISOString() : null,
+                notes: order.notes,
+                customer: { name: customer.name, phone: customer.phone },
+                items: orderItemsForEmail,
+                businessId: business.id,
+                postalPricingDetails: postalPricingDetails,
+                countryCode: countryCode || null,
+                city: city || null,
+                postalCode: postalCode || null,
+                invoiceType: (order as any).invoiceType || null // Invoice/Receipt selection (for Greek storefronts)
+              },
+              {
+                name: business.name,
+                orderNotificationsEnabled: businessWithNotifications.orderNotificationsEnabled,
+                orderNotificationEmail: businessWithNotifications.orderNotificationEmail,
+                email: businessWithNotifications.email,
+                currency: business.currency,
+                businessType: business.businessType,
+                language: business.language,
+                timezone: business.timezone || 'UTC'
+              }
+            )
           }
+        } catch (emailError) {
+          // Don't fail order creation if email fails
+          Sentry.captureException(emailError, {
+            tags: {
+              operation: 'send_order_notification',
+              businessId: business.id,
+            },
+            extra: {
+              orderId: order.id,
+              orderNumber: order.orderNumber,
+            },
+          })
+          console.error('Order notification email failed:', emailError)
         }
-      } catch (error) {
-        console.error('Error fetching postal pricing details for email:', error)
-      }
-    }
-
-    // Call the order notification service
-    await sendOrderNotification(
-      {
-        id: order.id,
-        orderNumber: order.orderNumber,
-        status: order.status,
-        type: order.type,
-        total: order.total,
-        deliveryAddress: order.deliveryAddress,
-        deliveryTime: order.deliveryTime ? order.deliveryTime.toISOString() : null,
-        notes: order.notes,
-        customer: { name: customer.name, phone: customer.phone },
-        items: orderItemsForEmail,
-        businessId: business.id,
-        postalPricingDetails: postalPricingDetails,
-        countryCode: countryCode || null,
-        city: city || null,
-        postalCode: postalCode || null,
-        invoiceType: (order as any).invoiceType || null // Invoice/Receipt selection (for Greek storefronts)
-      },
-      {
-        name: business.name,
-        orderNotificationsEnabled: businessWithNotifications.orderNotificationsEnabled,
-        orderNotificationEmail: businessWithNotifications.orderNotificationEmail,
-        email: businessWithNotifications.email,
-        currency: business.currency,
-        businessType: business.businessType,
-        language: business.language,
-        timezone: business.timezone || 'UTC'
-      }
-    )
-  }
-  } catch (emailError) {
-    // Don't fail order creation if email fails
-    Sentry.captureException(emailError, {
-      tags: {
-        operation: 'send_order_notification',
-        businessId: business.id,
-      },
-      extra: {
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-      },
-    })
-    console.error('Order notification email failed:', emailError)
-  }
-
-  // SuperAdmin copy notifications (independent of admin settings)
-  try {
-    const isSalon = business.businessType === 'SALON' || business.businessType === 'SERVICES'
-    if (isSalon) {
-      await sendSuperAdminBookingNotification(business.id, {
-        orderNumber: order.orderNumber,
-        appointmentDateTime: order.deliveryTime || order.createdAt
-      })
-    } else {
-      await sendSuperAdminOrderNotification(business.id, {
-        orderNumber: order.orderNumber,
-        total: order.total,
-        currency: business.currency,
-        createdAt: order.createdAt
-      })
-    }
-  } catch (superAdminErr) {
-    console.error('SuperAdmin notification email failed:', superAdminErr)
-  }
+      })(),
+      (async () => {
+        try {
+          // SuperAdmin copy notifications (independent of admin settings)
+          if (isSalon) {
+            await sendSuperAdminBookingNotification(business.id, {
+              orderNumber: order.orderNumber,
+              appointmentDateTime: order.deliveryTime || order.createdAt
+            })
+          } else {
+            await sendSuperAdminOrderNotification(business.id, {
+              orderNumber: order.orderNumber,
+              total: order.total,
+              currency: business.currency,
+              createdAt: order.createdAt
+            })
+          }
+        } catch (superAdminErr) {
+          console.error('SuperAdmin notification email failed:', superAdminErr)
+        }
+      })(),
+    ])
+  })
 
     // Format WhatsApp message with enhanced pickup/delivery support
     const whatsappMessage = formatWhatsAppOrder({

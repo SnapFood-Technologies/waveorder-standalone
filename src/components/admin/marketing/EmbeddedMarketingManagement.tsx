@@ -32,6 +32,19 @@ function escapeHtmlText(value: string): string {
   return value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
+/** Normalize hex for `<input type="color">` (requires #rrggbb). */
+function hexForColorPicker(raw: string, fallback: string): string {
+  const t = raw.trim()
+  const m = t.match(/^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/)
+  if (!m) return fallback.match(/^#[0-9a-fA-F]{6}$/i) ? fallback.toLowerCase() : '#0d9488'
+  let h = t.startsWith('#') ? t : `#${t}`
+  if (h.length === 4) {
+    const [, r, g, b] = h.split('')
+    h = `#${r}${r}${g}${g}${b}${b}`
+  }
+  return h.toLowerCase()
+}
+
 export default function EmbeddedMarketingManagement({ businessId }: Props) {
   const router = useRouter()
   const { subscription, userRole } = useBusiness()
@@ -315,21 +328,43 @@ export default function EmbeddedMarketingManagement({ businessId }: Props) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Background</label>
-            <input
-              type="text"
-              value={bgColor}
-              onChange={(e) => setBgColor(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
-            />
+            <div className="flex gap-2 items-center">
+              <input
+                type="color"
+                aria-label="Background color picker"
+                value={hexForColorPicker(bgColor, '#0d9488')}
+                onChange={(e) => setBgColor(e.target.value.toLowerCase())}
+                className="h-10 w-12 shrink-0 cursor-pointer rounded border border-gray-300 bg-white p-0.5"
+              />
+              <input
+                type="text"
+                value={bgColor}
+                onChange={(e) => setBgColor(e.target.value)}
+                className="flex-1 min-w-0 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+                placeholder="#0d9488"
+                spellCheck={false}
+              />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Text color</label>
-            <input
-              type="text"
-              value={textColor}
-              onChange={(e) => setTextColor(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
-            />
+            <div className="flex gap-2 items-center">
+              <input
+                type="color"
+                aria-label="Text color picker"
+                value={hexForColorPicker(textColor, '#ffffff')}
+                onChange={(e) => setTextColor(e.target.value.toLowerCase())}
+                className="h-10 w-12 shrink-0 cursor-pointer rounded border border-gray-300 bg-white p-0.5"
+              />
+              <input
+                type="text"
+                value={textColor}
+                onChange={(e) => setTextColor(e.target.value)}
+                className="flex-1 min-w-0 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono"
+                placeholder="#ffffff"
+                spellCheck={false}
+              />
+            </div>
           </div>
           <div className="md:col-span-2">
             <label className="inline-flex items-center gap-2 cursor-pointer">
