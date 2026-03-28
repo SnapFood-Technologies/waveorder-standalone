@@ -26,7 +26,16 @@ export function productVisibleForVisitorCountry(
   return visible.includes(v)
 }
 
-/** Merge Prisma where for Mongo: (visible empty OR has V) AND NOT (hidden has V). No-op if disabled or no visitor. */
+/**
+ * Merge Prisma where for MongoDB country catalog.
+ *
+ * Show product unless: (allowlist is non-empty AND does not include V) OR (hidden includes V).
+ *
+ * We use this **inverted** form instead of `OR: [isEmpty, has V]` because on Mongo, `isEmpty: true`
+ * often does **not** match documents where `visibleCountryCodes` is missing or null — those products
+ * were incorrectly excluded for every visitor. Here, `isEmpty: false` is false for [] / missing / null,
+ * so the inner AND fails and the product stays visible (worldwide).
+ */
 export function mergeProductWhereVisitorCountry(
   productWhere: Record<string, unknown>,
   options: { enabled: boolean; visitorIso: string | null }
@@ -38,7 +47,12 @@ export function mergeProductWhereVisitorCountry(
   const countryClause = {
     AND: [
       {
-        OR: [{ visibleCountryCodes: { isEmpty: true } }, { visibleCountryCodes: { has: v } }] as const
+        NOT: {
+          AND: [
+            { visibleCountryCodes: { isEmpty: false } },
+            { NOT: { visibleCountryCodes: { has: v } } }
+          ]
+        }
       },
       { NOT: { hiddenCountryCodes: { has: v } } }
     ]

@@ -51,15 +51,17 @@ describe('mergeProductWhereVisitorCountry', () => {
     const and = w.AND as unknown[]
     expect(and).toHaveLength(1)
     expect(and[0]).toMatchObject({
-      AND: expect.arrayContaining([
-        expect.objectContaining({
-          OR: expect.arrayContaining([
-            { visibleCountryCodes: { isEmpty: true } },
-            { visibleCountryCodes: { has: 'GR' } }
-          ])
-        }),
+      AND: [
+        {
+          NOT: {
+            AND: [
+              { visibleCountryCodes: { isEmpty: false } },
+              { NOT: { visibleCountryCodes: { has: 'GR' } } }
+            ]
+          }
+        },
         { NOT: { hiddenCountryCodes: { has: 'GR' } } }
-      ])
+      ]
     })
   })
 

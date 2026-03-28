@@ -13,7 +13,10 @@ import { businessSlugFilter } from '@/lib/storefront-slug'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 import { sendOrderNotification as sendTwilioOrderNotification, isTwilioConfigured } from '@/lib/twilio'
 import { buildWaMeUrlWithText } from '@/lib/whatsapp-wa-me-url'
-import { buildCustomerFollowUpWhatsappUrl } from '@/lib/whatsapp-mix-followup'
+import {
+  buildCustomerFollowUpWhatsappUrl,
+  resolveMixFollowUpLanguage,
+} from '@/lib/whatsapp-mix-followup'
 import * as Sentry from '@sentry/nextjs'
 
 // Helper function to calculate distance between two points
@@ -2494,6 +2497,12 @@ try {
           orderNumber: order.orderNumber,
           businessName: business.name,
           orderId: order.id,
+        },
+        {
+          language: resolveMixFollowUpLanguage(
+            business.language,
+            business.translateContentToBusinessLanguage
+          ),
         }
       )
     }
