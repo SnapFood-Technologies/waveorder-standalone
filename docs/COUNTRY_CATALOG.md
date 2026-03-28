@@ -6,17 +6,6 @@
 - **Product** `visibleCountryCodes` / `hiddenCountryCodes` (ISO 3166-1 alpha-2, uppercase). Empty `visibleCountryCodes` = visible everywhere (still subject to `hiddenCountryCodes`). If a visitor’s country is in `hiddenCountryCodes`, the product is hidden.
 - **Storefront DB filter** uses `OR` on `visibleCountryCodes`: visitor ISO is in the list, or the list is treated as worldwide via `has`, `isEmpty`, `equals: []`, or `equals: null` (covers legacy documents without stored arrays).
 
-### Backfill (optional, production)
-
-To normalize MongoDB documents so every product has explicit `visibleCountryCodes` and `hiddenCountryCodes` arrays (recommended if you want guaranteed Prisma matches):
-
-1. Dry run: `npm run backfill:product-country-codes -- --dry-run`
-2. Apply: `npm run backfill:product-country-codes` (requires `DATABASE_URL`)
-
-Only updates rows where a field is missing, null, or not an array (sets that field to `[]`). Valid ISO arrays are unchanged.
-
-**Deploy (GitHub Actions):** `.github/workflows/deploy.yml` runs the same script on each production deploy (idempotent when data is already normalized).
-
 ## Visitor country resolution (server)
 
 Order:

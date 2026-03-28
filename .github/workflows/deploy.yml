@@ -63,16 +63,6 @@ jobs:
           npx prisma generate
           echo "✅ Prisma client generated successfully"
 
-      # 🌍 Backfill Product.visibleCountryCodes / hiddenCountryCodes to explicit [] (MongoDB legacy docs).
-      # Idempotent: each deploy runs it; no-op when nothing needs updating.
-      - name: 🌍 Backfill product country codes
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: |
-          echo "Running product country codes backfill..."
-          npx tsx scripts/backfill-product-country-codes.ts
-          echo "✅ Backfill finished"
-
       # 🏗️ BUILD APPLICATION
       - name: 🏗️ Build Application
         env:
