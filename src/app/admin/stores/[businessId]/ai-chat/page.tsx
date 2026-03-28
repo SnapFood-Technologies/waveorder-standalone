@@ -66,9 +66,13 @@ interface TopQuestion {
 interface AiChatData {
   messages: Message[]
   totalCount: number
-  page: number
-  limit: number
   period: string
+  sessionPagination: {
+    page: number
+    perPage: number
+    totalSessions: number
+    totalPages: number
+  }
   summary: {
     totalMessages: number
     totalUserMessages: number
@@ -100,6 +104,7 @@ export default function AiChatPage() {
   const [error, setError] = useState<string | null>(null)
   const [enabled, setEnabled] = useState(true)
   const [period, setPeriod] = useState('month')
+  const [sessionPage, setSessionPage] = useState(1)
   const [showCustomizeModal, setShowCustomizeModal] = useState(false)
   const [settings, setSettings] = useState<AiChatSettings>({
     aiChatIcon: 'message',
@@ -142,7 +147,9 @@ export default function AiChatPage() {
       try {
         setLoading(true)
         setError(null)
-        const res = await fetch(`/api/admin/stores/${businessId}/ai-chat?period=${period}&limit=50`)
+        const res = await fetch(
+          `/api/admin/stores/${businessId}/ai-chat?period=${encodeURIComponent(period)}&sessionPage=${sessionPage}&sessionsPerPage=15`
+        )
         const json = await res.json()
 
         if (!res.ok) {
@@ -167,7 +174,7 @@ export default function AiChatPage() {
     }
 
     fetchData()
-  }, [businessId, period])
+  }, [businessId, period, sessionPage])
 
   const handleSaveSettings = async () => {
     setSavingSettings(true)
@@ -253,7 +260,10 @@ export default function AiChatPage() {
           </button>
           <select
             value={period}
-            onChange={(e) => setPeriod(e.target.value)}
+            onChange={(e) => {
+              setPeriod(e.target.value)
+              setSessionPage(1)
+            }}
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
           >
             <option value="today">Today</option>
@@ -450,16 +460,47 @@ export default function AiChatPage() {
         </div>
       )}
 
-      {/* Message history - grouped by session */}
+      {/* Message history - grouped by session (session-based pagination; full threads per page) */}
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Recent Chat History</h2>
-          <p className="text-sm text-gray-600 mt-1">Conversations grouped by session</p>
+        <div className="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Recent Chat History</h2>
+            <p className="text-sm text-gray-600 mt-1">Conversations grouped by session — full threads, paginated</p>
+          </div>
+          {data?.sessionPagination && data.sessionPagination.totalSessions > 0 && (
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              <span className="text-xs text-gray-500">
+                Page {data.sessionPagination.page} of {data.sessionPagination.totalPages} ·{' '}
+                {data.sessionPagination.totalSessions} conversation
+                {data.sessionPagination.totalSessions === 1 ? '' : 's'}
+              </span>
+              <button
+                type="button"
+                disabled={data.sessionPagination.page <= 1}
+                onClick={() => setSessionPage((p) => Math.max(1, p - 1))}
+                className="inline-flex items-center gap-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-4 h-4" />
+                Prev
+              </button>
+              <button
+                type="button"
+                disabled={data.sessionPagination.page >= data.sessionPagination.totalPages}
+                onClick={() => setSessionPage((p) => p + 1)}
+                className="inline-flex items-center gap-1 px-2 py-1.5 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Next
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
         <div className="divide-y divide-gray-200 max-h-[500px] overflow-y-auto">
           {data?.messages && data.messages.length > 0 ? (
             groupMessagesBySession(data.messages).map((session, idx) => {
               const isExpanded = !collapsedSessions.has(session.sessionId)
+              const convIndex =
+                (data.sessionPagination.page - 1) * data.sessionPagination.perPage + idx + 1
               return (
                 <div key={session.sessionId} className="border-b border-gray-100 last:border-b-0">
                   <button
@@ -468,7 +509,7 @@ export default function AiChatPage() {
                     className="w-full px-4 py-2 bg-gray-50 text-left text-xs font-medium text-gray-500 hover:bg-gray-100 flex items-center justify-between gap-2"
                   >
                     <span>
-                      Conversation {idx + 1} • Started {session.messages[0] ? formatDate(session.messages[0].createdAt) : '—'} • {session.messages.length} messages
+                      Conversation {convIndex} • Started {session.messages[0] ? formatDate(session.messages[0].createdAt) : '—'} • {session.messages.length} messages
                     </span>
                     {isExpanded ? <ChevronDown className="w-4 h-4 shrink-0" /> : <ChevronRight className="w-4 h-4 shrink-0" />}
                   </button>
