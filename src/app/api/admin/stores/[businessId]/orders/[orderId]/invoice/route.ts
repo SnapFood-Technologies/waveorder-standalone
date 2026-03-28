@@ -1,4 +1,4 @@
-// POST - Generate internal invoice for a completed, paid order
+// POST - Generate internal invoice (excludes cancelled/returned/refunded orders and payment REFUNDED)
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
