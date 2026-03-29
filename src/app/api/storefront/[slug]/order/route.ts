@@ -2260,14 +2260,16 @@ const orderNumber = business.orderNumberFormat.replace('{number}', `${timestamp}
           if (isSalon) {
             await sendSuperAdminBookingNotification(business.id, {
               orderNumber: order.orderNumber,
-              appointmentDateTime: order.deliveryTime || order.createdAt
+              appointmentDateTime: order.deliveryTime || order.createdAt,
+              createdByAdmin: order.createdByAdmin
             })
           } else {
             await sendSuperAdminOrderNotification(business.id, {
               orderNumber: order.orderNumber,
               total: order.total,
               currency: business.currency,
-              createdAt: order.createdAt
+              createdAt: order.createdAt,
+              createdByAdmin: order.createdByAdmin
             })
           }
         } catch (superAdminErr) {
