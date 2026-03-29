@@ -689,14 +689,16 @@ export async function POST(
         if (isSalon) {
           await sendSuperAdminBookingNotification(businessId, {
             orderNumber: order.orderNumber,
-            appointmentDateTime: order.deliveryTime || order.createdAt
+            appointmentDateTime: order.deliveryTime || order.createdAt,
+            createdByAdmin: order.createdByAdmin
           })
         } else {
           await sendSuperAdminOrderNotification(businessId, {
             orderNumber: order.orderNumber,
             total: order.total,
             currency: biz.currency || 'USD',
-            createdAt: order.createdAt
+            createdAt: order.createdAt,
+            createdByAdmin: order.createdByAdmin
           })
         }
       }

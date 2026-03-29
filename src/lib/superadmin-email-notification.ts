@@ -45,6 +45,30 @@ function formatCurrency(amount: number, currency: string): string {
   return `${symbol}${amount.toFixed(2)}`
 }
 
+/**
+ * Pill badge for SuperAdmin emails: shop admin vs customer storefront booking/order.
+ * Exported for unit tests.
+ */
+export function superAdminNotificationSourceBadgeHtml(
+  createdByAdmin: boolean,
+  kind: 'order' | 'booking'
+): string {
+  const isAdmin = createdByAdmin === true
+  const label = isAdmin
+    ? 'Created by shop admin'
+    : kind === 'booking'
+      ? 'Customer booking'
+      : 'Customer order'
+  const bg = isAdmin ? '#eef2ff' : '#ecfdf5'
+  const color = isAdmin ? '#3730a3' : '#047857'
+  const border = isAdmin ? '#c7d2fe' : '#a7f3d0'
+  return `<p style="margin: 0 0 20px 0;">
+  <span style="display: inline-block; padding: 6px 14px; border-radius: 9999px; font-size: 13px; font-weight: 600; letter-spacing: 0.02em; background-color: ${bg}; color: ${color}; border: 1px solid ${border};">
+    ${escapeHtml(label)}
+  </span>
+</p>`
+}
+
 // Base email template wrapper (matches WaveOrder style)
 function createEmailTemplate(content: string, title: string) {
   return `
@@ -88,6 +112,8 @@ export async function sendSuperAdminOrderNotification(
     total: number
     currency: string
     createdAt: Date
+    /** From Order.createdByAdmin — false for storefront self-checkout */
+    createdByAdmin?: boolean
   }
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -111,6 +137,10 @@ export async function sendSuperAdminOrderNotification(
     })
     const totalFormatted = formatCurrency(orderData.total, orderData.currency)
     const superAdminOrderUrl = `${baseUrl}/superadmin/businesses/${businessId}/orders`
+    const sourceBadge = superAdminNotificationSourceBadgeHtml(
+      orderData.createdByAdmin === true,
+      'order'
+    )
 
     const content = `
     <div style="padding: 40px 30px;">
@@ -120,6 +150,7 @@ export async function sendSuperAdminOrderNotification(
           New order at ${escapeHtml(business.name)}
         </h2>
       </div>
+      ${sourceBadge}
       <p style="color: #6b7280; margin: 0 0 24px; font-size: 16px; line-height: 1.6;">
         Order #${escapeHtml(orderData.orderNumber)} • ${escapeHtml(formattedDate)}
       </p>
@@ -159,6 +190,7 @@ export async function sendSuperAdminBookingNotification(
   bookingData: {
     orderNumber: string
     appointmentDateTime: Date
+    createdByAdmin?: boolean
   }
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -181,6 +213,10 @@ export async function sendSuperAdminBookingNotification(
       { dateStyle: 'medium', timeStyle: 'short' }
     )
     const superAdminBookingsUrl = `${baseUrl}/superadmin/businesses/${businessId}/appointments`
+    const sourceBadge = superAdminNotificationSourceBadgeHtml(
+      bookingData.createdByAdmin === true,
+      'booking'
+    )
 
     const content = `
     <div style="padding: 40px 30px;">
@@ -190,6 +226,7 @@ export async function sendSuperAdminBookingNotification(
           New booking at ${escapeHtml(business.name)}
         </h2>
       </div>
+      ${sourceBadge}
       <p style="color: #6b7280; margin: 0 0 24px; font-size: 16px; line-height: 1.6;">
         Booking #${escapeHtml(bookingData.orderNumber)} • ${escapeHtml(formattedDate)}
       </p>
