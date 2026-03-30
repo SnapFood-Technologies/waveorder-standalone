@@ -829,6 +829,7 @@ export async function GET(
       
       // Inventory display settings
       showStockBadge: business.showStockBadge ?? false,
+      storefrontAvailabilityDotEnabled: business.storefrontAvailabilityDotEnabled ?? false,
       countryBasedCatalogEnabled: business.countryBasedCatalogEnabled ?? false,
 
       // Custom Features

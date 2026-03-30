@@ -16,7 +16,8 @@ import {
   MessageSquare,
   Share2,
   Megaphone,
-  ExternalLink
+  ExternalLink,
+  CircleDot
 } from 'lucide-react'
 
 const AI_CHAT_MODELS = [
@@ -50,6 +51,7 @@ interface CustomFeatures {
   aiChatModel: string | null
   metaCatalogExportEnabled: boolean
   metaPixelEnabled: boolean
+  storefrontAvailabilityDotEnabled: boolean
 }
 
 interface Business {
@@ -72,7 +74,8 @@ export default function ManageCustomFeaturesPage() {
     aiAssistantEnabled: false,
     aiChatModel: null,
     metaCatalogExportEnabled: false,
-    metaPixelEnabled: false
+    metaPixelEnabled: false,
+    storefrontAvailabilityDotEnabled: false
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -472,6 +475,40 @@ export default function ManageCustomFeaturesPage() {
             </div>
           </div>
 
+          {/* Storefront availability dot (product cards) */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-4 flex-1">
+                <div className="p-3 bg-emerald-100 rounded-lg">
+                  <CircleDot className="w-6 h-6 text-emerald-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">Storefront availability dot</h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    Show a small indicator on each product card: <strong className="text-emerald-700">green</strong> when the item can be ordered, and a <strong className="text-gray-600">neutral grey ring</strong> when inventory is tracked and the product is out of stock. Helps on devices where cards can look faint or “disabled.” Independent of the optional text stock badge.
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span className="px-2 py-1 bg-gray-100 rounded">Product cards</span>
+                    <span className="px-2 py-1 bg-gray-100 rounded">SuperAdmin only</span>
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleToggle('storefrontAvailabilityDotEnabled')}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 ${
+                  features.storefrontAvailabilityDotEnabled ? 'bg-teal-600' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    features.storefrontAvailabilityDotEnabled ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
           {/* Custom Filtering Feature */}
           <div className="bg-white rounded-lg border border-gray-200 p-6">
             <div className="flex items-start justify-between">
@@ -638,6 +675,16 @@ export default function ManageCustomFeaturesPage() {
                     : 'bg-gray-100 text-gray-500'
                 }`}>
                   {features.metaPixelEnabled ? 'ON' : 'OFF'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-gray-600">Availability dot</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  features.storefrontAvailabilityDotEnabled
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {features.storefrontAvailabilityDotEnabled ? 'ON' : 'OFF'}
                 </span>
               </div>
               {features.aiAssistantEnabled && (

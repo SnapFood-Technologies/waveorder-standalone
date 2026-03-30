@@ -406,6 +406,8 @@ model Business {
 
   // Inventory display settings
   showStockBadge Boolean @default(false) // Show stock status badge on storefront (In Stock/Low Stock/Out of Stock)
+  /// SuperAdmin: show small availability dot on product cards (green = orderable, grey ring = out of stock when inventory tracked)
+  storefrontAvailabilityDotEnabled Boolean @default(false)
 
   // WhatsApp settings
   messageTemplate  String?

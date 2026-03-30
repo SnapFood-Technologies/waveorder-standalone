@@ -1906,6 +1906,8 @@ interface StoreData {
   initialProducts?: any[]  // Initial products from server-side render
   schedulingEnabled?: boolean  // Enable/disable order scheduling
   showStockBadge?: boolean  // Show stock status badge on product cards
+  /** SuperAdmin: green dot / grey ring on product cards for availability */
+  storefrontAvailabilityDotEnabled?: boolean
   invoiceReceiptSelectionEnabled?: boolean  // Invoice/Receipt selection feature (for Greek storefronts)
   invoiceMinimumOrderValue?: number | null  // Minimum order value required for invoice selection
   happyHour?: {
@@ -4802,6 +4804,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
                         businessSlug={storeData.slug}
                         isFiltering={isFiltering}
                         showStockBadge={storeData.showStockBadge}
+                        showAvailabilityDot={storeData.storefrontAvailabilityDotEnabled ?? false}
                         happyHour={storeData.happyHour}
                       />
                     ))}
@@ -5771,6 +5774,7 @@ function ProductCard({
   businessSlug = '', // Add business slug prop
   isFiltering = false, // Gray out card while filtering
   showStockBadge = false, // Show stock status badge
+  showAvailabilityDot = false, // SuperAdmin: dot indicator on card
   happyHour = null // Happy hour data
 }: { 
   product: Product & { categoryName?: string }
@@ -5785,6 +5789,7 @@ function ProductCard({
   businessSlug?: string // Add business slug prop
   isFiltering?: boolean // Gray out card while filtering
   showStockBadge?: boolean // Show stock status badge
+  showAvailabilityDot?: boolean
   happyHour?: { isActive: boolean; discountPercent: number; productIds: string[] } | null
 }) {
   const hasImage = product.images.length > 0
@@ -5889,6 +5894,24 @@ function ProductCard({
           <div>
             <div className="mb-2">
               <div className="flex flex-wrap items-center gap-2">
+                {/* Feature off: render nothing — zero DOM nodes, no flex gap slot vs pre-feature layout */}
+                {showAvailabilityDot ? (
+                  <span className="inline-flex shrink-0 self-center" title={hasStock ? (translations.availabilityDotAvailableHint ?? 'Available to order') : (translations.availabilityDotUnavailableHint ?? 'Not available right now')}>
+                    {hasStock ? (
+                      <span
+                        className="block w-2.5 h-2.5 rounded-full bg-emerald-500 ring-1 ring-emerald-700/25"
+                        role="img"
+                        aria-label={translations.availabilityDotAvailable ?? 'Available to order'}
+                      />
+                    ) : (
+                      <span
+                        className="block w-2.5 h-2.5 rounded-full border-2 border-gray-400 bg-white"
+                        role="img"
+                        aria-label={translations.availabilityDotUnavailable ?? 'Currently unavailable'}
+                      />
+                    )}
+                  </span>
+                ) : null}
                 <h3 className="font-semibold text-base text-gray-900 leading-tight">
                   {displayName}
                 </h3>
