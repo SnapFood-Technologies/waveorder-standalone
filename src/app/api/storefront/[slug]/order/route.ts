@@ -12,6 +12,7 @@ import { isStorefrontPhoneComplete } from '@/lib/storefront-phone'
 import { businessSlugFilter } from '@/lib/storefront-slug'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 import { sendOrderNotification as sendTwilioOrderNotification, isTwilioConfigured } from '@/lib/twilio'
+import { formatScheduledTimeForWhatsAppMessage } from '@/lib/format-scheduled-time-whatsapp'
 import { buildWaMeUrlWithText } from '@/lib/whatsapp-wa-me-url'
 import {
   buildCustomerFollowUpWhatsappUrl,
@@ -2799,7 +2800,7 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
                    language === 'el' ? 'el-GR' :
                    'en-US'
     message += `${timeLabel}: ${orderData.deliveryTime ? 
-      new Date(orderData.deliveryTime).toLocaleString(locale) 
+      formatScheduledTimeForWhatsAppMessage(orderData.deliveryTime, locale, business.timezone) 
       : terms.asap}\n`
     }
   } else if (orderData.deliveryType === 'pickup') {
@@ -2813,7 +2814,7 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
                    language === 'el' ? 'el-GR' :
                    'en-US'
     message += `${timeLabel}: ${orderData.deliveryTime ? 
-      new Date(orderData.deliveryTime).toLocaleString(locale) 
+      formatScheduledTimeForWhatsAppMessage(orderData.deliveryTime, locale, business.timezone) 
       : terms.asap}\n`
   } else if (orderData.deliveryType === 'dineIn') {
     const dineInAddress = business.address || (language === 'es' ? 'Ubicación del restaurante' : 'Restaurant location')
@@ -2825,7 +2826,7 @@ function formatWhatsAppOrder({ business, order, customer, items, orderData }: an
                    language === 'el' ? 'el-GR' :
                    'en-US'
     message += `${timeLabel}: ${orderData.deliveryTime ? 
-      new Date(orderData.deliveryTime).toLocaleString(locale) 
+      formatScheduledTimeForWhatsAppMessage(orderData.deliveryTime, locale, business.timezone) 
       : terms.asap}\n`
   }
   
