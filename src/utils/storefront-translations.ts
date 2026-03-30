@@ -373,6 +373,12 @@ close: string
     requestFormPerson: string
     requestFormCompany: string
     requestFormPreferredContact: string
+
+    /** SuperAdmin availability dot on product cards (optional; ProductCard has fallbacks) */
+    availabilityDotAvailable?: string
+    availabilityDotUnavailable?: string
+    availabilityDotAvailableHint?: string
+    availabilityDotUnavailableHint?: string
   }
   
   const englishTranslations: StorefrontTranslations = {
@@ -398,6 +404,11 @@ close: string
     outOfStock: "Out of stock",
     onlyLeft: "Only",
     left: "left!",
+
+    availabilityDotAvailable: "Available to order",
+    availabilityDotUnavailable: "Currently unavailable",
+    availabilityDotAvailableHint: "Available to order",
+    availabilityDotUnavailableHint: "Not available right now",
 
     onlyMoreCanBeAdded: "Only {count} more can be added to cart",
 stockLabel: "Stock",

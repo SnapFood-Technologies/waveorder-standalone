@@ -40,7 +40,8 @@ export async function GET(
         aiAssistantEnabled: true,
         aiChatModel: true,
         metaCatalogExportEnabled: true,
-        metaPixelEnabled: true
+        metaPixelEnabled: true,
+        storefrontAvailabilityDotEnabled: true
       }
     })
 
@@ -63,7 +64,8 @@ export async function GET(
         aiAssistantEnabled: business.aiAssistantEnabled,
         aiChatModel: business.aiChatModel,
         metaCatalogExportEnabled: business.metaCatalogExportEnabled,
-        metaPixelEnabled: business.metaPixelEnabled
+        metaPixelEnabled: business.metaPixelEnabled,
+        storefrontAvailabilityDotEnabled: business.storefrontAvailabilityDotEnabled
       }
     })
   } catch (error) {
@@ -108,7 +110,8 @@ export async function PATCH(
       aiAssistantEnabled,
       aiChatModel,
         metaCatalogExportEnabled,
-        metaPixelEnabled
+        metaPixelEnabled,
+        storefrontAvailabilityDotEnabled
     } = body
 
     // Validate business exists
@@ -131,6 +134,8 @@ export async function PATCH(
     if (aiChatModel !== undefined) updateData.aiChatModel = aiChatModel || null
     if (metaCatalogExportEnabled !== undefined) updateData.metaCatalogExportEnabled = metaCatalogExportEnabled
     if (metaPixelEnabled !== undefined) updateData.metaPixelEnabled = metaPixelEnabled
+    if (storefrontAvailabilityDotEnabled !== undefined)
+      updateData.storefrontAvailabilityDotEnabled = storefrontAvailabilityDotEnabled
 
     // Update business
     const updatedBusiness = await prisma.business.update({
@@ -147,7 +152,8 @@ export async function PATCH(
         aiAssistantEnabled: true,
         aiChatModel: true,
         metaCatalogExportEnabled: true,
-        metaPixelEnabled: true
+        metaPixelEnabled: true,
+        storefrontAvailabilityDotEnabled: true
       }
     })
 
@@ -163,7 +169,8 @@ export async function PATCH(
         aiAssistantEnabled: updatedBusiness.aiAssistantEnabled,
         aiChatModel: updatedBusiness.aiChatModel,
         metaCatalogExportEnabled: updatedBusiness.metaCatalogExportEnabled,
-        metaPixelEnabled: updatedBusiness.metaPixelEnabled
+        metaPixelEnabled: updatedBusiness.metaPixelEnabled,
+        storefrontAvailabilityDotEnabled: updatedBusiness.storefrontAvailabilityDotEnabled
       }
     })
   } catch (error) {
