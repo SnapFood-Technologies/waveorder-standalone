@@ -1,8 +1,8 @@
 # HolaOra — WaveOrder implementation spec (from product decisions)
 
-**Status:** Implemented in codebase (schema, API validation, SuperAdmin UI, HolaOra page). Still **deferred:** live provisioning HTTP client, Stripe webhook wiring, storefront embed.
+**Status:** WaveOrder-side wiring is in place: **Stripe entitlement sync** (webhook), **provisioning stubs** (`HOLAORA_PROVISIONING_STUB`), **business admin** (Settings → HolaOra), **SuperAdmin force-off** + **AI/Hola mutex**, **storefront embed shell** (`HolaOraEmbed` + `NEXT_PUBLIC_HOLAORA_EMBED_SCRIPT_URL`). Still **deferred:** real provisioning HTTP client and final embed snippet contract from HolaOra.
 
-**Purpose:** One place for **concrete repo changes** agreed for the integration module + HolaOra. Wire format from HolaOra (provisioning API, auth headers, embed snippet) remains **deferred** until they deliver documentation.
+**Purpose:** One place for **concrete repo changes** agreed for the integration module + HolaOra. Partner HTTP and embed details remain **deferred** until HolaOra documents them.
 
 ---
 
@@ -25,7 +25,12 @@
    - Add **`kind`**: `String` or Prisma `enum` with at least **`GENERIC`** and **`HOLAORA`** (match project conventions for enums).
 
 2. **`Business`**
-   - Add **`holaoraAccountId String?`** (nullable).
+   - **`holaoraAccountId String?`** — Hola tenant id after provisioning.
+   - **`holaoraEntitled Boolean`** — subscription includes a Stripe price listed in platform Hola `Integration.config.entitlementStripePriceIds` (synced from webhooks).
+   - **`holaoraStorefrontEmbedEnabled Boolean`** — merchant toggle (Settings → HolaOra).
+   - **`holaoraSetupUrl String?`** — optional setup URL from future provisioning response.
+   - **`holaoraSuperAdminForceOff Boolean`** — SuperAdmin hides embed on storefront regardless of merchant toggle.
+   - **`holaoraProvisioningStatus` / `holaoraProvisioningError String?`** — last stub or future HTTP outcome.
 
 3. Run your usual **Prisma** workflow (`db push` / migration) for the database.
 
@@ -81,22 +86,52 @@ Update **`HOLAORA_INTEGRATION.md` §5** when you want the architecture doc to me
 
 ---
 
-## 7. Deferred (after HolaOra delivers API + you wire billing)
+## 7. Stripe + entitlement (implemented)
 
-- Provisioning **HTTP client** (request/response per their contract).
-- **Stripe** (or subscription) webhook / job: read **`entitlementStripePriceIds`** from the HOLAORA **`Integration`**, call provisioning, write **`Business.holaoraAccountId`**.
-- **Deprovisioning** when bundle ends (per joint agreement).
-- **Storefront embed** (snippet + `holaoraAccountId`) per HolaOra embed docs.
+- **`src/app/api/webhooks/stripe/route.ts`** — after subscription **created**, **updated**, and **deleted**, calls **`syncHolaOraEntitlementForStripeSubscription`** (`src/lib/holaora-entitlement-sync.ts`).
+- Logic: load active **`Integration`** with **`kind === HOLAORA`**, parse config; if subscription **`status`** is **`active`** or **`trialing`** and **any** line item **`price.id`** is in **`entitlementStripePriceIds`**, set **`holaoraEntitled`** for businesses linked to subscription users; otherwise clear entitlement and **deprovision** locally.
+- **Provisioning stub:** `src/lib/holaora-provisioning.ts`. Set **`HOLAORA_PROVISIONING_STUB=1`** (or `true`) to write **`holaoraAccountId`** as `stub_<businessId>` for dev; otherwise status **`pending_partner_api`** until real HTTP exists.
+
+---
+
+## 8. AI Store Assistant vs HolaOra (product mutex)
+
+- **Not** in HolaOra’s docs — WaveOrder rule: only one of **AI chat** or **Hola embed** should be on.
+- **`applyAiHolaMutex`** (`src/lib/holaora-mutex.ts`): enabling **Hola embed** sets **`aiAssistantEnabled`** false; enabling **AI** sets **`holaoraStorefrontEmbedEnabled`** false.
+- **Merchant:** `PATCH /api/admin/stores/[businessId]/holaora-settings` applies mutex when toggling embed.
+- **SuperAdmin:** `PATCH .../custom-features` — turning **AI** on forces **`holaoraStorefrontEmbedEnabled`** false. Toggle **HolaOra embed (force off)** sets **`holaoraSuperAdminForceOff`** (embed hidden on storefront even if merchant enabled it).
+- **Storefront:** `GET /api/storefront/[slug]` exposes **`showHolaOraEmbed`**; components render **`HolaOraEmbed`** when true and **`AiChatBubble`** only when **`aiAssistantEnabled && !showHolaOraEmbed`**.
+
+---
+
+## 9. Storefront embed (shell)
+
+- **`src/components/storefront/HolaOraEmbed.tsx`** — optional script load from **`NEXT_PUBLIC_HOLAORA_EMBED_SCRIPT_URL`**; passes **`data-holaora-account`** / mount id for partner scripts.
+- **Env:** `NEXT_PUBLIC_HOLAORA_EMBED_SCRIPT_URL` — public loader URL when HolaOra provides it.
+
+---
+
+## 10. Deferred (after HolaOra delivers API/docs)
+
+- Provisioning **HTTP client** to **`holaOraBaseUrl`** (request/response per their contract).
+- **Deprovisioning** HTTP when bundle ends (if required by partner).
 - Optional: **auto-issue** business API keys with **`defaultV1Scopes`** when a business is entitled to HolaOra.
 
 ---
 
-## 8. File checklist (summary)
+## 11. File checklist (summary)
 
 | Action | Path / area |
 |--------|----------------|
-| Edit | `prisma/schema.prisma` — `Integration.kind`, `Business.holaoraAccountId` |
-| Add | `src/lib/…` — validate HOLAORA `config` |
+| Edit | `prisma/schema.prisma` — `Integration.kind`, `Business` Hola fields |
+| Add | `src/lib/holaora-mutex.ts`, `holaora-provisioning.ts`, `holaora-entitlement-sync.ts` |
+| Edit | `src/app/api/webhooks/stripe/route.ts` — Hola sync |
+| Add | `src/app/api/admin/stores/[businessId]/holaora-settings/route.ts` |
+| Add | `src/components/admin/settings/HolaOraSettings.tsx`, `src/app/admin/.../settings/holaora/page.tsx` |
+| Edit | `src/components/admin/layout/AdminSidebar.tsx` — Settings → HolaOra |
+| Edit | `src/app/api/superadmin/.../custom-features/route.ts` + `custom-features/page.tsx` |
+| Edit | `src/app/api/storefront/[slug]/route.ts`, `StoreFront` / `ServicesStoreFront` / `SalonStoreFront`, `HolaOraEmbed.tsx` |
+| Add | `src/__tests__/lib/holaora-mutex.test.ts`, `holaora-entitlement.test.ts` |
 | Edit | `src/app/api/superadmin/integrations/route.ts` |
 | Edit | `src/app/api/superadmin/integrations/[integrationId]/route.ts` |
 | Edit | `src/app/superadmin/integrations/page.tsx` |

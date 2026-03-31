@@ -68,6 +68,7 @@ import { FaXTwitter } from 'react-icons/fa6'
 import { PhoneInput } from '../site/PhoneInput'
 import LegalPagesModal from './LegalPagesModal'
 import { AiChatBubble } from './AiChatBubble'
+import { HolaOraEmbed } from './HolaOraEmbed'
 import { StorefrontOrderSubmitButton } from './StorefrontOrderSubmitButton'
 
 // Google Places API hook
@@ -1927,6 +1928,9 @@ interface StoreData {
   timezone?: string
   countryBasedCatalogEnabled?: boolean
   aiAssistantEnabled?: boolean
+  showHolaOraEmbed?: boolean
+  holaoraAccountId?: string | null
+  holaoraEmbedScriptUrl?: string | null
   aiChatIcon?: 'message' | 'help' | 'robot'
   aiChatIconSize?: 'xs' | 'sm' | 'medium' | 'lg' | 'xl'
   aiChatName?: string
@@ -3870,7 +3874,20 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: storeData.fontFamily }}>
-      {storeData.aiAssistantEnabled && !showCartModal && !showProductModal && !showBusinessInfoModal && !showShareModal && !showSchedulingModal && !showFilterModal && (
+      {storeData.showHolaOraEmbed && storeData.holaoraAccountId && (
+        <HolaOraEmbed
+          accountId={storeData.holaoraAccountId}
+          scriptUrl={storeData.holaoraEmbedScriptUrl || undefined}
+        />
+      )}
+      {storeData.aiAssistantEnabled &&
+        !storeData.showHolaOraEmbed &&
+        !showCartModal &&
+        !showProductModal &&
+        !showBusinessInfoModal &&
+        !showShareModal &&
+        !showSchedulingModal &&
+        !showFilterModal && (
         <AiChatBubble
           storeSlug={storeData.slug}
           storeName={storeData.name}

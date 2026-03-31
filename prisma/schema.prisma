@@ -405,7 +405,7 @@ model Business {
   maxAdvanceBookingDays Int     @default(7) // Maximum days in advance customers can schedule orders (4, 7, 14, 30, 60)
 
   // Inventory display settings
-  showStockBadge Boolean @default(false) // Show stock status badge on storefront (In Stock/Low Stock/Out of Stock)
+  showStockBadge                   Boolean @default(false) // Show stock status badge on storefront (In Stock/Low Stock/Out of Stock)
   /// SuperAdmin: show small availability dot on product cards (green = orderable, grey ring = out of stock when inventory tracked)
   storefrontAvailabilityDotEnabled Boolean @default(false)
 
@@ -460,7 +460,18 @@ model Business {
   externalIds Json?
 
   /// HolaOra tenant / account id (WaveOrder ↔ HolaOra provisioning). Single source of truth for HolaOra linkage.
-  holaoraAccountId String?
+  holaoraAccountId              String?
+  /// Stripe subscription includes a price ID listed on the HolaOra platform Integration config.
+  holaoraEntitled               Boolean @default(false)
+  /// Merchant: show HolaOra embed on storefront (mutually exclusive with AI Store Assistant in API layer).
+  holaoraStorefrontEmbedEnabled Boolean @default(false)
+  /// One-time setup URL from HolaOra provisioning response (optional).
+  holaoraSetupUrl               String?
+  /// SuperAdmin: force HolaOra storefront embed off regardless of merchant toggle.
+  holaoraSuperAdminForceOff     Boolean @default(false)
+  /// Last provisioning / deprovision outcome for ops (e.g. pending_partner_api, stub_success, deprovisioned_local).
+  holaoraProvisioningStatus     String?
+  holaoraProvisioningError      String?
 
   // SEO Configuration (English/Default)
   seoTitle       String?
@@ -1088,7 +1099,7 @@ model DeliveryEarning {
   amountAdjustmentReason String?
 
   /// Payment batch that marked this earning paid (if any)
-  settledByPaymentId String?        @db.ObjectId
+  settledByPaymentId String?          @db.ObjectId
   settledByPayment   DeliveryPayment? @relation("DeliveryEarningSettlement", fields: [settledByPaymentId], references: [id], onDelete: SetNull)
 
   // Status tracking
@@ -2312,7 +2323,7 @@ model SuperAdminNotificationSettings {
   orderNotificationsEnabled          Boolean @default(false)
   bookingNotificationsEnabled        Boolean @default(false) // SALON/SERVICES appointments
   serviceRequestNotificationsEnabled Boolean @default(false) // SERVICES form submissions
-  externalSyncNotificationsEnabled     Boolean @default(false) // External product sync completed / failed
+  externalSyncNotificationsEnabled   Boolean @default(false) // External product sync completed / failed
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

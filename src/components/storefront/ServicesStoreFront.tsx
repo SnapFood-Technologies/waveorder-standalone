@@ -48,6 +48,7 @@ import { FaFacebook, FaLinkedin, FaTelegram, FaWhatsapp } from 'react-icons/fa'
 import { FaXTwitter } from 'react-icons/fa6'
 import LegalPagesModal from './LegalPagesModal'
 import { AiChatBubble } from './AiChatBubble'
+import { HolaOraEmbed } from './HolaOraEmbed'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
 import { logStorefrontWhatsAppOrderRedirect } from '@/lib/client-system-log'
 import { PhoneInput } from '../site/PhoneInput'
@@ -114,6 +115,9 @@ interface StoreData {
   serviceAllowRequestByEmail?: boolean
   serviceAllowRequestByWhatsApp?: boolean
   aiAssistantEnabled?: boolean
+  showHolaOraEmbed?: boolean
+  holaoraAccountId?: string | null
+  holaoraEmbedScriptUrl?: string | null
   aiChatIcon?: 'message' | 'help' | 'robot'
   aiChatIconSize?: 'xs' | 'sm' | 'medium' | 'lg' | 'xl'
   aiChatName?: string
@@ -1229,7 +1233,19 @@ export default function ServicesStoreFront({ storeData }: { storeData: StoreData
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: storeData.fontFamily || 'system-ui' }}>
-      {storeData.aiAssistantEnabled && !showBookingModal && !showServiceModal && !showBusinessInfoModal && !showShareModal && !showFilterModal && (
+      {storeData.showHolaOraEmbed && storeData.holaoraAccountId && (
+        <HolaOraEmbed
+          accountId={storeData.holaoraAccountId}
+          scriptUrl={storeData.holaoraEmbedScriptUrl || undefined}
+        />
+      )}
+      {storeData.aiAssistantEnabled &&
+        !storeData.showHolaOraEmbed &&
+        !showBookingModal &&
+        !showServiceModal &&
+        !showBusinessInfoModal &&
+        !showShareModal &&
+        !showFilterModal && (
         <AiChatBubble
           storeSlug={storeData.slug}
           storeName={storeData.name}

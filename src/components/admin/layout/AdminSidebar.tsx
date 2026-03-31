@@ -689,6 +689,12 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           icon: Cog, 
           requiredPlan: 'STARTER'
         },
+        {
+          name: 'HolaOra',
+          href: `${baseUrl}/settings/holaora`,
+          icon: CalendarClock,
+          requiredPlan: 'STARTER'
+        },
         // @ts-ignore
         ...(customMenuEnabled ? [{
           name: 'Custom Menu', 

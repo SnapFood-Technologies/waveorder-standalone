@@ -17,8 +17,15 @@ import {
   userQualifiesForFinancialSuperadminAlerts,
 } from '@/lib/financial-superadmin-notifications'
 import Stripe from 'stripe'
+import { syncHolaOraEntitlementForStripeSubscription } from '@/lib/holaora-entitlement-sync'
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!
+
+function scheduleHolaOraStripeSync(sub: Stripe.Subscription) {
+  void syncHolaOraEntitlementForStripeSubscription(sub).catch((err) =>
+    console.error('[HolaOra] Stripe webhook sync failed:', err)
+  )
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -239,6 +246,8 @@ async function handleSubscriptionCreated(sub: Stripe.Subscription) {
       }
     })
 
+    scheduleHolaOraStripeSync(sub)
+
     // When switching to a new plan (e.g. downgrade to Starter), cancel the old Stripe subscription so we don't have two active
     if (oldStripeSubId) {
       try {
@@ -446,6 +455,8 @@ async function handleSubscriptionUpdated(sub: Stripe.Subscription) {
       })
     })
 
+    scheduleHolaOraStripeSync(sub)
+
     // 📧 SEND EMAIL IF PLAN CHANGED
     if (user && oldPlan !== plan) {
       const planData = PLANS[plan]
@@ -577,6 +588,8 @@ async function handleSubscriptionDeleted(sub: Stripe.Subscription) {
         }
       })
     })
+
+    scheduleHolaOraStripeSync(sub)
 
     // 📧 SEND CANCELLATION EMAIL
     if (user && oldPlan === 'PRO') {

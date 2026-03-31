@@ -17,7 +17,8 @@ import {
   Share2,
   Megaphone,
   ExternalLink,
-  CircleDot
+  CircleDot,
+  CalendarClock
 } from 'lucide-react'
 
 const AI_CHAT_MODELS = [
@@ -52,6 +53,8 @@ interface CustomFeatures {
   metaCatalogExportEnabled: boolean
   metaPixelEnabled: boolean
   storefrontAvailabilityDotEnabled: boolean
+  /** SuperAdmin: hide HolaOra embed on storefront regardless of merchant toggle */
+  holaoraSuperAdminForceOff: boolean
 }
 
 interface Business {
@@ -75,7 +78,8 @@ export default function ManageCustomFeaturesPage() {
     aiChatModel: null,
     metaCatalogExportEnabled: false,
     metaPixelEnabled: false,
-    storefrontAvailabilityDotEnabled: false
+    storefrontAvailabilityDotEnabled: false,
+    holaoraSuperAdminForceOff: false
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -403,6 +407,38 @@ export default function ManageCustomFeaturesPage() {
                 <span
                   className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
                     features.aiAssistantEnabled ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
+          {/* HolaOra — SuperAdmin kill switch */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-4 flex-1">
+                <div className="p-3 bg-teal-100 rounded-lg">
+                  <CalendarClock className="w-6 h-6 text-teal-700" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">HolaOra embed (force off)</h3>
+                  <p className="text-sm text-gray-600 mb-3">
+                    When enabled, the HolaOra storefront widget is hidden for this business even if they
+                    enable it in Settings. Use for support or compliance. Does not change Stripe
+                    entitlement.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleToggle('holaoraSuperAdminForceOff')}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 ${
+                  features.holaoraSuperAdminForceOff ? 'bg-teal-600' : 'bg-gray-200'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    features.holaoraSuperAdminForceOff ? 'translate-x-5' : 'translate-x-0'
                   }`}
                 />
               </button>
