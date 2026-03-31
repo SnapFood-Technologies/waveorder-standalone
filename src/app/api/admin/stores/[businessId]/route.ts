@@ -149,7 +149,8 @@ export async function GET(
         metaPixelEnabled: true, // For Meta Pixel (Ads tracking)
         metaPixelId: true,
         websiteEmbedEnabled: true,
-        
+        holaoraEntitled: true,
+
         // Inventory display
         showStockBadge: true,
         countryBasedCatalogEnabled: true,
