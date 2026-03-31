@@ -1,7 +1,17 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Plus, Trash2, Loader2, Mail, ShoppingBag, Calendar, Inbox } from 'lucide-react'
+import {
+  X,
+  Plus,
+  Trash2,
+  Loader2,
+  Mail,
+  ShoppingBag,
+  Calendar,
+  Inbox,
+  RefreshCw
+} from 'lucide-react'
 
 interface NotificationBusiness {
   id: string
@@ -14,6 +24,7 @@ interface NotificationBusiness {
     orderNotificationsEnabled: boolean
     bookingNotificationsEnabled: boolean
     serviceRequestNotificationsEnabled: boolean
+    externalSyncNotificationsEnabled: boolean
   } | null
 }
 
@@ -33,6 +44,7 @@ export function SuperAdminNotificationModal({
   const [orderEnabled, setOrderEnabled] = useState(false)
   const [bookingEnabled, setBookingEnabled] = useState(false)
   const [serviceRequestEnabled, setServiceRequestEnabled] = useState(false)
+  const [externalSyncEnabled, setExternalSyncEnabled] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -42,6 +54,7 @@ export function SuperAdminNotificationModal({
     setOrderEnabled(s?.orderNotificationsEnabled ?? false)
     setBookingEnabled(s?.bookingNotificationsEnabled ?? false)
     setServiceRequestEnabled(s?.serviceRequestNotificationsEnabled ?? false)
+    setExternalSyncEnabled(s?.externalSyncNotificationsEnabled ?? false)
   }, [business])
 
   const handleAddEmail = () => {
@@ -65,7 +78,12 @@ export function SuperAdminNotificationModal({
   }
 
   const handleSave = async () => {
-    if (orderEnabled || bookingEnabled || serviceRequestEnabled) {
+    if (
+      orderEnabled ||
+      bookingEnabled ||
+      serviceRequestEnabled ||
+      externalSyncEnabled
+    ) {
       if (emails.length === 0) {
         setError('Add at least one email when notifications are enabled')
         return
@@ -84,7 +102,8 @@ export function SuperAdminNotificationModal({
             notificationEmails: emails,
             orderNotificationsEnabled: orderEnabled,
             bookingNotificationsEnabled: bookingEnabled,
-            serviceRequestNotificationsEnabled: serviceRequestEnabled
+            serviceRequestNotificationsEnabled: serviceRequestEnabled,
+            externalSyncNotificationsEnabled: externalSyncEnabled
           })
         }
       )
@@ -229,6 +248,19 @@ export function SuperAdminNotificationModal({
                   />
                 </label>
               )}
+
+              <label className="flex items-center justify-between p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50">
+                <span className="flex items-center gap-2 text-gray-700">
+                  <RefreshCw className="w-4 h-4 text-teal-600" />
+                  External sync notifications
+                </span>
+                <input
+                  type="checkbox"
+                  checked={externalSyncEnabled}
+                  onChange={(e) => setExternalSyncEnabled(e.target.checked)}
+                  className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                />
+              </label>
             </div>
           </div>
 
