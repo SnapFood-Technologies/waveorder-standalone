@@ -184,8 +184,11 @@ export async function POST(
       return NextResponse.json({ message: 'Delivery person ID is required' }, { status: 400 })
     }
 
-    if (!amount || typeof amount !== 'number' || amount <= 0) {
-      return NextResponse.json({ message: 'Valid amount is required' }, { status: 400 })
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount < 0) {
+      return NextResponse.json(
+        { message: 'Amount must be a number zero or greater (e.g. 0 when no cash was paid)' },
+        { status: 400 }
+      )
     }
 
     // Verify delivery person exists and belongs to this business

@@ -2,6 +2,9 @@
 // SuperAdmin copy notifications - short emails with business-type-specific icons
 import { Resend } from 'resend'
 import { prisma } from '@/lib/prisma'
+import { formatExternalSyncEmailSubject } from '@/lib/superadmin-external-sync-email-format'
+
+export { formatExternalSyncEmailSubject } from '@/lib/superadmin-external-sync-email-format'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -30,6 +33,40 @@ function escapeHtml(s: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+/** Lucide RefreshCw-style icon for external sync emails */
+const EXTERNAL_SYNC_ICON_SVG = `<svg ${SVG_STYLE}><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>`
+
+function formatDurationMs(ms: number | null | undefined): string {
+  if (ms == null || !Number.isFinite(ms) || ms < 0) return '—'
+  if (ms < 1000) return `${Math.round(ms)} ms`
+  const sec = Math.round(ms / 1000)
+  if (sec < 60) return `${sec}s`
+  const m = Math.floor(sec / 60)
+  const r = sec % 60
+  return r ? `${m}m ${r}s` : `${m}m`
+}
+
+function externalSyncStatusBadgeHtml(
+  status: 'success' | 'failed' | 'partial'
+): string {
+  const cfg =
+    status === 'success'
+      ? { label: 'Success', bg: '#ecfdf5', color: '#047857', border: '#a7f3d0' }
+      : status === 'partial'
+        ? {
+            label: 'Completed with errors',
+            bg: '#fffbeb',
+            color: '#b45309',
+            border: '#fde68a'
+          }
+        : { label: 'Failed', bg: '#fef2f2', color: '#b91c1c', border: '#fecaca' }
+  return `<p style="margin: 0 0 20px 0;">
+  <span style="display: inline-block; padding: 6px 14px; border-radius: 9999px; font-size: 13px; font-weight: 600; letter-spacing: 0.02em; background-color: ${cfg.bg}; color: ${cfg.color}; border: 1px solid ${cfg.border};">
+    ${escapeHtml(cfg.label)}
+  </span>
+</p>`
 }
 
 function formatCurrency(amount: number, currency: string): string {
@@ -318,6 +355,113 @@ export async function sendSuperAdminServiceRequestNotification(
     return { success: true }
   } catch (error) {
     console.error('SuperAdmin service request notification error:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to send'
+    }
+  }
+}
+
+/**
+ * SuperAdmin email when an external product sync finishes (success, partial, or failed).
+ * Uses the same recipient list as other SuperAdmin notifications when the toggle is on.
+ */
+export async function sendSuperAdminExternalSyncNotification(
+  businessId: string,
+  data: {
+    syncName: string
+    externalSystemName?: string | null
+    status: 'success' | 'failed' | 'partial'
+    processedCount?: number
+    skippedCount?: number
+    errorCount?: number
+    durationMs: number | null | undefined
+    lastError?: string | null
+    logId?: string | null
+  }
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const settings = await prisma.superAdminNotificationSettings.findUnique({
+      where: { businessId },
+      include: { business: { select: { name: true, businessType: true } } }
+    })
+
+    if (
+      !settings?.externalSyncNotificationsEnabled ||
+      !settings.notificationEmails?.length
+    ) {
+      return { success: true }
+    }
+
+    const business = settings.business
+    const superAdminSyncsUrl = `${baseUrl}/superadmin/businesses/${businessId}/external-syncs`
+    const processed =
+      data.processedCount !== undefined ? String(data.processedCount) : '—'
+    const skipped =
+      data.skippedCount !== undefined ? String(data.skippedCount) : '—'
+    const errors =
+      data.errorCount !== undefined ? String(data.errorCount) : '—'
+    const durationLabel = formatDurationMs(data.durationMs)
+    const systemLine =
+      data.externalSystemName && String(data.externalSystemName).trim()
+        ? `<p style="color: #6b7280; margin: 0 0 8px; font-size: 15px;">System: ${escapeHtml(String(data.externalSystemName).trim())}</p>`
+        : ''
+    const errRaw = data.lastError?.trim()
+    const errSnippet =
+      errRaw && data.status !== 'success'
+        ? escapeHtml(errRaw.length > 500 ? `${errRaw.slice(0, 500)}…` : errRaw)
+        : ''
+    const errorBlock = errSnippet
+      ? `<p style="color: #b91c1c; margin: 16px 0 0; font-size: 14px; line-height: 1.5; white-space: pre-wrap;">${errSnippet}</p>`
+      : ''
+    const logLine =
+      data.logId && data.logId.trim()
+        ? `<p style="color: #6b7280; margin: 12px 0 0; font-size: 13px;">Log ID: ${escapeHtml(data.logId.trim())}</p>`
+        : ''
+
+    const content = `
+    <div style="padding: 40px 30px;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+        ${EXTERNAL_SYNC_ICON_SVG}
+        <h2 style="color: #1f2937; margin: 0; font-size: 22px; font-weight: 600;">
+          External sync at ${escapeHtml(business.name)}
+        </h2>
+      </div>
+      ${externalSyncStatusBadgeHtml(data.status)}
+      <p style="color: #1f2937; margin: 0 0 8px; font-size: 18px; font-weight: 600;">
+        ${escapeHtml(data.syncName)}
+      </p>
+      ${systemLine}
+      <p style="color: #6b7280; margin: 0 0 24px; font-size: 15px; line-height: 1.6;">
+        Processed: ${escapeHtml(processed)} • Skipped: ${escapeHtml(skipped)} • Errors: ${escapeHtml(errors)} • Duration: ${escapeHtml(durationLabel)}
+      </p>
+      ${errorBlock}
+      ${logLine}
+      <p style="margin: 24px 0 0;">
+        <a href="${superAdminSyncsUrl}" style="display: inline-block; background: linear-gradient(135deg, #0d9488 0%, #14b8a6 100%); color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; font-size: 14px;">
+          View external syncs in SuperAdmin →
+        </a>
+      </p>
+    </div>`
+
+    const title = formatExternalSyncEmailSubject(
+      business.name,
+      data.syncName,
+      data.status
+    )
+    const html = createEmailTemplate(content, title)
+    const subject = title
+
+    await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'noreply@waveorder.app',
+      to: settings.notificationEmails,
+      subject,
+      html
+    })
+
+    return { success: true }
+  } catch (error) {
+    console.error('SuperAdmin external sync notification error:', error)
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to send'

@@ -209,8 +209,18 @@ export default function DeliveryPayments({ businessId }: DeliveryPaymentsProps) 
   }
 
   const handleAddPayment = async () => {
-    if (!newPayment.deliveryPersonId || !newPayment.amount) {
-      toast.error('Please fill in all required fields')
+    if (!newPayment.deliveryPersonId) {
+      toast.error('Please select a delivery person')
+      return
+    }
+    const trimmedAmount = newPayment.amount.trim()
+    if (trimmedAmount === '') {
+      toast.error('Amount is required (use 0 if no money was paid)')
+      return
+    }
+    const parsedNew = parseFloat(trimmedAmount)
+    if (!Number.isFinite(parsedNew) || parsedNew < 0) {
+      toast.error('Amount must be zero or greater')
       return
     }
 
@@ -221,7 +231,7 @@ export default function DeliveryPayments({ businessId }: DeliveryPaymentsProps) 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           deliveryPersonId: newPayment.deliveryPersonId,
-          amount: parseFloat(newPayment.amount),
+          amount: parsedNew,
           currency: currency,
           paymentMethod: newPayment.paymentMethod || null,
           reference: newPayment.reference || null,
@@ -333,9 +343,14 @@ export default function DeliveryPayments({ businessId }: DeliveryPaymentsProps) 
 
   const saveEditPayment = async () => {
     if (!editingPayment) return
-    const amt = parseFloat(editForm.amount)
-    if (!Number.isFinite(amt) || amt <= 0) {
-      toast.error('Enter a valid amount')
+    const trimmed = editForm.amount.trim()
+    if (trimmed === '') {
+      toast.error('Amount is required (use 0 if no money was paid)')
+      return
+    }
+    const amt = parseFloat(trimmed)
+    if (!Number.isFinite(amt) || amt < 0) {
+      toast.error('Amount must be zero or greater')
       return
     }
     setEditSaving(true)
@@ -713,6 +728,10 @@ export default function DeliveryPayments({ businessId }: DeliveryPaymentsProps) 
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Amount *
                 </label>
+                <p className="text-xs text-gray-500 mb-1">
+                  Use <span className="font-mono">0</span> when the driver helped without taking payment (still link
+                  earnings to mark them paid in the system).
+                </p>
                 <input
                   type="number"
                   step="0.01"
@@ -874,6 +893,9 @@ export default function DeliveryPayments({ businessId }: DeliveryPaymentsProps) 
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
+                <p className="text-xs text-gray-500 mb-1">
+                  <span className="font-mono">0</span> is allowed when no cash was paid (e.g. volunteer delivery).
+                </p>
                 <input
                   type="number"
                   step="0.01"

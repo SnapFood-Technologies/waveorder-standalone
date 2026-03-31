@@ -28,6 +28,7 @@ interface NotificationBusiness {
     orderNotificationsEnabled: boolean
     bookingNotificationsEnabled: boolean
     serviceRequestNotificationsEnabled: boolean
+    externalSyncNotificationsEnabled: boolean
   } | null
   isConfigured: boolean
 }
@@ -119,9 +120,9 @@ export default function SuperAdminNotificationsPage() {
           SuperAdmin Notifications
         </h1>
         <p className="text-gray-600 mt-1">
-          Choose which emails receive order, booking, and service request
-          notifications per business. Independent of admin notification
-          settings.
+          Choose which emails receive order, booking, service request, and
+          external product sync notifications per business. Independent of
+          admin notification settings.
         </p>
       </div>
 
@@ -197,7 +198,8 @@ export default function SuperAdminNotificationsPage() {
                   const hasAnyEnabled =
                     b.settings?.orderNotificationsEnabled ||
                     b.settings?.bookingNotificationsEnabled ||
-                    b.settings?.serviceRequestNotificationsEnabled
+                    b.settings?.serviceRequestNotificationsEnabled ||
+                    b.settings?.externalSyncNotificationsEnabled
                   const hasEmails =
                     (b.settings?.notificationEmails?.length ?? 0) > 0
 

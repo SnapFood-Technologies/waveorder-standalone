@@ -50,8 +50,11 @@ export async function PATCH(
     const data: Record<string, unknown> = {}
 
     if (amount !== undefined) {
-      if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
-        return NextResponse.json({ message: 'Valid amount is required' }, { status: 400 })
+      if (typeof amount !== 'number' || !Number.isFinite(amount) || amount < 0) {
+        return NextResponse.json(
+          { message: 'Amount must be zero or greater' },
+          { status: 400 }
+        )
       }
       data.amount = amount
     }

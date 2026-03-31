@@ -35,7 +35,8 @@ export async function GET(request: NextRequest) {
           OR: [
             { orderNotificationsEnabled: true },
             { bookingNotificationsEnabled: true },
-            { serviceRequestNotificationsEnabled: true }
+            { serviceRequestNotificationsEnabled: true },
+            { externalSyncNotificationsEnabled: true }
           ]
         }
       }
@@ -56,7 +57,8 @@ export async function GET(request: NextRequest) {
             notificationEmails: true,
             orderNotificationsEnabled: true,
             bookingNotificationsEnabled: true,
-            serviceRequestNotificationsEnabled: true
+            serviceRequestNotificationsEnabled: true,
+            externalSyncNotificationsEnabled: true
           }
         }
       }
@@ -69,7 +71,8 @@ export async function GET(request: NextRequest) {
       const hasAnyEnabled =
         settings?.orderNotificationsEnabled ||
         settings?.bookingNotificationsEnabled ||
-        settings?.serviceRequestNotificationsEnabled
+        settings?.serviceRequestNotificationsEnabled ||
+        settings?.externalSyncNotificationsEnabled
       const hasEmails = (settings?.notificationEmails?.length ?? 0) > 0
 
       return {
@@ -86,7 +89,8 @@ export async function GET(request: NextRequest) {
               notificationEmails: settings.notificationEmails,
               orderNotificationsEnabled: settings.orderNotificationsEnabled,
               bookingNotificationsEnabled: settings.bookingNotificationsEnabled,
-              serviceRequestNotificationsEnabled: settings.serviceRequestNotificationsEnabled
+              serviceRequestNotificationsEnabled: settings.serviceRequestNotificationsEnabled,
+              externalSyncNotificationsEnabled: settings.externalSyncNotificationsEnabled
             }
           : null,
         isConfigured: hasAnyEnabled && hasEmails

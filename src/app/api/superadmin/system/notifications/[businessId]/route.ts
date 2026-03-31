@@ -83,6 +83,10 @@ export async function PATCH(
       typeof body.serviceRequestNotificationsEnabled === 'boolean'
         ? body.serviceRequestNotificationsEnabled
         : undefined
+    const externalSyncNotificationsEnabled =
+      typeof body.externalSyncNotificationsEnabled === 'boolean'
+        ? body.externalSyncNotificationsEnabled
+        : undefined
 
     const business = await prisma.business.findUnique({
       where: { id: businessId },
@@ -98,6 +102,7 @@ export async function PATCH(
       orderNotificationsEnabled?: boolean
       bookingNotificationsEnabled?: boolean
       serviceRequestNotificationsEnabled?: boolean
+      externalSyncNotificationsEnabled?: boolean
     } = {}
 
     if (notificationEmails !== undefined) updateData.notificationEmails = notificationEmails
@@ -107,6 +112,8 @@ export async function PATCH(
       updateData.bookingNotificationsEnabled = bookingNotificationsEnabled
     if (serviceRequestNotificationsEnabled !== undefined)
       updateData.serviceRequestNotificationsEnabled = serviceRequestNotificationsEnabled
+    if (externalSyncNotificationsEnabled !== undefined)
+      updateData.externalSyncNotificationsEnabled = externalSyncNotificationsEnabled
 
     let settings
 
@@ -123,7 +130,9 @@ export async function PATCH(
           orderNotificationsEnabled: updateData.orderNotificationsEnabled ?? false,
           bookingNotificationsEnabled: updateData.bookingNotificationsEnabled ?? false,
           serviceRequestNotificationsEnabled:
-            updateData.serviceRequestNotificationsEnabled ?? false
+            updateData.serviceRequestNotificationsEnabled ?? false,
+          externalSyncNotificationsEnabled:
+            updateData.externalSyncNotificationsEnabled ?? false
         }
       })
     }

@@ -2309,6 +2309,7 @@ model SuperAdminNotificationSettings {
   orderNotificationsEnabled          Boolean @default(false)
   bookingNotificationsEnabled        Boolean @default(false) // SALON/SERVICES appointments
   serviceRequestNotificationsEnabled Boolean @default(false) // SERVICES form submissions
+  externalSyncNotificationsEnabled     Boolean @default(false) // External product sync completed / failed
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
