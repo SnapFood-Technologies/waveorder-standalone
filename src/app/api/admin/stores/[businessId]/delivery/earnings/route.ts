@@ -77,6 +77,14 @@ export async function GET(
               name: true,
               email: true
             }
+          },
+          settledByPayment: {
+            select: {
+              id: true,
+              paidAt: true,
+              amount: true,
+              reference: true
+            }
           }
         },
         orderBy: { deliveredAt: 'desc' },

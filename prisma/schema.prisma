@@ -1078,8 +1078,15 @@ model DeliveryEarning {
   deliveryPersonId String @db.ObjectId
   deliveryPerson   User   @relation(fields: [deliveryPersonId], references: [id], onDelete: Cascade)
 
-  amount   Float // Delivery fee earned
+  amount   Float // Delivery fee earned (may be overridden by store admin)
   currency String @default("EUR")
+
+  /// Required context when an admin changes `amount` (PATCH)
+  amountAdjustmentReason String?
+
+  /// Payment batch that marked this earning paid (if any)
+  settledByPaymentId String?        @db.ObjectId
+  settledByPayment   DeliveryPayment? @relation("DeliveryEarningSettlement", fields: [settledByPaymentId], references: [id], onDelete: SetNull)
 
   // Status tracking
   status DeliveryEarningStatus @default(PENDING) // PENDING, PAID, CANCELLED
@@ -1123,6 +1130,8 @@ model DeliveryPayment {
 
   // Link to earnings that were paid
   earningsIds String[] // Array of DeliveryEarning IDs that were paid
+
+  settledEarnings DeliveryEarning[] @relation("DeliveryEarningSettlement")
 
   paidAt    DateTime @default(now()) // When payment was made
   createdAt DateTime @default(now())
