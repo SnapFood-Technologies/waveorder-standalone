@@ -105,6 +105,8 @@ SuperAdmin should be able to:
 
 **Note:** Exact UI and storage follow existing WaveOrder SuperAdmin and billing patterns.
 
+**Implemented in app:** HolaOra uses a platform **`Integration`** row with `kind: HOLAORA` and validated `config` (base URL, Stripe price IDs, default v1 API scopes). SuperAdmin: **Integrations → All integrations** (create/edit) and **Integrations → HolaOra** (`/superadmin/integrations/holaora`) for a focused dashboard. See `docs/HOLAORA_IMPLEMENTATION_SPEC.md`.
+
 ---
 
 ## 6. Business users: HolaOra login vs embed

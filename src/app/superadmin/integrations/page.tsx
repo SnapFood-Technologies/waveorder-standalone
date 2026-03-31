@@ -5,9 +5,69 @@ import {
   Puzzle, Search, Plus, RefreshCw, Eye, Edit, Trash2,
   Key, Power, PowerOff, Copy, CheckCircle, XCircle,
   Building2, Activity, Globe, Link2, X, AlertCircle, Clock,
-  Zap, PackageSearch, Loader2
+  Zap, PackageSearch, Loader2, Info, Calendar, ExternalLink
 } from 'lucide-react'
+import Link from 'next/link'
 import toast from 'react-hot-toast'
+import type { IntegrationKind } from '@/lib/integration-kind'
+import { normalizeIntegrationKind } from '@/lib/integration-kind'
+import { ALL_V1_API_SCOPES, parseHolaOraConfig } from '@/lib/integration-config'
+
+const DEFAULT_HOLA_SCOPES: string[] = ['services:read', 'products:read', 'categories:read']
+
+function splitLinesOrComma(s: string): string[] {
+  return s
+    .split(/[\n,]+/)
+    .map((x) => x.trim())
+    .filter(Boolean)
+}
+
+function emptyFormData(): {
+  name: string
+  slug: string
+  description: string
+  logoUrl: string
+  webhookUrl: string
+  kind: IntegrationKind
+  holaOraBaseUrl: string
+  entitlementStripePriceIdsText: string
+  documentedV1PathsText: string
+  defaultV1Scopes: string[]
+  rateLimitPerMinute: string
+  setupNotes: string
+} {
+  return {
+    name: '',
+    slug: '',
+    description: '',
+    logoUrl: '',
+    webhookUrl: '',
+    kind: 'GENERIC',
+    holaOraBaseUrl: 'https://',
+    entitlementStripePriceIdsText: '',
+    documentedV1PathsText: '',
+    defaultV1Scopes: [...DEFAULT_HOLA_SCOPES],
+    rateLimitPerMinute: '',
+    setupNotes: '',
+  }
+}
+
+function buildHolaConfigPayload(form: ReturnType<typeof emptyFormData>) {
+  const rateRaw = form.rateLimitPerMinute.trim()
+  let rateLimitPerMinute: number | undefined
+  if (rateRaw) {
+    const n = parseInt(rateRaw, 10)
+    if (Number.isFinite(n) && n > 0) rateLimitPerMinute = n
+  }
+  return {
+    holaOraBaseUrl: form.holaOraBaseUrl.trim(),
+    entitlementStripePriceIds: splitLinesOrComma(form.entitlementStripePriceIdsText),
+    defaultV1Scopes: form.defaultV1Scopes,
+    documentedV1Paths: splitLinesOrComma(form.documentedV1PathsText),
+    rateLimitPerMinute,
+    setupNotes: form.setupNotes.trim() || undefined,
+  }
+}
 
 // ===========================================
 // Types
@@ -16,6 +76,7 @@ interface Integration {
   id: string
   name: string
   slug: string
+  kind: IntegrationKind
   description: string | null
   apiKey: string | null
   apiKeyPreview: string | null
@@ -86,19 +147,14 @@ export default function IntegrationsPage() {
     integration: Integration & {
       connectedBusinesses: ConnectedBusiness[]
       logs: LogEntry[]
+      parsedHolaConfig?: import('@/lib/integration-config').HolaOraIntegrationConfig | null
     }
   } | null>(null)
   const [detailTab, setDetailTab] = useState<'businesses' | 'logs'>('businesses')
   const [detailLoading, setDetailLoading] = useState(false)
 
   // Create/Edit form state
-  const [formData, setFormData] = useState({
-    name: '',
-    slug: '',
-    description: '',
-    logoUrl: '',
-    webhookUrl: '',
-  })
+  const [formData, setFormData] = useState(emptyFormData)
   const [formSubmitting, setFormSubmitting] = useState(false)
 
   // Manual actions modal
@@ -128,7 +184,12 @@ export default function IntegrationsPage() {
       if (!res.ok) throw new Error('Failed to fetch integrations')
 
       const data = await res.json()
-      setIntegrations(data.integrations)
+      setIntegrations(
+        (data.integrations || []).map((i: Integration) => ({
+          ...i,
+          kind: normalizeIntegrationKind(i.kind),
+        }))
+      )
       setStats(data.stats)
     } catch {
       toast.error('Failed to load integrations')
@@ -167,13 +228,33 @@ export default function IntegrationsPage() {
       toast.error('Name and slug are required')
       return
     }
+    if (formData.kind === 'HOLAORA') {
+      const u = formData.holaOraBaseUrl.trim()
+      if (!u || !/^https?:\/\//i.test(u)) {
+        toast.error('HolaOra: enter a valid provisioning base URL (https://…)')
+        return
+      }
+      if (formData.defaultV1Scopes.length === 0) {
+        toast.error('HolaOra: select at least one Public API (v1) scope')
+        return
+      }
+    }
 
     try {
       setFormSubmitting(true)
+      const payload: Record<string, unknown> = {
+        name: formData.name.trim(),
+        slug: formData.slug.trim(),
+        description: formData.description.trim() || undefined,
+        logoUrl: formData.logoUrl.trim() || undefined,
+        webhookUrl: formData.webhookUrl.trim() || undefined,
+        kind: formData.kind,
+        config: formData.kind === 'HOLAORA' ? buildHolaConfigPayload(formData) : null,
+      }
       const res = await fetch('/api/superadmin/integrations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       })
 
       const data = await res.json()
@@ -199,13 +280,37 @@ export default function IntegrationsPage() {
   // Update integration
   const handleUpdate = async () => {
     if (!selectedIntegration) return
+    if (!formData.name?.trim()) {
+      toast.error('Name is required')
+      return
+    }
+    if (formData.kind === 'HOLAORA') {
+      const u = formData.holaOraBaseUrl.trim()
+      if (!u || !/^https?:\/\//i.test(u)) {
+        toast.error('HolaOra: enter a valid provisioning base URL (https://…)')
+        return
+      }
+      if (formData.defaultV1Scopes.length === 0) {
+        toast.error('HolaOra: select at least one Public API (v1) scope')
+        return
+      }
+    }
 
     try {
       setFormSubmitting(true)
+      const payload: Record<string, unknown> = {
+        name: formData.name.trim(),
+        slug: formData.slug.trim(),
+        description: formData.description.trim() || null,
+        logoUrl: formData.logoUrl.trim() || null,
+        webhookUrl: formData.webhookUrl.trim() || null,
+        kind: formData.kind,
+        config: formData.kind === 'HOLAORA' ? buildHolaConfigPayload(formData) : null,
+      }
       const res = await fetch(`/api/superadmin/integrations/${selectedIntegration.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       })
 
       const data = await res.json()
@@ -334,20 +439,40 @@ export default function IntegrationsPage() {
 
   // Open modals
   const openCreate = () => {
-    setFormData({ name: '', slug: '', description: '', logoUrl: '', webhookUrl: '' })
+    setFormData(emptyFormData())
     setShowCreateModal(true)
   }
 
   const openEdit = (integration: Integration) => {
     setSelectedIntegration(integration)
+    const k = normalizeIntegrationKind(integration.kind)
+    const hc = parseHolaOraConfig(integration.config)
     setFormData({
       name: integration.name,
       slug: integration.slug,
       description: integration.description || '',
       logoUrl: integration.logoUrl || '',
       webhookUrl: integration.webhookUrl || '',
+      kind: k,
+      holaOraBaseUrl: hc?.holaOraBaseUrl ?? 'https://',
+      entitlementStripePriceIdsText: hc?.entitlementStripePriceIds?.join('\n') ?? '',
+      documentedV1PathsText: hc?.documentedV1Paths?.join('\n') ?? '',
+      defaultV1Scopes:
+        hc?.defaultV1Scopes?.length ? [...hc.defaultV1Scopes] : [...DEFAULT_HOLA_SCOPES],
+      rateLimitPerMinute:
+        hc?.rateLimitPerMinute != null ? String(hc.rateLimitPerMinute) : '',
+      setupNotes: hc?.setupNotes ?? '',
     })
     setShowEditModal(true)
+  }
+
+  const toggleV1Scope = (scopeId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      defaultV1Scopes: prev.defaultV1Scopes.includes(scopeId)
+        ? prev.defaultV1Scopes.filter((s) => s !== scopeId)
+        : [...prev.defaultV1Scopes, scopeId],
+    }))
   }
 
   const openDetail = (integration: Integration) => {
@@ -364,8 +489,8 @@ export default function IntegrationsPage() {
 
   // Auto-generate slug from name
   const handleNameChange = (name: string) => {
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       name,
       slug: name
         .toLowerCase()
@@ -373,7 +498,7 @@ export default function IntegrationsPage() {
         .replace(/\s+/g, '-')
         .replace(/--+/g, '-')
         .replace(/^-|-$/g, ''),
-    })
+    }))
   }
 
   // ===========================================
@@ -395,6 +520,21 @@ export default function IntegrationsPage() {
     ) : (
       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
         <XCircle className="w-3 h-3" /> Inactive
+      </span>
+    )
+  }
+
+  const getKindBadge = (kind: IntegrationKind) => {
+    if (kind === 'HOLAORA') {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
+          <Calendar className="w-3 h-3" /> HolaOra
+        </span>
+      )
+    }
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+        Generic
       </span>
     )
   }
@@ -452,6 +592,13 @@ export default function IntegrationsPage() {
           >
             <RefreshCw className="w-4 h-4" />
           </button>
+          <Link
+            href="/superadmin/integrations/holaora"
+            className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-teal-800 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 transition-colors"
+          >
+            <Calendar className="w-4 h-4" />
+            HolaOra
+          </Link>
           <button
             onClick={() => {
               setManualActionResult(null)
@@ -572,6 +719,7 @@ export default function IntegrationsPage() {
                 <tr>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Integration</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Slug</th>
+                  <th className="text-left px-4 py-3 font-medium text-gray-600">Type</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
                   <th className="text-left px-4 py-3 font-medium text-gray-600">API Key</th>
                   <th className="text-center px-4 py-3 font-medium text-gray-600">Businesses</th>
@@ -607,6 +755,7 @@ export default function IntegrationsPage() {
                     <td className="px-4 py-3">
                       <code className="text-xs bg-gray-100 px-2 py-1 rounded font-mono">{integration.slug}</code>
                     </td>
+                    <td className="px-4 py-3">{getKindBadge(integration.kind)}</td>
                     <td className="px-4 py-3">{getStatusBadge(integration.isActive)}</td>
                     <td className="px-4 py-3">
                       <span className="text-xs text-gray-500 font-mono">
@@ -682,14 +831,33 @@ export default function IntegrationsPage() {
       {/* ========================================= */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between p-5 border-b border-gray-200">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-gray-200 flex-shrink-0">
               <h3 className="text-lg font-semibold text-gray-900">Create Integration</h3>
               <button onClick={() => setShowCreateModal(false)} className="p-1 text-gray-400 hover:text-gray-600 rounded">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-5 space-y-4">
+            <div className="p-5 space-y-4 overflow-y-auto flex-1">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Integration type *</label>
+                <select
+                  value={formData.kind}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      kind: e.target.value as IntegrationKind,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 bg-white"
+                >
+                  <option value="GENERIC">Generic partner</option>
+                  <option value="HOLAORA">HolaOra (scheduling)</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  HolaOra unlocks validated settings for provisioning, Stripe bundle IDs, and Public API scopes.
+                </p>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
                 <input
@@ -706,7 +874,7 @@ export default function IntegrationsPage() {
                   type="text"
                   value={formData.slug}
                   onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                  placeholder="e.g., chowtap"
+                  placeholder="e.g., chowtap or holaora"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
                 <p className="text-xs text-gray-400 mt-1">Used in API paths: /api/integrations/{formData.slug || 'slug'}/connect</p>
@@ -741,8 +909,99 @@ export default function IntegrationsPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
+
+              {formData.kind === 'HOLAORA' && (
+                <div className="border border-teal-200 rounded-xl bg-teal-50/50 p-4 space-y-4">
+                  <div className="flex gap-2">
+                    <Info className="w-5 h-5 text-teal-600 flex-shrink-0" />
+                    <div className="text-xs text-teal-900 space-y-1">
+                      <p className="font-semibold text-sm text-teal-950">HolaOra settings</p>
+                      <p>
+                        WaveOrder → HolaOra <strong>secrets</strong> belong in environment variables, not in this form.
+                        Catalog access uses existing <code className="bg-white/80 px-1 rounded">/api/v1</code> with per-business{' '}
+                        <code className="bg-white/80 px-1 rounded">wo_live_…</code> keys.
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-800 mb-1">Provisioning base URL *</label>
+                    <input
+                      type="url"
+                      value={formData.holaOraBaseUrl}
+                      onChange={(e) => setFormData({ ...formData, holaOraBaseUrl: e.target.value })}
+                      placeholder="https://api.partner.example"
+                      className="w-full px-3 py-2 border border-teal-200 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-800 mb-1">
+                      Stripe price IDs (bundle includes HolaOra)
+                    </label>
+                    <textarea
+                      value={formData.entitlementStripePriceIdsText}
+                      onChange={(e) =>
+                        setFormData({ ...formData, entitlementStripePriceIdsText: e.target.value })
+                      }
+                      placeholder={'One price_… per line or comma-separated'}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-teal-200 rounded-lg text-sm font-mono focus:ring-2 focus:ring-teal-500 bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-800 mb-2">Public API (v1) scopes *</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-teal-100 rounded-lg p-2 bg-white">
+                      {ALL_V1_API_SCOPES.map((scope) => (
+                        <label key={scope} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.defaultV1Scopes.includes(scope)}
+                            onChange={() => toggleV1Scope(scope)}
+                            className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                          />
+                          <span className="font-mono text-xs">{scope}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-800 mb-1">Documented v1 paths (optional)</label>
+                    <textarea
+                      value={formData.documentedV1PathsText}
+                      onChange={(e) =>
+                        setFormData({ ...formData, documentedV1PathsText: e.target.value })
+                      }
+                      placeholder={'/api/v1/services\n/api/v1/products'}
+                      rows={3}
+                      className="w-full px-3 py-2 border border-teal-200 rounded-lg text-sm font-mono bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-800 mb-1">Rate limit / minute (optional)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={formData.rateLimitPerMinute}
+                      onChange={(e) =>
+                        setFormData({ ...formData, rateLimitPerMinute: e.target.value })
+                      }
+                      placeholder="Leave empty to use global v1 default"
+                      className="w-full px-3 py-2 border border-teal-200 rounded-lg text-sm bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-800 mb-1">Internal notes (optional)</label>
+                    <textarea
+                      value={formData.setupNotes}
+                      onChange={(e) => setFormData({ ...formData, setupNotes: e.target.value })}
+                      placeholder="What we store from HolaOra responses, runbooks…"
+                      rows={2}
+                      className="w-full px-3 py-2 border border-teal-200 rounded-lg text-sm bg-white"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-200">
+            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-200 flex-shrink-0 bg-gray-50/80">
               <button
                 onClick={() => setShowCreateModal(false)}
                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
@@ -766,14 +1025,33 @@ export default function IntegrationsPage() {
       {/* ========================================= */}
       {showEditModal && selectedIntegration && (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md">
-            <div className="flex items-center justify-between p-5 border-b border-gray-200">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[92vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 border-b border-gray-200 flex-shrink-0">
               <h3 className="text-lg font-semibold text-gray-900">Edit Integration</h3>
               <button onClick={() => setShowEditModal(false)} className="p-1 text-gray-400 hover:text-gray-600 rounded">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-5 space-y-4">
+            <div className="p-5 space-y-4 overflow-y-auto flex-1">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Integration type *</label>
+                <select
+                  value={formData.kind}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      kind: e.target.value as IntegrationKind,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 bg-white"
+                >
+                  <option value="GENERIC">Generic partner</option>
+                  <option value="HOLAORA">HolaOra (scheduling)</option>
+                </select>
+                <p className="text-xs text-amber-700 mt-1">
+                  Switching to HolaOra saves a validated config. Switching to Generic clears stored JSON config unless you save again.
+                </p>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
                 <input
@@ -819,8 +1097,87 @@ export default function IntegrationsPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
+
+              {formData.kind === 'HOLAORA' && (
+                <div className="border border-teal-200 rounded-xl bg-teal-50/50 p-4 space-y-4">
+                  <div className="flex gap-2">
+                    <Info className="w-5 h-5 text-teal-600 flex-shrink-0" />
+                    <p className="text-xs text-teal-900">
+                      Server secrets for WaveOrder → HolaOra stay in <strong>environment variables</strong>.
+                    </p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-800 mb-1">Provisioning base URL *</label>
+                    <input
+                      type="url"
+                      value={formData.holaOraBaseUrl}
+                      onChange={(e) => setFormData({ ...formData, holaOraBaseUrl: e.target.value })}
+                      className="w-full px-3 py-2 border border-teal-200 rounded-lg text-sm bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-800 mb-1">Stripe price IDs</label>
+                    <textarea
+                      value={formData.entitlementStripePriceIdsText}
+                      onChange={(e) =>
+                        setFormData({ ...formData, entitlementStripePriceIdsText: e.target.value })
+                      }
+                      rows={3}
+                      className="w-full px-3 py-2 border border-teal-200 rounded-lg text-sm font-mono bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-800 mb-2">Public API (v1) scopes *</label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-teal-100 rounded-lg p-2 bg-white">
+                      {ALL_V1_API_SCOPES.map((scope) => (
+                        <label key={scope} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={formData.defaultV1Scopes.includes(scope)}
+                            onChange={() => toggleV1Scope(scope)}
+                            className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                          />
+                          <span className="font-mono text-xs">{scope}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-800 mb-1">Documented v1 paths (optional)</label>
+                    <textarea
+                      value={formData.documentedV1PathsText}
+                      onChange={(e) =>
+                        setFormData({ ...formData, documentedV1PathsText: e.target.value })
+                      }
+                      rows={3}
+                      className="w-full px-3 py-2 border border-teal-200 rounded-lg text-sm font-mono bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-800 mb-1">Rate limit / minute (optional)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={formData.rateLimitPerMinute}
+                      onChange={(e) =>
+                        setFormData({ ...formData, rateLimitPerMinute: e.target.value })
+                      }
+                      className="w-full px-3 py-2 border border-teal-200 rounded-lg text-sm bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-800 mb-1">Internal notes (optional)</label>
+                    <textarea
+                      value={formData.setupNotes}
+                      onChange={(e) => setFormData({ ...formData, setupNotes: e.target.value })}
+                      rows={2}
+                      className="w-full px-3 py-2 border border-teal-200 rounded-lg text-sm bg-white"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
-            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-200">
+            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-200 flex-shrink-0 bg-gray-50/80">
               <button
                 onClick={() => setShowEditModal(false)}
                 className="px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
@@ -894,6 +1251,70 @@ export default function IntegrationsPage() {
                 <div className="mt-2 flex items-center gap-1 text-xs text-gray-500">
                   <Globe className="w-3 h-3" />
                   Webhook: <span className="font-mono">{selectedIntegration.webhookUrl}</span>
+                </div>
+              )}
+              <div className="mt-3">{getKindBadge(selectedIntegration.kind)}</div>
+
+              {normalizeIntegrationKind(selectedIntegration.kind) === 'HOLAORA' && (
+                <div className="mt-4 rounded-lg border border-teal-200 bg-teal-50/60 p-4 text-sm">
+                  <p className="font-semibold text-teal-950 flex items-center gap-2 mb-2">
+                    <Calendar className="w-4 h-4" />
+                    HolaOra configuration
+                  </p>
+                  {!detailData?.integration?.parsedHolaConfig ? (
+                    <p className="text-amber-800 text-xs">
+                      Config is missing or invalid. Edit this integration and save HolaOra fields.
+                    </p>
+                  ) : (
+                    <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                      <div>
+                        <dt className="text-teal-800/80">Base URL</dt>
+                        <dd className="font-mono text-gray-900 break-all mt-0.5">
+                          {detailData.integration.parsedHolaConfig.holaOraBaseUrl}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-teal-800/80">Rate limit / min</dt>
+                        <dd className="text-gray-900 mt-0.5">
+                          {detailData.integration.parsedHolaConfig.rateLimitPerMinute ?? '—'}
+                        </dd>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <dt className="text-teal-800/80">Stripe price IDs</dt>
+                        <dd className="mt-0.5 flex flex-wrap gap-1">
+                          {detailData.integration.parsedHolaConfig.entitlementStripePriceIds.length ? (
+                            detailData.integration.parsedHolaConfig.entitlementStripePriceIds.map((id) => (
+                              <code key={id} className="bg-white px-1.5 py-0.5 rounded border text-[11px]">
+                                {id}
+                              </code>
+                            ))
+                          ) : (
+                            <span className="text-gray-500">None</span>
+                          )}
+                        </dd>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <dt className="text-teal-800/80">v1 scopes</dt>
+                        <dd className="mt-0.5 flex flex-wrap gap-1">
+                          {detailData.integration.parsedHolaConfig.defaultV1Scopes.map((s) => (
+                            <span
+                              key={s}
+                              className="bg-white border border-teal-100 text-teal-900 px-1.5 py-0.5 rounded text-[11px] font-mono"
+                            >
+                              {s}
+                            </span>
+                          ))}
+                        </dd>
+                      </div>
+                    </dl>
+                  )}
+                  <Link
+                    href="/superadmin/integrations/holaora"
+                    className="inline-flex items-center gap-1 mt-3 text-xs font-medium text-teal-800 hover:text-teal-950"
+                  >
+                    Open HolaOra dashboard
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
                 </div>
               )}
             </div>

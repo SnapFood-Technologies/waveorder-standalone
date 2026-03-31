@@ -9,6 +9,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { generateIntegrationKey } from '@/lib/integration-auth'
+import { normalizeIntegrationKind } from '@/lib/integration-kind'
+import { normalizeIntegrationConfig } from '@/lib/integration-config'
 
 // ===========================================
 // GET - List all integrations
@@ -95,6 +97,7 @@ export async function GET(request: NextRequest) {
     // Enrich integrations with stats
     const enrichedIntegrations = integrations.map((integration) => ({
       ...integration,
+      kind: normalizeIntegrationKind(integration.kind),
       connectedBusinesses: connectedCounts[integration.slug] || 0,
       apiCalls30d: recentLogCounts[integration.id] || 0,
       totalLogs: integration._count.logs,
@@ -165,6 +168,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const kind = normalizeIntegrationKind(data.kind)
+    const configNorm = normalizeIntegrationConfig(kind, data.config ?? null)
+    if (!configNorm.ok) {
+      return NextResponse.json({ message: configNorm.error }, { status: 400 })
+    }
+
     // Generate API key
     const { plainKey, keyHash, keyPreview } = generateIntegrationKey()
 
@@ -173,13 +182,15 @@ export async function POST(request: NextRequest) {
       data: {
         name: data.name.trim(),
         slug,
+        kind,
         description: data.description?.trim() || null,
         apiKey: keyHash,
         apiKeyPreview: keyPreview,
         isActive: true,
         logoUrl: data.logoUrl?.trim() || null,
         webhookUrl: data.webhookUrl?.trim() || null,
-        config: data.config || null,
+        config:
+          configNorm.value === undefined ? null : (configNorm.value as object),
       },
     })
 

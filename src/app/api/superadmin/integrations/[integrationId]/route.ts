@@ -9,6 +9,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { normalizeIntegrationKind } from '@/lib/integration-kind'
+import { normalizeIntegrationConfig, parseHolaOraConfig } from '@/lib/integration-config'
 
 // ===========================================
 // GET - Integration detail with connections and logs
@@ -92,9 +94,14 @@ export async function GET(
       },
     })
 
+    const kind = normalizeIntegrationKind(integration.kind)
+
     return NextResponse.json({
       integration: {
         ...integration,
+        kind,
+        parsedHolaConfig:
+          kind === 'HOLAORA' ? parseHolaOraConfig(integration.config) : null,
         connectedBusinesses,
         apiCalls30d,
         totalLogs: integration._count.logs,
@@ -132,6 +139,8 @@ export async function PUT(
       return NextResponse.json({ message: 'Integration not found' }, { status: 404 })
     }
 
+    const prevKind = normalizeIntegrationKind(existing.kind)
+
     // Build update data from allowed fields
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: Record<string, any> = {}
@@ -141,7 +150,35 @@ export async function PUT(
     if (data.isActive !== undefined) updateData.isActive = Boolean(data.isActive)
     if (data.logoUrl !== undefined) updateData.logoUrl = data.logoUrl?.trim() || null
     if (data.webhookUrl !== undefined) updateData.webhookUrl = data.webhookUrl?.trim() || null
-    if (data.config !== undefined) updateData.config = data.config
+
+    let nextKind = prevKind
+    if (data.kind !== undefined) {
+      nextKind = normalizeIntegrationKind(data.kind)
+      updateData.kind = nextKind
+    }
+
+    if (data.kind !== undefined && nextKind === 'HOLAORA' && prevKind !== 'HOLAORA' && data.config === undefined) {
+      return NextResponse.json(
+        {
+          message:
+            'When changing kind to HolaOra, send a full `config` object (base URL, scopes, Stripe price IDs).',
+        },
+        { status: 400 }
+      )
+    }
+
+    if (data.kind !== undefined && nextKind === 'GENERIC' && prevKind === 'HOLAORA' && data.config === undefined) {
+      updateData.config = null
+    }
+
+    if (data.config !== undefined) {
+      const configNorm = normalizeIntegrationConfig(nextKind, data.config)
+      if (!configNorm.ok) {
+        return NextResponse.json({ message: configNorm.error }, { status: 400 })
+      }
+      updateData.config =
+        configNorm.value === undefined ? null : (configNorm.value as object)
+    }
 
     // Slug updates require uniqueness check
     if (data.slug !== undefined && data.slug !== existing.slug) {
