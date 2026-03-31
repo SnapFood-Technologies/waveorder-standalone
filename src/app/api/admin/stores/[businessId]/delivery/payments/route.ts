@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { checkBusinessAccess } from '@/lib/api-helpers'
+import { syncPaymentEarningLinks } from '@/lib/delivery-earning-payment-sync'
 
 export async function GET(
   request: NextRequest,
@@ -220,34 +221,38 @@ export async function POST(
       }
     }
 
-    // Create payment record
-    const payment = await prisma.deliveryPayment.create({
-      data: {
-        businessId,
-        deliveryPersonId,
-        amount,
-        currency: currency || 'EUR',
-        periodStart: periodStart ? new Date(periodStart) : null,
-        periodEnd: periodEnd ? new Date(periodEnd) : null,
-        paymentMethod: paymentMethod || null,
-        reference: reference || null,
-        notes: notes || null,
-        earningsIds: earningsIds || [],
-        paidAt: paidAt ? new Date(paidAt) : new Date()
-      }
-    })
+    const ids = Array.isArray(earningsIds) ? earningsIds : []
 
-    // Mark earnings as paid if provided
-    if (earningsIds && Array.isArray(earningsIds) && earningsIds.length > 0) {
-      await prisma.deliveryEarning.updateMany({
-        where: {
-          id: { in: earningsIds }
-        },
+    const payment = await prisma.$transaction(async (tx) => {
+      const created = await tx.deliveryPayment.create({
         data: {
-          status: 'PAID'
+          businessId,
+          deliveryPersonId,
+          amount,
+          currency: currency || 'EUR',
+          periodStart: periodStart ? new Date(periodStart) : null,
+          periodEnd: periodEnd ? new Date(periodEnd) : null,
+          paymentMethod: paymentMethod || null,
+          reference: reference || null,
+          notes: notes || null,
+          earningsIds: ids,
+          paidAt: paidAt ? new Date(paidAt) : new Date()
         }
       })
-    }
+      if (ids.length > 0) {
+        await syncPaymentEarningLinks(
+          tx,
+          {
+            id: created.id,
+            businessId,
+            deliveryPersonId,
+            earningsIds: created.earningsIds
+          },
+          ids
+        )
+      }
+      return created
+    })
 
     return NextResponse.json({
       success: true,

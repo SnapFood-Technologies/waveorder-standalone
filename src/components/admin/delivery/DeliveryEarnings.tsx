@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react'
 import {
   Coins,
   Truck,
-  TrendingUp,
   Clock,
   CheckCircle,
   XCircle,
@@ -16,7 +15,9 @@ import {
   Package,
   AlertCircle,
   RefreshCw,
-  Download
+  Pencil,
+  Link2,
+  Unlink
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
@@ -30,11 +31,18 @@ interface DeliveryEarning {
   currency: string
   status: 'PENDING' | 'PAID' | 'CANCELLED'
   deliveredAt: string | null
+  amountAdjustmentReason?: string | null
+  settledByPayment?: {
+    id: string
+    paidAt: string
+    amount: number
+    reference: string | null
+  } | null
   order: {
     orderNumber: string
     status: string
     deliveryAddress: string | null
-    deliveredAt: string | null
+    deliveredAt?: string | null
   }
   deliveryPerson: {
     id: string
@@ -74,11 +82,49 @@ export function DeliveryEarnings({ businessId }: DeliveryEarningsProps) {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [deliveryPersons, setDeliveryPersons] = useState<Array<{ id: string; name: string; email: string }>>([])
+  const [adjustTarget, setAdjustTarget] = useState<DeliveryEarning | null>(null)
+  const [adjustAmount, setAdjustAmount] = useState('')
+  const [adjustReason, setAdjustReason] = useState('')
+  const [adjustSaving, setAdjustSaving] = useState(false)
+  const [linkTarget, setLinkTarget] = useState<DeliveryEarning | null>(null)
+  const [linkPaymentId, setLinkPaymentId] = useState('')
+  const [paymentsForLink, setPaymentsForLink] = useState<
+    Array<{ id: string; paidAt: string; amount: number; reference: string | null }>
+  >([])
+  const [linkLoading, setLinkLoading] = useState(false)
+  const [linkSaving, setLinkSaving] = useState(false)
 
   useEffect(() => {
     fetchEarnings()
     fetchDeliveryPersons()
   }, [businessId, page, statusFilter, personFilter, dateFilter])
+
+  useEffect(() => {
+    if (!linkTarget) {
+      setPaymentsForLink([])
+      setLinkPaymentId('')
+      return
+    }
+    const load = async () => {
+      setLinkLoading(true)
+      try {
+        const params = new URLSearchParams({
+          deliveryPersonId: linkTarget.deliveryPerson.id,
+          limit: '100',
+          page: '1'
+        })
+        const res = await fetch(`/api/admin/stores/${businessId}/delivery/payments?${params}`)
+        if (!res.ok) return
+        const data = await res.json()
+        setPaymentsForLink(data.data?.payments || [])
+      } catch {
+        toast.error('Failed to load payments for this driver')
+      } finally {
+        setLinkLoading(false)
+      }
+    }
+    load()
+  }, [linkTarget, businessId])
 
   const fetchDeliveryPersons = async () => {
     try {
@@ -210,6 +256,101 @@ export function DeliveryEarnings({ businessId }: DeliveryEarningsProps) {
     
     return matchesSearch
   })
+
+  const openAdjust = (e: DeliveryEarning) => {
+    setAdjustAmount(String(e.amount))
+    setAdjustReason('')
+    setAdjustTarget(e)
+  }
+
+  const saveAdjust = async () => {
+    if (!adjustTarget) return
+    const amt = parseFloat(adjustAmount)
+    if (!Number.isFinite(amt) || amt < 0) {
+      toast.error('Enter a valid non-negative amount')
+      return
+    }
+    if (!adjustReason.trim()) {
+      toast.error('Adjustment reason is required')
+      return
+    }
+    setAdjustSaving(true)
+    try {
+      const res = await fetch(
+        `/api/admin/stores/${businessId}/delivery/earnings/${adjustTarget.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: amt,
+            amountAdjustmentReason: adjustReason.trim()
+          })
+        }
+      )
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to update')
+      }
+      toast.success('Earning amount updated')
+      setAdjustTarget(null)
+      fetchEarnings()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update')
+    } finally {
+      setAdjustSaving(false)
+    }
+  }
+
+  const saveLinkPayment = async () => {
+    if (!linkTarget || !linkPaymentId) {
+      toast.error('Select a payment')
+      return
+    }
+    setLinkSaving(true)
+    try {
+      const res = await fetch(
+        `/api/admin/stores/${businessId}/delivery/earnings/${linkTarget.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ linkPaymentId })
+        }
+      )
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to link')
+      }
+      toast.success('Earning linked to payment')
+      setLinkTarget(null)
+      fetchEarnings()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to link')
+    } finally {
+      setLinkSaving(false)
+    }
+  }
+
+  const unlinkPayment = async (e: DeliveryEarning) => {
+    if (!confirm('Unlink this earning from its payment? It will show as pending again.')) return
+    try {
+      const res = await fetch(
+        `/api/admin/stores/${businessId}/delivery/earnings/${e.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ unlinkPayment: true })
+        }
+      )
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to unlink')
+      }
+      toast.success('Earning unlinked')
+      fetchEarnings()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to unlink')
+    }
+  }
 
   if (!enabled) {
     return (
@@ -413,6 +554,8 @@ export function DeliveryEarnings({ businessId }: DeliveryEarningsProps) {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Delivered At</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Address</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -440,6 +583,57 @@ export function DeliveryEarnings({ businessId }: DeliveryEarningsProps) {
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-500">
                         {earning.order.deliveryAddress || 'N/A'}
+                      </td>
+                      <td className="px-4 py-4 text-xs text-gray-600 max-w-[140px]">
+                        {earning.settledByPayment ? (
+                          <span className="font-mono" title={earning.settledByPayment.id}>
+                            …{earning.settledByPayment.id.slice(-8)}
+                          </span>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="flex flex-wrap gap-1">
+                          {earning.status !== 'CANCELLED' && (
+                            <button
+                              type="button"
+                              onClick={() => openAdjust(earning)}
+                              className="inline-flex items-center gap-0.5 px-2 py-1 text-xs font-medium text-teal-700 bg-teal-50 rounded border border-teal-200 hover:bg-teal-100"
+                            >
+                              <Pencil className="w-3 h-3" />
+                              Adjust
+                            </button>
+                          )}
+                          {earning.status === 'PENDING' && (
+                            <button
+                              type="button"
+                              onClick={() => setLinkTarget(earning)}
+                              className="inline-flex items-center gap-0.5 px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 rounded border border-blue-200 hover:bg-blue-100"
+                            >
+                              <Link2 className="w-3 h-3" />
+                              Link
+                            </button>
+                          )}
+                          {earning.status === 'PAID' && earning.settledByPayment && (
+                            <button
+                              type="button"
+                              onClick={() => unlinkPayment(earning)}
+                              className="inline-flex items-center gap-0.5 px-2 py-1 text-xs font-medium text-gray-700 bg-gray-50 rounded border border-gray-200 hover:bg-gray-100"
+                            >
+                              <Unlink className="w-3 h-3" />
+                              Unlink
+                            </button>
+                          )}
+                        </div>
+                        {earning.amountAdjustmentReason ? (
+                          <p
+                            className="mt-1 text-xs text-amber-800 bg-amber-50 rounded px-1.5 py-0.5 line-clamp-2"
+                            title={earning.amountAdjustmentReason}
+                          >
+                            Note: {earning.amountAdjustmentReason}
+                          </p>
+                        ) : null}
                       </td>
                     </tr>
                   ))}
@@ -474,6 +668,128 @@ export function DeliveryEarnings({ businessId }: DeliveryEarningsProps) {
           </>
         )}
       </div>
+
+      {adjustTarget && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full shadow-xl">
+            <div className="p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Adjust earning amount</h3>
+              <p className="text-sm text-gray-500 mt-1">
+                Order {adjustTarget.order.orderNumber} · {adjustTarget.deliveryPerson.name}
+              </p>
+            </div>
+            <div className="p-4 space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Amount ({currency})</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  value={adjustAmount}
+                  onChange={(e) => setAdjustAmount(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Reason for change <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={adjustReason}
+                  onChange={(e) => setAdjustReason(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  placeholder="e.g. Correct delivery fee from order; waived fee; bonus"
+                  required
+                />
+              </div>
+            </div>
+            <div className="p-4 border-t border-gray-200 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setAdjustTarget(null)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={adjustSaving}
+                onClick={saveAdjust}
+                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+              >
+                {adjustSaving ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {linkTarget && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-lg w-full shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-start">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Link to payment</h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {linkTarget.order.orderNumber} · {formatCurrency(linkTarget.amount)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLinkTarget(null)}
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-4 space-y-3">
+              {linkLoading ? (
+                <p className="text-sm text-gray-500">Loading payments…</p>
+              ) : paymentsForLink.length === 0 ? (
+                <p className="text-sm text-amber-800 bg-amber-50 rounded-lg p-3">
+                  No payments found for this driver. Record a payment first under Delivery → Payments, then link
+                  this earning here.
+                </p>
+              ) : (
+                <>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment</label>
+                  <select
+                    value={linkPaymentId}
+                    onChange={(e) => setLinkPaymentId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="">Select payment…</option>
+                    {paymentsForLink.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {formatDate(p.paidAt)} · {formatCurrency(p.amount)}
+                        {p.reference ? ` · ${p.reference}` : ''} · …{p.id.slice(-6)}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              )}
+            </div>
+            <div className="p-4 border-t border-gray-200 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setLinkTarget(null)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={linkSaving || linkLoading || !linkPaymentId}
+                onClick={saveLinkPayment}
+                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+              >
+                {linkSaving ? 'Linking…' : 'Link'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

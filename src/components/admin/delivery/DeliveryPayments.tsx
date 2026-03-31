@@ -4,7 +4,6 @@
 import { useState, useEffect } from 'react'
 import {
   CreditCard,
-  Truck,
   User,
   Plus,
   Search,
@@ -13,9 +12,7 @@ import {
   AlertCircle,
   RefreshCw,
   X,
-  CheckCircle,
-  Edit2,
-  Trash2
+  Edit2
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 
@@ -50,6 +47,13 @@ interface TotalsByPerson {
   paymentCount: number
 }
 
+interface PendingEarningRow {
+  id: string
+  amount: number
+  status: string
+  order: { orderNumber: string }
+}
+
 export default function DeliveryPayments({ businessId }: DeliveryPaymentsProps) {
   const [loading, setLoading] = useState(true)
   const [enabled, setEnabled] = useState(true)
@@ -75,11 +79,63 @@ export default function DeliveryPayments({ businessId }: DeliveryPaymentsProps) 
     periodEnd: '',
     paidAt: new Date().toISOString().split('T')[0]
   })
+  const [pendingForNew, setPendingForNew] = useState<PendingEarningRow[]>([])
+  const [selectedEarningIdsNew, setSelectedEarningIdsNew] = useState<string[]>([])
+
+  const [editingPayment, setEditingPayment] = useState<DeliveryPayment | null>(null)
+  const [editSaving, setEditSaving] = useState(false)
+  const [editForm, setEditForm] = useState({
+    amount: '',
+    paymentMethod: '',
+    reference: '',
+    notes: '',
+    periodStart: '',
+    periodEnd: '',
+    paidAt: ''
+  })
+  const [editSelectableEarnings, setEditSelectableEarnings] = useState<PendingEarningRow[]>([])
+  const [selectedEarningIdsEdit, setSelectedEarningIdsEdit] = useState<string[]>([])
 
   useEffect(() => {
     fetchPayments()
     fetchDeliveryPersons()
   }, [businessId, page, personFilter, dateFilter])
+
+  useEffect(() => {
+    setSelectedEarningIdsNew([])
+  }, [newPayment.deliveryPersonId])
+
+  useEffect(() => {
+    if (!showAddPayment) {
+      setPendingForNew([])
+      setSelectedEarningIdsNew([])
+      return
+    }
+    if (!businessId || !newPayment.deliveryPersonId) {
+      setPendingForNew([])
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const params = new URLSearchParams({
+          deliveryPersonId: newPayment.deliveryPersonId,
+          status: 'PENDING',
+          limit: '200',
+          page: '1'
+        })
+        const res = await fetch(`/api/admin/stores/${businessId}/delivery/earnings?${params}`)
+        if (!res.ok || cancelled) return
+        const data = await res.json()
+        if (!cancelled) setPendingForNew(data.data?.earnings || [])
+      } catch {
+        if (!cancelled) setPendingForNew([])
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [showAddPayment, newPayment.deliveryPersonId, businessId])
 
   const fetchDeliveryPersons = async () => {
     try {
@@ -172,7 +228,8 @@ export default function DeliveryPayments({ businessId }: DeliveryPaymentsProps) 
           notes: newPayment.notes || null,
           periodStart: newPayment.periodStart || null,
           periodEnd: newPayment.periodEnd || null,
-          paidAt: newPayment.paidAt
+          paidAt: newPayment.paidAt,
+          ...(selectedEarningIdsNew.length > 0 ? { earningsIds: selectedEarningIdsNew } : {})
         })
       })
 
@@ -183,6 +240,8 @@ export default function DeliveryPayments({ businessId }: DeliveryPaymentsProps) 
 
       toast.success('Payment recorded successfully')
       setShowAddPayment(false)
+      setSelectedEarningIdsNew([])
+      setPendingForNew([])
       setNewPayment({
         deliveryPersonId: '',
         amount: '',
@@ -218,6 +277,99 @@ export default function DeliveryPayments({ businessId }: DeliveryPaymentsProps) 
       month: 'short',
       day: 'numeric'
     })
+  }
+
+  const toggleNewEarning = (id: string) => {
+    setSelectedEarningIdsNew((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
+  const fillAmountFromSelectedNew = () => {
+    const sum = pendingForNew
+      .filter((e) => selectedEarningIdsNew.includes(e.id))
+      .reduce((s, e) => s + (e.amount || 0), 0)
+    setNewPayment((p) => ({ ...p, amount: sum.toFixed(2) }))
+  }
+
+  const openEditPayment = async (p: DeliveryPayment) => {
+    setEditingPayment(p)
+    setEditForm({
+      amount: String(p.amount),
+      paymentMethod: p.paymentMethod || '',
+      reference: p.reference || '',
+      notes: p.notes || '',
+      periodStart: p.periodStart ? p.periodStart.slice(0, 10) : '',
+      periodEnd: p.periodEnd ? p.periodEnd.slice(0, 10) : '',
+      paidAt: p.paidAt ? p.paidAt.slice(0, 10) : ''
+    })
+    const ids = p.earningsIds || []
+    setSelectedEarningIdsEdit([...ids])
+    try {
+      const params = new URLSearchParams({
+        deliveryPersonId: p.deliveryPerson.id,
+        limit: '300',
+        page: '1'
+      })
+      const res = await fetch(`/api/admin/stores/${businessId}/delivery/earnings?${params}`)
+      if (!res.ok) {
+        setEditSelectableEarnings([])
+        return
+      }
+      const data = await res.json()
+      const list: PendingEarningRow[] = data.data?.earnings || []
+      const idSet = new Set(ids)
+      setEditSelectableEarnings(list.filter((e) => e.status === 'PENDING' || idSet.has(e.id)))
+    } catch {
+      setEditSelectableEarnings([])
+    }
+  }
+
+  const toggleEditEarning = (id: string) => {
+    setSelectedEarningIdsEdit((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
+  const saveEditPayment = async () => {
+    if (!editingPayment) return
+    const amt = parseFloat(editForm.amount)
+    if (!Number.isFinite(amt) || amt <= 0) {
+      toast.error('Enter a valid amount')
+      return
+    }
+    setEditSaving(true)
+    try {
+      const res = await fetch(
+        `/api/admin/stores/${businessId}/delivery/payments/${editingPayment.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: amt,
+            currency,
+            paymentMethod: editForm.paymentMethod || null,
+            reference: editForm.reference || null,
+            notes: editForm.notes || null,
+            periodStart: editForm.periodStart || null,
+            periodEnd: editForm.periodEnd || null,
+            paidAt: editForm.paidAt,
+            earningsIds: selectedEarningIdsEdit
+          })
+        }
+      )
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) {
+        throw new Error(data.message || 'Failed to update payment')
+      }
+      toast.success('Payment updated')
+      setEditingPayment(null)
+      fetchPayments()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update')
+    } finally {
+      setEditSaving(false)
+    }
   }
 
   // Filter payments by search term
@@ -406,6 +558,8 @@ export default function DeliveryPayments({ businessId }: DeliveryPaymentsProps) 
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Earnings</th>
+                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -434,6 +588,21 @@ export default function DeliveryPayments({ businessId }: DeliveryPaymentsProps) 
                       </td>
                       <td className="px-4 py-4 text-sm text-gray-500">
                         {payment.notes || '-'}
+                      </td>
+                      <td className="px-4 py-4 text-sm text-gray-600">
+                        {(payment.earningsIds?.length || 0) === 0
+                          ? '—'
+                          : `${payment.earningsIds.length} linked`}
+                      </td>
+                      <td className="px-4 py-4 text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => openEditPayment(payment)}
+                          className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-teal-700 bg-teal-50 rounded border border-teal-200 hover:bg-teal-100"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          Edit
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -508,6 +677,37 @@ export default function DeliveryPayments({ businessId }: DeliveryPaymentsProps) 
                   ))}
                 </select>
               </div>
+
+              {newPayment.deliveryPersonId && pendingForNew.length > 0 && (
+                <div className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-gray-800">Mark pending earnings as paid</span>
+                    <button
+                      type="button"
+                      onClick={fillAmountFromSelectedNew}
+                      className="text-xs text-teal-700 hover:underline"
+                    >
+                      Set amount from selected
+                    </button>
+                  </div>
+                  <ul className="max-h-40 overflow-y-auto space-y-2">
+                    {pendingForNew.map((e) => (
+                      <li key={e.id} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={selectedEarningIdsNew.includes(e.id)}
+                          onChange={() => toggleNewEarning(e.id)}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-gray-800">{e.order.orderNumber}</span>
+                        <span className="text-gray-500">
+                          {formatCurrency(e.amount)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -627,6 +827,149 @@ export default function DeliveryPayments({ businessId }: DeliveryPaymentsProps) 
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {editingPayment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white">
+              <h2 className="text-xl font-bold text-gray-900">Edit payment</h2>
+              <button
+                type="button"
+                onClick={() => setEditingPayment(null)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-600">
+                {editingPayment.deliveryPerson.name} · Paid {formatDate(editingPayment.paidAt)}
+              </p>
+
+              <div className="border border-gray-200 rounded-lg p-3 bg-gray-50 max-h-48 overflow-y-auto">
+                <p className="text-sm font-medium text-gray-800 mb-2">Linked earnings</p>
+                {editSelectableEarnings.length === 0 ? (
+                  <p className="text-xs text-gray-500">No earnings to show for this driver.</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {editSelectableEarnings.map((e) => (
+                      <li key={e.id} className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          checked={selectedEarningIdsEdit.includes(e.id)}
+                          onChange={() => toggleEditEarning(e.id)}
+                          className="rounded border-gray-300"
+                        />
+                        <span>{e.order.orderNumber}</span>
+                        <span className="text-gray-500">{formatCurrency(e.amount)}</span>
+                        <span className="text-xs text-gray-400">{e.status}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={editForm.amount}
+                  onChange={(e) => setEditForm({ ...editForm, amount: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment method</label>
+                  <select
+                    value={editForm.paymentMethod}
+                    onChange={(e) => setEditForm({ ...editForm, paymentMethod: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  >
+                    <option value="">—</option>
+                    <option value="cash">Cash</option>
+                    <option value="bank_transfer">Bank transfer</option>
+                    <option value="card">Card</option>
+                    <option value="mobile_payment">Mobile payment</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment date</label>
+                  <input
+                    type="date"
+                    value={editForm.paidAt}
+                    onChange={(e) => setEditForm({ ...editForm, paidAt: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Reference</label>
+                <input
+                  type="text"
+                  value={editForm.reference}
+                  onChange={(e) => setEditForm({ ...editForm, reference: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Period start</label>
+                  <input
+                    type="date"
+                    value={editForm.periodStart}
+                    onChange={(e) => setEditForm({ ...editForm, periodStart: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Period end</label>
+                  <input
+                    type="date"
+                    value={editForm.periodEnd}
+                    onChange={(e) => setEditForm({ ...editForm, periodEnd: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <textarea
+                  value={editForm.notes}
+                  onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+              </div>
+            </div>
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setEditingPayment(null)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={editSaving}
+                onClick={saveEditPayment}
+                className="px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+              >
+                {editSaving ? 'Saving…' : 'Save changes'}
+              </button>
+            </div>
           </div>
         </div>
       )}
