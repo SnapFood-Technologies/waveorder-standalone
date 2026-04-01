@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
+import { HO_MUTEX_ERR_BOTH_ON } from '@/lib/holaora-ai-mutex-messages'
 
 export async function GET(
   request: NextRequest,
@@ -149,7 +150,8 @@ export async function GET(
         metaPixelEnabled: true, // For Meta Pixel (Ads tracking)
         metaPixelId: true,
         websiteEmbedEnabled: true,
-        
+        holaoraEntitled: true,
+
         // Inventory display
         showStockBadge: true,
         countryBasedCatalogEnabled: true,
@@ -222,6 +224,30 @@ export async function PUT(
     }
 
     const body = await request.json()
+
+    if (
+      body.aiAssistantEnabled !== undefined ||
+      body.holaoraStorefrontEmbedEnabled !== undefined
+    ) {
+      const existing = await prisma.business.findUnique({
+        where: { id: businessId },
+        select: { aiAssistantEnabled: true, holaoraStorefrontEmbedEnabled: true },
+      })
+      if (!existing) {
+        return NextResponse.json({ error: 'Business not found' }, { status: 404 })
+      }
+      const nextAi =
+        body.aiAssistantEnabled !== undefined
+          ? body.aiAssistantEnabled
+          : existing.aiAssistantEnabled
+      const nextEmbed =
+        body.holaoraStorefrontEmbedEnabled !== undefined
+          ? body.holaoraStorefrontEmbedEnabled
+          : existing.holaoraStorefrontEmbedEnabled
+      if (nextAi === true && nextEmbed === true) {
+        return NextResponse.json({ error: HO_MUTEX_ERR_BOTH_ON }, { status: 400 })
+      }
+    }
 
     // Update business data
     const updatedBusiness = await prisma.business.update({

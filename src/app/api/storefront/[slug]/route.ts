@@ -834,6 +834,14 @@ export async function GET(
 
       // Custom Features
       aiAssistantEnabled: business.aiAssistantEnabled || false,
+      showHolaOraEmbed: Boolean(
+        business.holaoraEntitled &&
+          !business.holaoraSuperAdminForceOff &&
+          business.holaoraStorefrontEmbedEnabled &&
+          business.holaoraAccountId
+      ),
+      holaoraAccountId: business.holaoraAccountId || null,
+      holaoraEmbedScriptUrl: process.env.NEXT_PUBLIC_HOLAORA_EMBED_SCRIPT_URL || null,
       metaPixelEnabled: business.metaPixelEnabled || false,
       metaPixelId: business.metaPixelId || null,
       aiChatIcon: business.aiChatIcon || 'message',

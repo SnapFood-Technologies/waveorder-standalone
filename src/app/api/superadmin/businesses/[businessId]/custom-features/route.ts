@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { HO_MUTEX_ERR_ENABLE_AI } from '@/lib/holaora-ai-mutex-messages'
 
 // GET - Fetch custom features settings for a business
 export async function GET(
@@ -41,7 +42,8 @@ export async function GET(
         aiChatModel: true,
         metaCatalogExportEnabled: true,
         metaPixelEnabled: true,
-        storefrontAvailabilityDotEnabled: true
+        storefrontAvailabilityDotEnabled: true,
+        holaoraSuperAdminForceOff: true
       }
     })
 
@@ -65,7 +67,8 @@ export async function GET(
         aiChatModel: business.aiChatModel,
         metaCatalogExportEnabled: business.metaCatalogExportEnabled,
         metaPixelEnabled: business.metaPixelEnabled,
-        storefrontAvailabilityDotEnabled: business.storefrontAvailabilityDotEnabled
+        storefrontAvailabilityDotEnabled: business.storefrontAvailabilityDotEnabled,
+        holaoraSuperAdminForceOff: business.holaoraSuperAdminForceOff
       }
     })
   } catch (error) {
@@ -111,12 +114,28 @@ export async function PATCH(
       aiChatModel,
         metaCatalogExportEnabled,
         metaPixelEnabled,
-        storefrontAvailabilityDotEnabled
+        storefrontAvailabilityDotEnabled,
+        holaoraSuperAdminForceOff
     } = body
 
     // Validate business exists
     const business = await prisma.business.findUnique({
-      where: { id: businessId }
+      where: { id: businessId },
+      select: {
+        id: true,
+        holaoraStorefrontEmbedEnabled: true,
+        brandsFeatureEnabled: true,
+        collectionsFeatureEnabled: true,
+        groupsFeatureEnabled: true,
+        customMenuEnabled: true,
+        customFilteringEnabled: true,
+        aiAssistantEnabled: true,
+        aiChatModel: true,
+        metaCatalogExportEnabled: true,
+        metaPixelEnabled: true,
+        storefrontAvailabilityDotEnabled: true,
+        holaoraSuperAdminForceOff: true,
+      },
     })
 
     if (!business) {
@@ -136,6 +155,15 @@ export async function PATCH(
     if (metaPixelEnabled !== undefined) updateData.metaPixelEnabled = metaPixelEnabled
     if (storefrontAvailabilityDotEnabled !== undefined)
       updateData.storefrontAvailabilityDotEnabled = storefrontAvailabilityDotEnabled
+    if (holaoraSuperAdminForceOff !== undefined)
+      updateData.holaoraSuperAdminForceOff = holaoraSuperAdminForceOff
+
+    if (
+      updateData.aiAssistantEnabled === true &&
+      business.holaoraStorefrontEmbedEnabled
+    ) {
+      return NextResponse.json({ error: HO_MUTEX_ERR_ENABLE_AI }, { status: 400 })
+    }
 
     // Update business
     const updatedBusiness = await prisma.business.update({
@@ -153,7 +181,8 @@ export async function PATCH(
         aiChatModel: true,
         metaCatalogExportEnabled: true,
         metaPixelEnabled: true,
-        storefrontAvailabilityDotEnabled: true
+        storefrontAvailabilityDotEnabled: true,
+        holaoraSuperAdminForceOff: true
       }
     })
 
@@ -170,7 +199,8 @@ export async function PATCH(
         aiChatModel: updatedBusiness.aiChatModel,
         metaCatalogExportEnabled: updatedBusiness.metaCatalogExportEnabled,
         metaPixelEnabled: updatedBusiness.metaPixelEnabled,
-        storefrontAvailabilityDotEnabled: updatedBusiness.storefrontAvailabilityDotEnabled
+        storefrontAvailabilityDotEnabled: updatedBusiness.storefrontAvailabilityDotEnabled,
+        holaoraSuperAdminForceOff: updatedBusiness.holaoraSuperAdminForceOff
       }
     })
   } catch (error) {

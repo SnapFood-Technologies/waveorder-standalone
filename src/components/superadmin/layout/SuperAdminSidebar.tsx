@@ -288,6 +288,11 @@ export function SuperAdminSidebar({ isOpen, onClose }: SuperAdminSidebarProps) {
           name: 'API Logs', 
           href: '/superadmin/integrations/logs', 
           icon: Activity
+        },
+        {
+          name: 'HolaOra',
+          href: '/superadmin/integrations/holaora',
+          icon: Calendar
         }
       ]
     },

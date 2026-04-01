@@ -113,6 +113,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
   const [legalPagesEnabled, setLegalPagesEnabled] = useState(false)
   const [countryBasedCatalogEnabled, setCountryBasedCatalogEnabled] = useState(false)
   const [aiAssistantEnabled, setAiAssistantEnabled] = useState(false)
+  const [holaoraEntitled, setHolaoraEntitled] = useState(false)
   const [metaPixelEnabled, setMetaPixelEnabled] = useState(false)
   const [websiteEmbedEnabled, setWebsiteEmbedEnabled] = useState(false)
   const [userRole, setUserRole] = useState<'OWNER' | 'MANAGER' | 'STAFF' | null>(null)
@@ -163,6 +164,7 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           setEnableManualTeamCreation(data.business?.enableManualTeamCreation || false)
           setLegalPagesEnabled(data.business?.legalPagesEnabled || false)
           setAiAssistantEnabled(data.business?.aiAssistantEnabled || false)
+          setHolaoraEntitled(data.business?.holaoraEntitled || false)
           setMetaPixelEnabled(data.business?.metaPixelEnabled || false)
           setWebsiteEmbedEnabled(data.business?.websiteEmbedEnabled || false)
           setCountryBasedCatalogEnabled(data.business?.countryBasedCatalogEnabled || false)
@@ -689,6 +691,13 @@ export function AdminSidebar({ isOpen, onClose, businessId }: AdminSidebarProps)
           icon: Cog, 
           requiredPlan: 'STARTER'
         },
+        // @ts-ignore
+        ...((holaoraEntitled || isImpersonating) ? [{
+          name: 'HolaOra',
+          href: `${baseUrl}/settings/holaora`,
+          icon: CalendarClock,
+          requiredPlan: 'STARTER' as Plan
+        }] : []),
         // @ts-ignore
         ...(customMenuEnabled ? [{
           name: 'Custom Menu', 
