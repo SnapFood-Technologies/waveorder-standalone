@@ -139,9 +139,9 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const prev = currentParsed.data.waveorderMarketingSite ?? {}
-    let portalEmail: string | null = prev.portalEmail ?? null
-    let portalPasswordEnc: string | null = prev.portalPasswordEnc ?? null
+    const prev = currentParsed.data.waveorderMarketingSite
+    let portalEmail: string | null = prev?.portalEmail ?? null
+    let portalPasswordEnc: string | null = prev?.portalPasswordEnc ?? null
 
     if (p.savePortalLogin === false) {
       portalEmail = null
