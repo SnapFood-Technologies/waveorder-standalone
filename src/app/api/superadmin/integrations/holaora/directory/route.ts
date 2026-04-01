@@ -3,12 +3,13 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 
-const FILTERS = ['all', 'active', 'hola_linked', 'hola_entitled'] as const
+/** Same scope as /superadmin/businesses default (active, non-test); then Hola subsets. */
+const FILTERS = ['active', 'hola_linked', 'hola_entitled'] as const
 type Filter = (typeof FILTERS)[number]
 
 function parseFilter(v: string | null): Filter {
   if (v && FILTERS.includes(v as Filter)) return v as Filter
-  return 'all'
+  return 'active'
 }
 
 /**
@@ -27,32 +28,28 @@ export async function GET(request: NextRequest) {
     const take = Math.min(Math.max(Number(searchParams.get('take')) || 25, 1), 100)
     const skip = Math.max(Number(searchParams.get('skip')) || 0, 0)
 
-    const whereParts: object[] = []
+    const andParts: object[] = [
+      { NOT: { testMode: true } },
+      { isActive: true },
+    ]
+
+    if (filter === 'hola_linked') {
+      andParts.push({ holaoraAccountId: { not: null } })
+    }
+    if (filter === 'hola_entitled') {
+      andParts.push({ holaoraEntitled: true })
+    }
 
     if (search) {
-      whereParts.push({
+      andParts.push({
         OR: [
           { name: { contains: search, mode: 'insensitive' as const } },
           { slug: { contains: search, mode: 'insensitive' as const } },
         ],
       })
     }
-    if (filter === 'active') {
-      whereParts.push({ isActive: true })
-    }
-    if (filter === 'hola_linked') {
-      whereParts.push({ holaoraAccountId: { not: null } })
-    }
-    if (filter === 'hola_entitled') {
-      whereParts.push({ holaoraEntitled: true })
-    }
 
-    const where =
-      whereParts.length === 0
-        ? {}
-        : whereParts.length === 1
-          ? whereParts[0]
-          : { AND: whereParts }
+    const where = { AND: andParts }
 
     const [rows, total] = await Promise.all([
       prisma.business.findMany({
