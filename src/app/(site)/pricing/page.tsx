@@ -173,7 +173,7 @@ export default function PricingPage() {
                 "name": "What payment methods do you accept?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "We accept all major credit cards, PayPal, and bank transfers. All payments are processed securely through Stripe."
+                  "text": "This refers to paying for your WaveOrder subscription: billing runs through Stripe (credit and debit cards, and other methods Stripe may offer in your region). Customer orders through your storefront are cash-based in the product today—you coordinate payment with your customers directly."
                 }
               }
             ]

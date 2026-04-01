@@ -40,7 +40,7 @@ export default function FAQ({ showContactSection = true }: FAQProps) {
     },
     {
       question: "What payment methods are supported?",
-      answer: "You can accept cash on delivery, bank transfers, or integrate with payment gateways like Stripe. You handle payments directly with your customers — we don't take any commission or cut from your sales."
+      answer: "Customer checkout in WaveOrder is set up for cash when the order is delivered or picked up (or when a service is completed), depending on your business type. You arrange payment directly with your customer. We don't take a commission on your sales. Your WaveOrder subscription is billed separately through Stripe."
     },
     {
       question: "Can I manage multiple stores?",

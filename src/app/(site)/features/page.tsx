@@ -58,7 +58,7 @@ export default function FeaturesPage() {
                 "Order Analytics",
                 "Custom Branding",
                 "Multi-language Support",
-                "Payment Flexibility"
+                "Cash payment for customer orders"
               ]
             }
           })

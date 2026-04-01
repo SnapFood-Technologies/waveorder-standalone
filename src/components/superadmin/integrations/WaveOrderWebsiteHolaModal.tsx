@@ -8,9 +8,13 @@ import {
   Eye,
   EyeOff,
   X,
+  Code,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { HOLAORA_EMBED_IFRAME_BASE, HOLAORA_EMBED_SCRIPT_DEFAULT } from '@/lib/holaora-embed-constants'
+import { parseHolaEmbedPaste } from '@/lib/holaora-embed-parse'
 
 type SitePayload = {
   embedEnabled?: boolean
@@ -52,6 +56,9 @@ export function WaveOrderWebsiteHolaModal({
   const [showPw, setShowPw] = useState(false)
   const [revealing, setRevealing] = useState(false)
   const [hadPasswordSaved, setHadPasswordSaved] = useState(false)
+  const [showEmbedPaste, setShowEmbedPaste] = useState(false)
+  const [embedPaste, setEmbedPaste] = useState('')
+  const [embedPasteErr, setEmbedPasteErr] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -164,14 +171,43 @@ export function WaveOrderWebsiteHolaModal({
     }
   }
 
+  const applyEmbedPaste = () => {
+    setEmbedPasteErr(null)
+    const p = parseHolaEmbedPaste(embedPaste)
+    if (!p.workspaceId || !p.kind) {
+      setEmbedPasteErr(
+        'Could not find a Hola workspace. Paste the script tag, iframe tag, or embed/window URL from HolaOra.'
+      )
+      return
+    }
+    setEmbedKind(p.kind)
+    setWorkspaceId(p.workspaceId)
+    if (p.primaryColor) setPrimaryColor(p.primaryColor)
+    if (p.position) setPosition(p.position)
+    if (p.title) setTitle(p.title)
+    if (p.greeting) setGreeting(p.greeting)
+    if (p.kind === 'IFRAME') {
+      if (p.iframeWidth != null) setIframeW(String(p.iframeWidth))
+      if (p.iframeHeight != null) setIframeH(String(p.iframeHeight))
+    }
+    setEmbedPaste('')
+    setShowEmbedPaste(false)
+    toast.success('Fields filled from pasted embed')
+  }
+
   if (!open) return null
 
-  const previewScript =
-    workspaceId.trim() &&
-    `<script src="${HOLAORA_EMBED_SCRIPT_DEFAULT}"
-  data-workspace="${workspaceId.trim()}"
-  ${primaryColor.trim() ? `data-primary-color="${primaryColor.trim()}"` : ''}
-  ${position.trim() ? `data-position="${position.trim()}"` : ''}></script>`
+  /** Matches HolaOraEmbed: title/greeting use encodeURIComponent on data-* (plain text in fields, not pre-encoded). */
+  const previewScript = (() => {
+    const ws = workspaceId.trim()
+    if (!ws) return ''
+    const lines = [`<script src="${HOLAORA_EMBED_SCRIPT_DEFAULT}"`, `  data-workspace="${ws}"`]
+    if (primaryColor.trim()) lines.push(`  data-primary-color="${primaryColor.trim()}"`)
+    if (position.trim()) lines.push(`  data-position="${position.trim()}"`)
+    if (title.trim()) lines.push(`  data-title="${encodeURIComponent(title.trim())}"`)
+    if (greeting.trim()) lines.push(`  data-greeting="${encodeURIComponent(greeting.trim())}"`)
+    return `${lines.join('\n')}\n></script>`
+  })()
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50">
@@ -231,6 +267,45 @@ export function WaveOrderWebsiteHolaModal({
                 </div>
               </div>
 
+              <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 space-y-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEmbedPaste((v) => !v)
+                    setEmbedPasteErr(null)
+                  }}
+                  className="flex items-center gap-2 text-sm font-medium text-teal-700 w-full text-left"
+                >
+                  <Code className="w-4 h-4 shrink-0" />
+                  Paste embed from HolaOra (script or iframe)
+                  {showEmbedPaste ? <ChevronUp className="w-4 h-4 ml-auto" /> : <ChevronDown className="w-4 h-4 ml-auto" />}
+                </button>
+                {showEmbedPaste && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-gray-600">
+                      Paste the full <strong>script</strong> or <strong>iframe</strong> from your Hola dashboard. Title and
+                      greeting are read from <code className="bg-gray-100 px-0.5">data-title</code> /{' '}
+                      <code className="bg-gray-100 px-0.5">data-greeting</code> (plain text after decoding).
+                    </p>
+                    <textarea
+                      value={embedPaste}
+                      onChange={(e) => setEmbedPaste(e.target.value)}
+                      rows={6}
+                      placeholder='<script src="https://holaora.com/embed/chat.js" ...> or <iframe ...>'
+                      className="w-full rounded border border-gray-200 p-2 text-xs font-mono"
+                    />
+                    {embedPasteErr && <p className="text-xs text-red-600">{embedPasteErr}</p>}
+                    <button
+                      type="button"
+                      onClick={applyEmbedPaste}
+                      className="text-sm px-3 py-1.5 rounded-lg bg-teal-600 text-white hover:bg-teal-700"
+                    >
+                      Apply to fields
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block font-medium text-gray-700 mb-1">Hola workspace ID</label>
                 <input
@@ -267,7 +342,11 @@ export function WaveOrderWebsiteHolaModal({
                       className="w-full border border-gray-200 rounded-lg px-3 py-2"
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
+                      placeholder="WaveOrder Help"
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Plain text — the preview adds URL encoding for <code className="bg-gray-100 px-0.5">data-title</code> like Hola&apos;s docs.
+                    </p>
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block text-gray-700 mb-1">Greeting</label>
@@ -275,7 +354,11 @@ export function WaveOrderWebsiteHolaModal({
                       className="w-full border border-gray-200 rounded-lg px-3 py-2"
                       value={greeting}
                       onChange={(e) => setGreeting(e.target.value)}
+                      placeholder="Hi! Ask us anything about WaveOrder..."
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      Don&apos;t paste <code className="bg-gray-100 px-0.5">%20</code> sequences — type the sentence normally.
+                    </p>
                   </div>
                 </div>
               )}

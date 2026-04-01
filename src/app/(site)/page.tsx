@@ -74,7 +74,7 @@ export default function HomePage() {
                 "name": "What payment methods are supported?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "You can accept cash on delivery, bank transfers, or integrate with payment gateways like Stripe and PayPal. You handle payments directly with your customers — we don't take any cut."
+                  "text": "Your storefront is set up for cash payment when the order is delivered or picked up (or when a service is completed), depending on your business type. You coordinate payment directly with your customer. WaveOrder does not take a cut of your sales. Paying for your WaveOrder subscription is handled separately via Stripe."
                 }
               },
               {

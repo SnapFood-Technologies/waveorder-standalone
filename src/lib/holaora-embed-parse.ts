@@ -11,6 +11,9 @@ export type ParsedHolaSnippet = {
   title: string | null
   greeting: string | null
   kind: 'SCRIPT' | 'IFRAME' | null
+  /** Set when kind is IFRAME and the snippet had width/height attributes */
+  iframeWidth?: number | null
+  iframeHeight?: number | null
 }
 
 function decodeAttr(raw: string | null | undefined): string | null {
@@ -31,6 +34,8 @@ export function parseHolaScriptSnippet(html: string): ParsedHolaSnippet {
     title: null,
     greeting: null,
     kind: null,
+    iframeWidth: null,
+    iframeHeight: null,
   }
   if (!html?.trim()) return empty
 
@@ -52,10 +57,12 @@ export function parseHolaScriptSnippet(html: string): ParsedHolaSnippet {
     title: decodeAttr(titleRaw),
     greeting: decodeAttr(greetingRaw),
     kind: workspaceId ? 'SCRIPT' : null,
+    iframeWidth: null,
+    iframeHeight: null,
   }
 }
 
-/** Extract workspace from Hola iframe snippet. */
+/** Extract workspace from Hola iframe snippet (full tag, or bare embed/window URL). */
 export function parseHolaIframeSnippet(html: string): ParsedHolaSnippet {
   const empty: ParsedHolaSnippet = {
     workspaceId: null,
@@ -64,10 +71,18 @@ export function parseHolaIframeSnippet(html: string): ParsedHolaSnippet {
     title: null,
     greeting: null,
     kind: null,
+    iframeWidth: null,
+    iframeHeight: null,
   }
   if (!html?.trim()) return empty
 
-  const srcMatch = html.match(/src\s*=\s*["']([^"']+)["']/i)
+  let blob = html.trim()
+  // Bare Hola window URL pasted without <iframe>
+  if (/^https?:\/\//i.test(blob) && /holaora\.com\/embed\/window/i.test(blob)) {
+    blob = `<iframe src="${blob.replace(/"/g, '&quot;')}"></iframe>`
+  }
+
+  const srcMatch = blob.match(/src\s*=\s*["']([^"']+)["']/i)
   const src = srcMatch?.[1] ?? ''
   const q = src.match(/[?&]workspace=([^&]+)/i)
   let workspaceId: string | null = null
@@ -79,9 +94,14 @@ export function parseHolaIframeSnippet(html: string): ParsedHolaSnippet {
     }
   }
   if (!workspaceId || !UUID_RE.test(workspaceId)) {
-    const m = html.match(UUID_RE)
+    const m = blob.match(UUID_RE)
     workspaceId = m ? m[0] : null
   }
+
+  const wAttr = blob.match(/\bwidth\s*=\s*["']?(\d+)/i)?.[1]
+  const hAttr = blob.match(/\bheight\s*=\s*["']?(\d+)/i)?.[1]
+  const iw = wAttr ? parseInt(wAttr, 10) : NaN
+  const ih = hAttr ? parseInt(hAttr, 10) : NaN
 
   return {
     workspaceId,
@@ -90,5 +110,45 @@ export function parseHolaIframeSnippet(html: string): ParsedHolaSnippet {
     title: null,
     greeting: null,
     kind: workspaceId ? 'IFRAME' : null,
+    iframeWidth: Number.isFinite(iw) ? iw : null,
+    iframeHeight: Number.isFinite(ih) ? ih : null,
   }
+}
+
+/**
+ * Paste anything Hola gives you: script tag, iframe tag, or bare embed/window URL.
+ * Prefers script when it contains a valid workspace (more fields).
+ */
+export function parseHolaEmbedPaste(raw: string): ParsedHolaSnippet {
+  const empty: ParsedHolaSnippet = {
+    workspaceId: null,
+    primaryColor: null,
+    position: null,
+    title: null,
+    greeting: null,
+    kind: null,
+    iframeWidth: null,
+    iframeHeight: null,
+  }
+  const html = raw?.trim() ?? ''
+  if (!html) return empty
+
+  const looksScript =
+    /<script/i.test(html) &&
+    (/holaora\.com\/embed\/chat\.js/i.test(html) || /data-workspace/i.test(html))
+  if (looksScript) {
+    const s = parseHolaScriptSnippet(html)
+    if (s.workspaceId) return s
+  }
+
+  const looksIframe = /<iframe/i.test(html) || /holaora\.com\/embed\/window/i.test(html)
+  if (looksIframe) {
+    const i = parseHolaIframeSnippet(html)
+    if (i.workspaceId) return i
+  }
+
+  const s2 = parseHolaScriptSnippet(html)
+  if (s2.workspaceId) return s2
+
+  return parseHolaIframeSnippet(html)
 }
