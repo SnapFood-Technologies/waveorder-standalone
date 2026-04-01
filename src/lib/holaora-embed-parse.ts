@@ -10,6 +10,8 @@ export type ParsedHolaSnippet = {
   position: string | null
   title: string | null
   greeting: string | null
+  suggestionsEnabled?: boolean | null
+  suggestions?: string[] | null
   kind: 'SCRIPT' | 'IFRAME' | null
   /** Set when kind is IFRAME and the snippet had width/height attributes */
   iframeWidth?: number | null
@@ -33,6 +35,8 @@ export function parseHolaScriptSnippet(html: string): ParsedHolaSnippet {
     position: null,
     title: null,
     greeting: null,
+    suggestionsEnabled: null,
+    suggestions: null,
     kind: null,
     iframeWidth: null,
     iframeHeight: null,
@@ -49,6 +53,22 @@ export function parseHolaScriptSnippet(html: string): ParsedHolaSnippet {
   const position = html.match(/data-position\s*=\s*["']([^"']+)["']/i)?.[1] ?? null
   const titleRaw = html.match(/data-title\s*=\s*["']([^"']+)["']/i)?.[1] ?? null
   const greetingRaw = html.match(/data-greeting\s*=\s*["']([^"']+)["']/i)?.[1] ?? null
+  const sugEnRaw = html.match(/data-suggestions-enabled\s*=\s*["']([^"']+)["']/i)?.[1]?.trim().toLowerCase()
+  const suggestionsEnabled =
+    sugEnRaw === 'true' || sugEnRaw === '1' ? true : sugEnRaw === 'false' || sugEnRaw === '0' ? false : null
+  const suggestionsAttr = html.match(/data-suggestions\s*=\s*["']([^"']+)["']/i)?.[1] ?? null
+  let suggestions: string[] | null = null
+  if (suggestionsAttr) {
+    try {
+      const decoded = decodeURIComponent(suggestionsAttr.replace(/\+/g, ' '))
+      const arr = JSON.parse(decoded) as unknown
+      if (Array.isArray(arr) && arr.every((x) => typeof x === 'string')) {
+        suggestions = arr as string[]
+      }
+    } catch {
+      /* ignore */
+    }
+  }
 
   return {
     workspaceId,
@@ -56,6 +76,8 @@ export function parseHolaScriptSnippet(html: string): ParsedHolaSnippet {
     position,
     title: decodeAttr(titleRaw),
     greeting: decodeAttr(greetingRaw),
+    suggestionsEnabled,
+    suggestions,
     kind: workspaceId ? 'SCRIPT' : null,
     iframeWidth: null,
     iframeHeight: null,
@@ -70,6 +92,8 @@ export function parseHolaIframeSnippet(html: string): ParsedHolaSnippet {
     position: null,
     title: null,
     greeting: null,
+    suggestionsEnabled: null,
+    suggestions: null,
     kind: null,
     iframeWidth: null,
     iframeHeight: null,
@@ -109,6 +133,8 @@ export function parseHolaIframeSnippet(html: string): ParsedHolaSnippet {
     position: null,
     title: null,
     greeting: null,
+    suggestionsEnabled: null,
+    suggestions: null,
     kind: workspaceId ? 'IFRAME' : null,
     iframeWidth: Number.isFinite(iw) ? iw : null,
     iframeHeight: Number.isFinite(ih) ? ih : null,
@@ -126,6 +152,8 @@ export function parseHolaEmbedPaste(raw: string): ParsedHolaSnippet {
     position: null,
     title: null,
     greeting: null,
+    suggestionsEnabled: null,
+    suggestions: null,
     kind: null,
     iframeWidth: null,
     iframeHeight: null,

@@ -9,6 +9,12 @@ import { mergeProductWhereVisitorCountry, resolveVisitorCountryIso } from '@/lib
 import * as Sentry from '@sentry/nextjs'
 import { getHolaoraEmbedScriptUrl } from '@/lib/holaora-embed-constants'
 
+function holaSuggestionsFromDb(json: unknown): string[] | null {
+  if (json == null) return null
+  if (Array.isArray(json) && json.every((x) => typeof x === 'string')) return json as string[]
+  return null
+}
+
 function formatBusinessHours(businessHours: any): string | null {
   if (!businessHours) return null
   
@@ -848,6 +854,8 @@ export async function GET(
       holaoraChatPosition: business.holaoraChatPosition ?? null,
       holaoraChatTitle: business.holaoraChatTitle ?? null,
       holaoraChatGreeting: business.holaoraChatGreeting ?? null,
+      holaoraChatSuggestionsEnabled: business.holaoraChatSuggestionsEnabled ?? false,
+      holaoraChatSuggestions: holaSuggestionsFromDb(business.holaoraChatSuggestions) ?? null,
       holaoraIframeWidth: business.holaoraIframeWidth ?? null,
       holaoraIframeHeight: business.holaoraIframeHeight ?? null,
       holaoraEmbedScriptUrl: getHolaoraEmbedScriptUrl(),

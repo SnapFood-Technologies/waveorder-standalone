@@ -16,6 +16,8 @@ const patchSchema = z
     holaoraChatPosition: z.union([z.string().max(64), z.null()]).optional(),
     holaoraChatTitle: z.union([z.string().max(200), z.null()]).optional(),
     holaoraChatGreeting: z.union([z.string().max(500), z.null()]).optional(),
+    holaoraChatSuggestionsEnabled: z.boolean().optional(),
+    holaoraChatSuggestions: z.union([z.array(z.string().max(200)).max(30), z.null()]).optional(),
     holaoraIframeWidth: z.union([z.number().int().min(200).max(1200), z.null()]).optional(),
     holaoraIframeHeight: z.union([z.number().int().min(200).max(1200), z.null()]).optional(),
   })
@@ -43,6 +45,8 @@ export async function GET(
         holaoraChatPosition: true,
         holaoraChatTitle: true,
         holaoraChatGreeting: true,
+        holaoraChatSuggestionsEnabled: true,
+        holaoraChatSuggestions: true,
         holaoraIframeWidth: true,
         holaoraIframeHeight: true,
         holaoraSetupUrl: true,
@@ -65,6 +69,10 @@ export async function GET(
       holaoraChatPosition: business.holaoraChatPosition,
       holaoraChatTitle: business.holaoraChatTitle,
       holaoraChatGreeting: business.holaoraChatGreeting,
+      holaoraChatSuggestionsEnabled: business.holaoraChatSuggestionsEnabled ?? false,
+      holaoraChatSuggestions: Array.isArray(business.holaoraChatSuggestions)
+        ? (business.holaoraChatSuggestions as string[])
+        : null,
       holaoraIframeWidth: business.holaoraIframeWidth,
       holaoraIframeHeight: business.holaoraIframeHeight,
       holaoraSetupUrl: business.holaoraSetupUrl,
@@ -158,6 +166,10 @@ export async function PATCH(
     if (p.holaoraChatPosition !== undefined) data.holaoraChatPosition = p.holaoraChatPosition
     if (p.holaoraChatTitle !== undefined) data.holaoraChatTitle = p.holaoraChatTitle
     if (p.holaoraChatGreeting !== undefined) data.holaoraChatGreeting = p.holaoraChatGreeting
+    if (p.holaoraChatSuggestionsEnabled !== undefined)
+      data.holaoraChatSuggestionsEnabled = p.holaoraChatSuggestionsEnabled
+    if (p.holaoraChatSuggestions !== undefined)
+      data.holaoraChatSuggestions = p.holaoraChatSuggestions as Prisma.InputJsonValue
     if (p.holaoraIframeWidth !== undefined) data.holaoraIframeWidth = p.holaoraIframeWidth
     if (p.holaoraIframeHeight !== undefined) data.holaoraIframeHeight = p.holaoraIframeHeight
 
@@ -172,6 +184,8 @@ export async function PATCH(
         holaoraChatPosition: true,
         holaoraChatTitle: true,
         holaoraChatGreeting: true,
+        holaoraChatSuggestionsEnabled: true,
+        holaoraChatSuggestions: true,
         holaoraIframeWidth: true,
         holaoraIframeHeight: true,
         aiAssistantEnabled: true,
@@ -187,6 +201,10 @@ export async function PATCH(
       holaoraChatPosition: updated.holaoraChatPosition,
       holaoraChatTitle: updated.holaoraChatTitle,
       holaoraChatGreeting: updated.holaoraChatGreeting,
+      holaoraChatSuggestionsEnabled: updated.holaoraChatSuggestionsEnabled ?? false,
+      holaoraChatSuggestions: Array.isArray(updated.holaoraChatSuggestions)
+        ? (updated.holaoraChatSuggestions as string[])
+        : null,
       holaoraIframeWidth: updated.holaoraIframeWidth,
       holaoraIframeHeight: updated.holaoraIframeHeight,
       aiAssistantEnabled: updated.aiAssistantEnabled,

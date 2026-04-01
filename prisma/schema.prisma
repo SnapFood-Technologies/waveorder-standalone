@@ -475,6 +475,10 @@ model Business {
   holaoraChatTitle              String?
   /// Script tag: data-greeting.
   holaoraChatGreeting           String?
+  /// Script tag: data-suggestions-enabled (Hola quick-reply chips).
+  holaoraChatSuggestionsEnabled Boolean @default(false)
+  /// Script tag: data-suggestions — JSON string[] (stored as Json).
+  holaoraChatSuggestions        Json?
   /// Iframe embed width/height (defaults 400×600 per Hola docs).
   holaoraIframeWidth            Int?
   holaoraIframeHeight           Int?
