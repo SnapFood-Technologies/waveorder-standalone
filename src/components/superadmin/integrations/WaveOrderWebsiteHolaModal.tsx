@@ -241,7 +241,7 @@ export function WaveOrderWebsiteHolaModal({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50">
-      <div className="bg-white rounded-xl shadow-xl max-w-xl w-full max-h-[92vh] overflow-y-auto">
+      <div className="bg-white rounded-xl shadow-xl max-w-xl w-full max-h-[92vh] overflow-y-auto scrollbar-hide">
         <div className="sticky top-0 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Globe className="w-5 h-5 text-teal-600" />
