@@ -96,7 +96,7 @@ export default function Resources() {
       questions: [
         {
           question: "What payment methods can I accept?",
-          answer: "Configure cash on delivery, bank transfers, and integrate with payment gateways like Stripe and PayPal. Regional payment methods are supported based on your location."
+          answer: "WaveOrder is set up for cash when orders are delivered or picked up (or when appointments or sessions are completed). You coordinate payment directly with customers. Additional payment methods may be offered in the future."
         },
         {
           question: "Are there any commission fees?",

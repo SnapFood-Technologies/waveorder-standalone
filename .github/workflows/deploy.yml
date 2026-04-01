@@ -118,6 +118,9 @@ jobs:
 
           # API Docs
           API_DOCS_PASSWORD: ${{ secrets.API_DOCS_PASSWORD }}
+
+          # HolaOra (encrypted Hola dashboard passwords in Integration config)
+          HOLAORA_PORTAL_CREDENTIALS_ENCRYPTION_KEY: ${{ secrets.HOLAORA_PORTAL_CREDENTIALS_ENCRYPTION_KEY }}
           
           # 📱 Twilio WhatsApp
           TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
@@ -205,6 +208,9 @@ jobs:
 
           # API Docs
           API_DOCS_PASSWORD=${{ secrets.API_DOCS_PASSWORD }}
+
+          # HolaOra (encrypted Hola dashboard passwords in Integration config)
+          HOLAORA_PORTAL_CREDENTIALS_ENCRYPTION_KEY=${{ secrets.HOLAORA_PORTAL_CREDENTIALS_ENCRYPTION_KEY }}
 
           # 📱 Twilio WhatsApp
           TWILIO_ACCOUNT_SID=${{ secrets.TWILIO_ACCOUNT_SID }}

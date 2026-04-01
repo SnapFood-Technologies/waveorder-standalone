@@ -79,8 +79,8 @@ export default function Features() {
     },
     {
       icon: CreditCard,
-      title: "Payment Flexibility",
-      description: "Cash on delivery, bank transfers, and regional payment methods",
+      title: "Cash payments",
+      description: "Customers pay cash on delivery, pickup, or when the service is completed—configured per your business type",
       category: "Payments",
       color: "bg-purple-50 border-purple-100 text-purple-700"
     },

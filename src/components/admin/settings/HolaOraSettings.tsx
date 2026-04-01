@@ -10,10 +10,9 @@ import {
   Code,
   ChevronDown,
   ChevronUp,
-  MessageCircle,
 } from 'lucide-react'
 import { HOLAORA_EMBED_IFRAME_BASE, HOLAORA_EMBED_SCRIPT_DEFAULT } from '@/lib/holaora-embed-constants'
-import { parseHolaIframeSnippet, parseHolaScriptSnippet } from '@/lib/holaora-embed-parse'
+import { parseHolaEmbedPaste } from '@/lib/holaora-embed-parse'
 
 type EmbedKind = 'SCRIPT' | 'IFRAME'
 
@@ -62,12 +61,9 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
   const [iframeW, setIframeW] = useState('400')
   const [iframeH, setIframeH] = useState('600')
 
-  const [showScriptPaste, setShowScriptPaste] = useState(false)
-  const [scriptPaste, setScriptPaste] = useState('')
-  const [scriptPasteErr, setScriptPasteErr] = useState<string | null>(null)
-  const [showIframePaste, setShowIframePaste] = useState(false)
-  const [iframePaste, setIframePaste] = useState('')
-  const [iframePasteErr, setIframePasteErr] = useState<string | null>(null)
+  const [showEmbedPaste, setShowEmbedPaste] = useState(false)
+  const [embedPaste, setEmbedPaste] = useState('')
+  const [embedPasteErr, setEmbedPasteErr] = useState<string | null>(null)
 
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
 
@@ -138,34 +134,27 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
     }
   }
 
-  const applyScriptPaste = () => {
-    setScriptPasteErr(null)
-    const parsed = parseHolaScriptSnippet(scriptPaste)
-    if (!parsed.workspaceId) {
-      setScriptPasteErr('Could not find a workspace UUID in the pasted code. Paste the full script tag from HolaOra.')
+  const applyEmbedPaste = () => {
+    setEmbedPasteErr(null)
+    const parsed = parseHolaEmbedPaste(embedPaste)
+    if (!parsed.workspaceId || !parsed.kind) {
+      setEmbedPasteErr(
+        'Could not find a Hola workspace. Paste the script tag, iframe tag, or embed/window URL from HolaOra.'
+      )
       return
     }
     setWorkspaceId(parsed.workspaceId)
-    setEmbedKind('SCRIPT')
+    setEmbedKind(parsed.kind)
     if (parsed.primaryColor) setPrimaryColor(parsed.primaryColor)
     if (parsed.position) setPosition(parsed.position)
     if (parsed.title) setChatTitle(parsed.title)
     if (parsed.greeting) setGreeting(parsed.greeting)
-    setScriptPaste('')
-    setShowScriptPaste(false)
-  }
-
-  const applyIframePaste = () => {
-    setIframePasteErr(null)
-    const parsed = parseHolaIframeSnippet(iframePaste)
-    if (!parsed.workspaceId) {
-      setIframePasteErr('Could not find a workspace in the iframe src. Paste the full iframe tag from HolaOra.')
-      return
+    if (parsed.kind === 'IFRAME') {
+      if (parsed.iframeWidth != null) setIframeW(String(parsed.iframeWidth))
+      if (parsed.iframeHeight != null) setIframeH(String(parsed.iframeHeight))
     }
-    setWorkspaceId(parsed.workspaceId)
-    setEmbedKind('IFRAME')
-    setIframePaste('')
-    setShowIframePaste(false)
+    setEmbedPaste('')
+    setShowEmbedPaste(false)
   }
 
   const dirty = useMemo(() => {
@@ -362,68 +351,40 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
             />
           </div>
 
-          {/* Paste helpers — same idea as Meta Pixel “paste full snippet” */}
+          {/* Paste full script or iframe from Hola — auto-detects and fills fields */}
           <div className="rounded-lg border border-gray-100 bg-gray-50 p-4 space-y-3">
             <button
               type="button"
               onClick={() => {
-                setShowScriptPaste((v) => !v)
-                setScriptPasteErr(null)
+                setShowEmbedPaste((v) => !v)
+                setEmbedPasteErr(null)
               }}
               className="flex items-center gap-2 text-sm font-medium text-teal-700"
             >
               <Code className="w-4 h-4" />
-              Paste script tag from HolaOra
-              {showScriptPaste ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              Paste embed from HolaOra (script or iframe)
+              {showEmbedPaste ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
-            {showScriptPaste && (
+            {showEmbedPaste && (
               <div className="space-y-2">
+                <p className="text-xs text-gray-600">
+                  Copy the <strong>script</strong> or <strong>iframe</strong> block from your Hola dashboard (or a bare
+                  embed/window URL). We detect the type and prefill workspace, colors, title, and size.
+                </p>
                 <textarea
-                  value={scriptPaste}
-                  onChange={(e) => setScriptPaste(e.target.value)}
-                  rows={5}
-                  placeholder='<script src="https://holaora.com/embed/chat.js" data-workspace="..." ...>'
+                  value={embedPaste}
+                  onChange={(e) => setEmbedPaste(e.target.value)}
+                  rows={6}
+                  placeholder='<script src="https://holaora.com/embed/chat.js" ...> or <iframe src="https://holaora.com/embed/window?workspace=...">'
                   className="w-full rounded border border-gray-200 p-2 text-xs font-mono"
                 />
-                {scriptPasteErr && <p className="text-xs text-red-600">{scriptPasteErr}</p>}
+                {embedPasteErr && <p className="text-xs text-red-600">{embedPasteErr}</p>}
                 <button
                   type="button"
-                  onClick={applyScriptPaste}
+                  onClick={applyEmbedPaste}
                   className="text-sm px-3 py-1.5 rounded-lg bg-teal-600 text-white hover:bg-teal-700"
                 >
-                  Extract workspace & options
-                </button>
-              </div>
-            )}
-
-            <button
-              type="button"
-              onClick={() => {
-                setShowIframePaste((v) => !v)
-                setIframePasteErr(null)
-              }}
-              className="flex items-center gap-2 text-sm font-medium text-teal-700"
-            >
-              <MessageCircle className="w-4 h-4" />
-              Paste iframe from HolaOra
-              {showIframePaste ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
-            {showIframePaste && (
-              <div className="space-y-2">
-                <textarea
-                  value={iframePaste}
-                  onChange={(e) => setIframePaste(e.target.value)}
-                  rows={5}
-                  placeholder='<iframe src="https://holaora.com/embed/window?workspace=..." ...>'
-                  className="w-full rounded border border-gray-200 p-2 text-xs font-mono"
-                />
-                {iframePasteErr && <p className="text-xs text-red-600">{iframePasteErr}</p>}
-                <button
-                  type="button"
-                  onClick={applyIframePaste}
-                  className="text-sm px-3 py-1.5 rounded-lg bg-teal-600 text-white hover:bg-teal-700"
-                >
-                  Extract workspace (switches to iframe mode)
+                  Apply to fields
                 </button>
               </div>
             )}
