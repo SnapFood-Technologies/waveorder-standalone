@@ -33,8 +33,8 @@ type DirectoryRow = {
 }
 
 const PAGE_SIZE = 25
+/** Matches /superadmin/businesses default list: active, non-test stores only. */
 const FILTERS = [
-  { id: 'all', label: 'All' },
   { id: 'active', label: 'Active' },
   { id: 'hola_linked', label: 'Hola linked' },
   { id: 'hola_entitled', label: 'Hola entitled' },
@@ -43,7 +43,7 @@ const FILTERS = [
 type Props = { hasHolaIntegrationRow: boolean }
 
 export function HolaOraBusinessDirectory({ hasHolaIntegrationRow }: Props) {
-  const [filter, setFilter] = useState<(typeof FILTERS)[number]['id']>('all')
+  const [filter, setFilter] = useState<(typeof FILTERS)[number]['id']>('active')
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const [skip, setSkip] = useState(0)
@@ -177,8 +177,9 @@ export function HolaOraBusinessDirectory({ hasHolaIntegrationRow }: Props) {
           <div>
             <h2 className="font-semibold text-gray-900">Businesses — HolaOra hub</h2>
             <p className="text-xs text-gray-500 mt-1">
-              Search, link manual Hola tenant ids, set entitlement source (Stripe vs manual), bundle tier, and run
-              sync (stub logs today; Hola HTTP later).
+              Same scope as <strong>SuperAdmin → Businesses</strong> default (active, non-test). Filters: all active
+              stores, or those with a Hola id / Hola entitlement. Manage: manual tenant id, Stripe vs manual source,
+              bundle tier, sync (stub until Hola HTTP).
             </p>
           </div>
           <button

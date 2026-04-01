@@ -838,7 +838,7 @@ export default function IntegrationsPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-5 space-y-4 overflow-y-auto flex-1">
+            <div className="p-5 space-y-4 overflow-y-auto flex-1 min-h-0 scrollbar-hide">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Integration type *</label>
                 <select
@@ -949,7 +949,7 @@ export default function IntegrationsPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-800 mb-2">Public API (v1) scopes *</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-teal-100 rounded-lg p-2 bg-white">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-teal-100 rounded-lg p-2 bg-white scrollbar-hide">
                       {ALL_V1_API_SCOPES.map((scope) => (
                         <label key={scope} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                           <input
@@ -1032,7 +1032,7 @@ export default function IntegrationsPage() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="p-5 space-y-4 overflow-y-auto flex-1">
+            <div className="p-5 space-y-4 overflow-y-auto flex-1 min-h-0 scrollbar-hide">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Integration type *</label>
                 <select
@@ -1128,7 +1128,7 @@ export default function IntegrationsPage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-800 mb-2">Public API (v1) scopes *</label>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-teal-100 rounded-lg p-2 bg-white">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-teal-100 rounded-lg p-2 bg-white scrollbar-hide">
                       {ALL_V1_API_SCOPES.map((scope) => (
                         <label key={scope} className="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                           <input
