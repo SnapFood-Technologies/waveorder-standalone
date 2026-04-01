@@ -28,7 +28,6 @@ type DirectoryRow = {
   holaoraEntitlementSource: string
   holaoraProvisionBundleType: string | null
   holaoraProvisioningStatus: string | null
-  holaoraSuperAdminForceOff: boolean
   holaoraStorefrontEmbedEnabled: boolean
 }
 
@@ -59,7 +58,6 @@ export function HolaOraBusinessDirectory({ hasHolaIntegrationRow }: Props) {
   const [formEntitled, setFormEntitled] = useState(false)
   const [formSource, setFormSource] = useState<string>(HOLA_ENTITLEMENT_SOURCE_STRIPE)
   const [formBundle, setFormBundle] = useState<string>('')
-  const [formForceOff, setFormForceOff] = useState(false)
 
   const [syncBundle, setSyncBundle] = useState<'FREE' | 'PAID'>('PAID')
 
@@ -103,7 +101,6 @@ export function HolaOraBusinessDirectory({ hasHolaIntegrationRow }: Props) {
     setFormEntitled(r.holaoraEntitled)
     setFormSource(r.holaoraEntitlementSource || HOLA_ENTITLEMENT_SOURCE_STRIPE)
     setFormBundle(r.holaoraProvisionBundleType || '')
-    setFormForceOff(r.holaoraSuperAdminForceOff)
   }
 
   const saveManage = async () => {
@@ -113,7 +110,6 @@ export function HolaOraBusinessDirectory({ hasHolaIntegrationRow }: Props) {
       const body: Record<string, unknown> = {
         holaoraEntitled: formEntitled,
         holaoraEntitlementSource: formSource,
-        holaoraSuperAdminForceOff: formForceOff,
         holaoraProvisionBundleType: formBundle === '' ? null : formBundle,
       }
       body.holaoraAccountId =
@@ -271,9 +267,6 @@ export function HolaOraBusinessDirectory({ hasHolaIntegrationRow }: Props) {
                     <div className="truncate" title={r.holaoraProvisioningStatus || ''}>
                       {r.holaoraProvisioningStatus || '—'}
                     </div>
-                    {r.holaoraSuperAdminForceOff && (
-                      <span className="text-amber-700 block">Force off</span>
-                    )}
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex flex-col gap-1">
@@ -384,15 +377,6 @@ export function HolaOraBusinessDirectory({ hasHolaIntegrationRow }: Props) {
                 <option value="PAID">PAID</option>
               </select>
             </div>
-
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={formForceOff}
-                onChange={(e) => setFormForceOff(e.target.checked)}
-              />
-              Force storefront embed off (support kill switch)
-            </label>
 
             <div className="flex justify-end gap-2 pt-2">
               <button

@@ -66,7 +66,6 @@ export async function GET(request: NextRequest) {
           holaoraEntitlementSource: true,
           holaoraProvisionBundleType: true,
           holaoraProvisioningStatus: true,
-          holaoraSuperAdminForceOff: true,
           holaoraStorefrontEmbedEnabled: true,
           createdAt: true,
         },

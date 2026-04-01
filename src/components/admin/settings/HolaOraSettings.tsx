@@ -10,7 +10,6 @@ type HolaState = {
   holaoraSetupUrl: string | null
   holaoraProvisioningStatus: string | null
   holaoraProvisioningError: string | null
-  holaoraSuperAdminForceOff: boolean
   aiAssistantEnabled: boolean
 }
 
@@ -78,8 +77,7 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
     )
   }
 
-  const forcedOff = data.holaoraSuperAdminForceOff
-  const canToggleEmbed = data.holaoraEntitled && !forcedOff
+  const canToggleEmbed = data.holaoraEntitled
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -105,13 +103,6 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
             {data.holaoraEntitled ? 'Active' : 'Not included'}
           </span>
         </div>
-
-        {forcedOff && (
-          <p className="text-sm text-amber-800 bg-amber-50 rounded-lg px-3 py-2">
-            HolaOra embed is disabled by WaveOrder support for this store. Contact support if this is a
-            mistake.
-          </p>
-        )}
 
         <div className="flex justify-between gap-4 text-sm">
           <span className="text-gray-700">HolaOra account</span>

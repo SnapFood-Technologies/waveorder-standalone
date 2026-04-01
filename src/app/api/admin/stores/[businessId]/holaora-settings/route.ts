@@ -28,7 +28,6 @@ export async function GET(
         holaoraSetupUrl: true,
         holaoraProvisioningStatus: true,
         holaoraProvisioningError: true,
-        holaoraSuperAdminForceOff: true,
         aiAssistantEnabled: true,
       },
     })
@@ -44,7 +43,6 @@ export async function GET(
       holaoraSetupUrl: business.holaoraSetupUrl,
       holaoraProvisioningStatus: business.holaoraProvisioningStatus,
       holaoraProvisioningError: business.holaoraProvisioningError,
-      holaoraSuperAdminForceOff: business.holaoraSuperAdminForceOff,
       aiAssistantEnabled: business.aiAssistantEnabled,
     })
   } catch (e) {

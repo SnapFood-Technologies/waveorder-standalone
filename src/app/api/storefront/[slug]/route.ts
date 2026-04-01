@@ -834,14 +834,22 @@ export async function GET(
 
       // Custom Features
       aiAssistantEnabled: business.aiAssistantEnabled || false,
-      showHolaOraEmbed: Boolean(
-        business.holaoraEntitled &&
-          !business.holaoraSuperAdminForceOff &&
-          business.holaoraStorefrontEmbedEnabled &&
-          business.holaoraAccountId
-      ),
-      holaoraAccountId: business.holaoraAccountId || null,
-      holaoraEmbedScriptUrl: process.env.NEXT_PUBLIC_HOLAORA_EMBED_SCRIPT_URL || null,
+      // --- HolaOra storefront embed (DISABLED) ---
+      // Partner script (NEXT_PUBLIC_HOLAORA_EMBED_SCRIPT_URL) loads after hydration via HolaOraEmbed;
+      // it can add network cost, main-thread jank, and perceived delay. Re-enable only after measuring
+      // and accepting that cost; also uncomment <HolaOraEmbed> in StoreFront / SalonStoreFront / ServicesStoreFront.
+      // Previous gate (restore if turning embed back on):
+      // showHolaOraEmbed: Boolean(
+      //   business.holaoraEntitled &&
+      //     !business.holaoraSuperAdminForceOff &&
+      //     business.holaoraStorefrontEmbedEnabled &&
+      //     business.holaoraAccountId
+      // ),
+      // holaoraAccountId: business.holaoraAccountId || null,
+      // holaoraEmbedScriptUrl: process.env.NEXT_PUBLIC_HOLAORA_EMBED_SCRIPT_URL || null,
+      showHolaOraEmbed: false,
+      holaoraAccountId: null,
+      holaoraEmbedScriptUrl: null,
       metaPixelEnabled: business.metaPixelEnabled || false,
       metaPixelId: business.metaPixelId || null,
       aiChatIcon: business.aiChatIcon || 'message',
