@@ -43,7 +43,6 @@ export async function GET(
         metaCatalogExportEnabled: true,
         metaPixelEnabled: true,
         storefrontAvailabilityDotEnabled: true,
-        holaoraSuperAdminForceOff: true
       }
     })
 
@@ -68,7 +67,6 @@ export async function GET(
         metaCatalogExportEnabled: business.metaCatalogExportEnabled,
         metaPixelEnabled: business.metaPixelEnabled,
         storefrontAvailabilityDotEnabled: business.storefrontAvailabilityDotEnabled,
-        holaoraSuperAdminForceOff: business.holaoraSuperAdminForceOff
       }
     })
   } catch (error) {
@@ -115,7 +113,6 @@ export async function PATCH(
         metaCatalogExportEnabled,
         metaPixelEnabled,
         storefrontAvailabilityDotEnabled,
-        holaoraSuperAdminForceOff
     } = body
 
     // Validate business exists
@@ -134,7 +131,6 @@ export async function PATCH(
         metaCatalogExportEnabled: true,
         metaPixelEnabled: true,
         storefrontAvailabilityDotEnabled: true,
-        holaoraSuperAdminForceOff: true,
       },
     })
 
@@ -155,8 +151,6 @@ export async function PATCH(
     if (metaPixelEnabled !== undefined) updateData.metaPixelEnabled = metaPixelEnabled
     if (storefrontAvailabilityDotEnabled !== undefined)
       updateData.storefrontAvailabilityDotEnabled = storefrontAvailabilityDotEnabled
-    if (holaoraSuperAdminForceOff !== undefined)
-      updateData.holaoraSuperAdminForceOff = holaoraSuperAdminForceOff
 
     if (
       updateData.aiAssistantEnabled === true &&
@@ -182,7 +176,6 @@ export async function PATCH(
         metaCatalogExportEnabled: true,
         metaPixelEnabled: true,
         storefrontAvailabilityDotEnabled: true,
-        holaoraSuperAdminForceOff: true
       }
     })
 
@@ -200,7 +193,6 @@ export async function PATCH(
         metaCatalogExportEnabled: updatedBusiness.metaCatalogExportEnabled,
         metaPixelEnabled: updatedBusiness.metaPixelEnabled,
         storefrontAvailabilityDotEnabled: updatedBusiness.storefrontAvailabilityDotEnabled,
-        holaoraSuperAdminForceOff: updatedBusiness.holaoraSuperAdminForceOff
       }
     })
   } catch (error) {

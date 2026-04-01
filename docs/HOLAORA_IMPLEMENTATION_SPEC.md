@@ -1,6 +1,6 @@
 # HolaOra — WaveOrder implementation spec (from product decisions)
 
-**Status:** WaveOrder-side wiring is in place: **Stripe entitlement sync** (webhook), **provisioning stubs** (`HOLAORA_PROVISIONING_STUB`), **business admin** (Settings → HolaOra), **SuperAdmin force-off** + **AI/Hola mutex**, **storefront embed shell** (`HolaOraEmbed` + `NEXT_PUBLIC_HOLAORA_EMBED_SCRIPT_URL`). Still **deferred:** real provisioning HTTP client and final embed snippet contract from HolaOra.
+**Status:** WaveOrder-side wiring is in place: **Stripe entitlement sync** (webhook), **provisioning stubs** (`HOLAORA_PROVISIONING_STUB`), **business admin** (Settings → HolaOra), **AI/Hola mutex** (validation only), **storefront embed shell** (`HolaOraEmbed` + `NEXT_PUBLIC_HOLAORA_EMBED_SCRIPT_URL`). Still **deferred:** real provisioning HTTP client and final embed snippet contract from HolaOra.
 
 **Purpose:** One place for **concrete repo changes** agreed for the integration module + HolaOra. Partner HTTP and embed details remain **deferred** until HolaOra documents them.
 
@@ -29,7 +29,7 @@
    - **`holaoraEntitled Boolean`** — subscription includes a Stripe price listed in platform Hola `Integration.config.entitlementStripePriceIds` (synced from webhooks).
    - **`holaoraStorefrontEmbedEnabled Boolean`** — merchant toggle (Settings → HolaOra).
    - **`holaoraSetupUrl String?`** — optional setup URL from future provisioning response.
-   - **`holaoraSuperAdminForceOff Boolean`** — SuperAdmin hides embed on storefront regardless of merchant toggle.
+   - **`holaoraSuperAdminForceOff Boolean`** — legacy DB field; app no longer uses it (kept for existing rows).
    - **`holaoraProvisioningStatus` / `holaoraProvisioningError String?`** — last stub or future HTTP outcome.
 
 3. Run your usual **Prisma** workflow (`db push` / migration) for the database.
@@ -82,7 +82,7 @@ Optional later: **GET** `/api/superadmin/integrations/holaora` returning the sin
 | **Content** | Load the **`Integration`** with **`kind === HOLAORA`** (or fixed slug `holaora` if you enforce it); show Hola **config**, **connected businesses** (same rules as today: `externalIds[slug]` until you migrate counts to `holaoraAccountId`), shortcuts to **API Logs** / main integrations list. |
 | **Sidebar** | [`src/components/superadmin/layout/SuperAdminSidebar.tsx`](../src/components/superadmin/layout/SuperAdminSidebar.tsx) — under **Integrations**, add child **HolaOra** → `/superadmin/integrations/holaora`. |
 
-**Hub behavior (business directory):** paginated list (`GET .../holaora/directory`) scoped like **SuperAdmin → Businesses** default: **active** and **non-test** only; filters **Active** (all such stores), **Hola linked**, **Hola entitled**; search on name/slug. **Manage** modal → `PATCH /api/superadmin/businesses/[id]/holaora-link` (manual `holaoraAccountId`, `holaoraEntitled`, `holaoraEntitlementSource` **STRIPE** vs **MANUAL**, `holaoraProvisionBundleType` **FREE**/**PAID**, `holaoraSuperAdminForceOff`). **MANUAL** entitlement → Stripe webhooks **do not** change that business’s Hola entitlement. **Sync** → `POST .../holaora-sync` with `{ bundleType: FREE | PAID }` (stores tier, logs, runs stub provision if entitled).
+**Hub behavior (business directory):** paginated list (`GET .../holaora/directory`) scoped like **SuperAdmin → Businesses** default: **active** and **non-test** only; filters **Active** (all such stores), **Hola linked**, **Hola entitled**; search on name/slug. **Manage** modal → `PATCH /api/superadmin/businesses/[id]/holaora-link` (manual `holaoraAccountId`, `holaoraEntitled`, `holaoraEntitlementSource` **STRIPE** vs **MANUAL**, `holaoraProvisionBundleType` **FREE**/**PAID**). **MANUAL** entitlement → Stripe webhooks **do not** change that business’s Hola entitlement. **Sync** → `POST .../holaora-sync` with `{ bundleType: FREE | PAID }` (stores tier, logs, runs stub provision if entitled).
 
 Update **`HOLAORA_INTEGRATION.md` §5** when you want the architecture doc to mention this route explicitly.
 
@@ -100,8 +100,7 @@ Update **`HOLAORA_INTEGRATION.md` §5** when you want the architecture doc to me
 
 - **Not** in HolaOra’s docs — WaveOrder rule: only one of **AI chat** or **Hola embed** should be on.
 - **Validation (400):** AI and Hola storefront embed cannot both be on. **`PATCH .../custom-features`**: cannot enable **AI** while **`holaoraStorefrontEmbedEnabled`** is true (message tells admin to turn off Hola embed first). **`PATCH .../holaora-settings`**: cannot enable **Hola embed** while **`aiAssistantEnabled`** is true (message tells admin to disable AI in Custom features). **`PUT .../admin/stores/[id]`**: rejects if the update would leave both true.
-- Toggle **HolaOra embed (force off)** (`holaoraSuperAdminForceOff`) still hides embed on the storefront even if the merchant enabled it.
-- **Storefront:** `GET /api/storefront/[slug]` exposes **`showHolaOraEmbed`**; components render **`HolaOraEmbed`** when true and **`AiChatBubble`** only when **`aiAssistantEnabled && !showHolaOraEmbed`**.
+- **Storefront:** `GET /api/storefront/[slug]` exposes **`showHolaOraEmbed`** when entitled, merchant embed on, and account id set; components render **`HolaOraEmbed`** when true and **`AiChatBubble`** only when **`aiAssistantEnabled && !showHolaOraEmbed`**.
 
 ---
 

@@ -48,7 +48,8 @@ import { FaFacebook, FaLinkedin, FaTelegram, FaWhatsapp } from 'react-icons/fa'
 import { FaXTwitter } from 'react-icons/fa6'
 import LegalPagesModal from './LegalPagesModal'
 import { AiChatBubble } from './AiChatBubble'
-import { HolaOraEmbed } from './HolaOraEmbed'
+// HolaOra embed disabled storefront-wide — partner script can delay / jank the page (see API storefront route).
+// import { HolaOraEmbed } from './HolaOraEmbed'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
 import { logStorefrontWhatsAppOrderRedirect } from '@/lib/client-system-log'
 import { PhoneInput } from '../site/PhoneInput'
@@ -115,6 +116,8 @@ interface StoreData {
   serviceAllowRequestByEmail?: boolean
   serviceAllowRequestByWhatsApp?: boolean
   aiAssistantEnabled?: boolean
+  // HolaOra: storefront JSON from GET /api/storefront/[slug] still includes these keys; this interface matches that shape.
+  // Embed is disabled in the API + UI (see route + HolaOraEmbed comments); values are inert until re-enabled.
   showHolaOraEmbed?: boolean
   holaoraAccountId?: string | null
   holaoraEmbedScriptUrl?: string | null
@@ -1233,14 +1236,14 @@ export default function ServicesStoreFront({ storeData }: { storeData: StoreData
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: storeData.fontFamily || 'system-ui' }}>
-      {storeData.showHolaOraEmbed && storeData.holaoraAccountId && (
+      {/* HolaOra: intentionally not mounted — third-party embed script risk (delay / main-thread). See GET storefront API. */}
+      {/* {storeData.showHolaOraEmbed && storeData.holaoraAccountId && (
         <HolaOraEmbed
           accountId={storeData.holaoraAccountId}
           scriptUrl={storeData.holaoraEmbedScriptUrl || undefined}
         />
-      )}
+      )} */}
       {storeData.aiAssistantEnabled &&
-        !storeData.showHolaOraEmbed &&
         !showBookingModal &&
         !showServiceModal &&
         !showBusinessInfoModal &&

@@ -467,7 +467,7 @@ model Business {
   holaoraStorefrontEmbedEnabled Boolean @default(false)
   /// One-time setup URL from HolaOra provisioning response (optional).
   holaoraSetupUrl               String?
-  /// SuperAdmin: force HolaOra storefront embed off regardless of merchant toggle.
+  /// Legacy column; no longer read or written by the app (embed visibility = entitlement + merchant toggle + AI mutex).
   holaoraSuperAdminForceOff     Boolean @default(false)
   /// Last provisioning / deprovision outcome for ops (e.g. pending_partner_api, stub_success, deprovisioned_local).
   holaoraProvisioningStatus     String?

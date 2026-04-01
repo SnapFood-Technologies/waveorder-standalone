@@ -12,11 +12,10 @@ const patchSchema = z.object({
   holaoraEntitled: z.boolean().optional(),
   holaoraEntitlementSource: z.enum([HOLA_ENTITLEMENT_SOURCE_STRIPE, HOLA_ENTITLEMENT_SOURCE_MANUAL]).optional(),
   holaoraProvisionBundleType: z.enum(['FREE', 'PAID']).nullable().optional(),
-  holaoraSuperAdminForceOff: z.boolean().optional(),
 })
 
 /**
- * SuperAdmin: link / update Hola fields for a business (manual id, entitlement source, bundle tier, force-off).
+ * SuperAdmin: link / update Hola fields for a business (manual id, entitlement source, bundle tier).
  */
 export async function PATCH(
   request: NextRequest,
@@ -54,8 +53,6 @@ export async function PATCH(
       data.holaoraEntitlementSource = p.holaoraEntitlementSource
     if (p.holaoraProvisionBundleType !== undefined)
       data.holaoraProvisionBundleType = p.holaoraProvisionBundleType
-    if (p.holaoraSuperAdminForceOff !== undefined)
-      data.holaoraSuperAdminForceOff = p.holaoraSuperAdminForceOff
 
     if (Object.keys(data).length === 0) {
       return NextResponse.json({ message: 'No fields to update' }, { status: 400 })
@@ -72,7 +69,6 @@ export async function PATCH(
         holaoraEntitled: true,
         holaoraEntitlementSource: true,
         holaoraProvisionBundleType: true,
-        holaoraSuperAdminForceOff: true,
         holaoraStorefrontEmbedEnabled: true,
         holaoraProvisioningStatus: true,
       },
