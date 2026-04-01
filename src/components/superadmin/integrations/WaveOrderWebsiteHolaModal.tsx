@@ -24,6 +24,8 @@ type SitePayload = {
   position?: string | null
   title?: string | null
   greeting?: string | null
+  suggestionsEnabled?: boolean
+  suggestions?: string[]
   iframeWidth?: number | null
   iframeHeight?: number | null
   portalEmail?: string | null
@@ -48,6 +50,8 @@ export function WaveOrderWebsiteHolaModal({
   const [position, setPosition] = useState('bottom-right')
   const [title, setTitle] = useState('')
   const [greeting, setGreeting] = useState('')
+  const [suggestionsEnabled, setSuggestionsEnabled] = useState(false)
+  const [suggestionsText, setSuggestionsText] = useState('')
   const [iframeW, setIframeW] = useState('400')
   const [iframeH, setIframeH] = useState('600')
   const [savePortalLogin, setSavePortalLogin] = useState(false)
@@ -75,6 +79,8 @@ export function WaveOrderWebsiteHolaModal({
         setPosition(s.position || 'bottom-right')
         setTitle(s.title || '')
         setGreeting(s.greeting || '')
+        setSuggestionsEnabled(!!s.suggestionsEnabled)
+        setSuggestionsText((s.suggestions || []).join('\n'))
         setIframeW(s.iframeWidth != null ? String(s.iframeWidth) : '400')
         setIframeH(s.iframeHeight != null ? String(s.iframeHeight) : '600')
         setPortalEmail(s.portalEmail || '')
@@ -89,6 +95,8 @@ export function WaveOrderWebsiteHolaModal({
         setPosition('bottom-right')
         setTitle('')
         setGreeting('')
+        setSuggestionsEnabled(false)
+        setSuggestionsText('')
         setIframeW('400')
         setIframeH('600')
         setPortalEmail('')
@@ -147,6 +155,11 @@ export function WaveOrderWebsiteHolaModal({
         position: position.trim(),
         title: title.trim(),
         greeting: greeting.trim(),
+        suggestionsEnabled,
+        suggestions: suggestionsText
+          .split('\n')
+          .map((l) => l.trim())
+          .filter(Boolean),
         iframeWidth: Number.isFinite(iw) ? iw : null,
         iframeHeight: Number.isFinite(ih) ? ih : null,
         savePortalLogin,
@@ -206,6 +219,14 @@ export function WaveOrderWebsiteHolaModal({
     if (position.trim()) lines.push(`  data-position="${position.trim()}"`)
     if (title.trim()) lines.push(`  data-title="${encodeURIComponent(title.trim())}"`)
     if (greeting.trim()) lines.push(`  data-greeting="${encodeURIComponent(greeting.trim())}"`)
+    if (suggestionsEnabled) {
+      lines.push(`  data-suggestions-enabled="true"`)
+      const list = suggestionsText
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean)
+      lines.push(`  data-suggestions="${encodeURIComponent(JSON.stringify(list))}"`)
+    }
     return `${lines.join('\n')}\n></script>`
   })()
 
@@ -360,6 +381,30 @@ export function WaveOrderWebsiteHolaModal({
                       Don&apos;t paste <code className="bg-gray-100 px-0.5">%20</code> sequences — type the sentence normally.
                     </p>
                   </div>
+                  <div className="sm:col-span-2 flex items-center gap-2">
+                    <input
+                      id="wo-hola-suggestions"
+                      type="checkbox"
+                      checked={suggestionsEnabled}
+                      onChange={(e) => setSuggestionsEnabled(e.target.checked)}
+                      className="rounded border-gray-300"
+                    />
+                    <label htmlFor="wo-hola-suggestions" className="text-gray-700 font-medium">
+                      Quick suggestions (chips)
+                    </label>
+                  </div>
+                  {suggestionsEnabled && (
+                    <div className="sm:col-span-2">
+                      <label className="block text-gray-700 mb-1">Suggestions (one per line)</label>
+                      <textarea
+                        value={suggestionsText}
+                        onChange={(e) => setSuggestionsText(e.target.value)}
+                        rows={5}
+                        placeholder={'Pricing and plans\nWhat is WaveOrder?'}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-xs font-mono"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
 

@@ -25,6 +25,18 @@ describe('parseHolaScriptSnippet', () => {
     expect(p.greeting).toBe('Hi! How can I help you today?')
   })
 
+  it('extracts data-suggestions-enabled and data-suggestions', () => {
+    const sug = ['Pricing', 'Help']
+    const html = `<script src="https://holaora.com/embed/chat.js"
+  data-workspace="${WS}"
+  data-suggestions-enabled="true"
+  data-suggestions="${encodeURIComponent(JSON.stringify(sug))}">
+</script>`
+    const p = parseHolaScriptSnippet(html)
+    expect(p.suggestionsEnabled).toBe(true)
+    expect(p.suggestions).toEqual(sug)
+  })
+
   it('returns empty when no workspace', () => {
     const p = parseHolaScriptSnippet('<script src="https://holaora.com/embed/chat.js"></script>')
     expect(p.workspaceId).toBeNull()

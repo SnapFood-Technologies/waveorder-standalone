@@ -125,6 +125,8 @@ interface StoreData {
   holaoraChatPosition?: string | null
   holaoraChatTitle?: string | null
   holaoraChatGreeting?: string | null
+  holaoraChatSuggestionsEnabled?: boolean
+  holaoraChatSuggestions?: string[] | null
   holaoraIframeWidth?: number | null
   holaoraIframeHeight?: number | null
   aiChatIcon?: 'message' | 'help' | 'robot'
@@ -1251,6 +1253,8 @@ export default function ServicesStoreFront({ storeData }: { storeData: StoreData
           position={storeData.holaoraChatPosition}
           title={storeData.holaoraChatTitle}
           greeting={storeData.holaoraChatGreeting}
+          suggestionsEnabled={storeData.holaoraChatSuggestionsEnabled}
+          suggestions={storeData.holaoraChatSuggestions}
           iframeWidth={storeData.holaoraIframeWidth}
           iframeHeight={storeData.holaoraIframeHeight}
         />

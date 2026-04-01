@@ -29,6 +29,10 @@ export const waveorderMarketingSiteSchema = z.object({
   position: z.string().max(64).nullable().optional(),
   title: z.string().max(200).nullable().optional(),
   greeting: z.string().max(500).nullable().optional(),
+  /** Script: data-suggestions-enabled */
+  suggestionsEnabled: z.boolean().default(false),
+  /** Script: data-suggestions — JSON array of suggestion strings */
+  suggestions: z.array(z.string().max(200)).max(30).optional(),
   iframeWidth: z.number().int().min(200).max(1200).nullable().optional(),
   iframeHeight: z.number().int().min(200).max(1200).nullable().optional(),
   /** Support: Hola web app login email (optional). */

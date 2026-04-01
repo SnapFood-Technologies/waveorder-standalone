@@ -25,6 +25,8 @@ type HolaState = {
   holaoraChatPosition: string | null
   holaoraChatTitle: string | null
   holaoraChatGreeting: string | null
+  holaoraChatSuggestionsEnabled: boolean
+  holaoraChatSuggestions: string[] | null
   holaoraIframeWidth: number | null
   holaoraIframeHeight: number | null
   holaoraSetupUrl: string | null
@@ -58,6 +60,8 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
   const [position, setPosition] = useState('bottom-right')
   const [chatTitle, setChatTitle] = useState('')
   const [greeting, setGreeting] = useState('')
+  const [suggestionsEnabled, setSuggestionsEnabled] = useState(false)
+  const [suggestionsText, setSuggestionsText] = useState('')
   const [iframeW, setIframeW] = useState('400')
   const [iframeH, setIframeH] = useState('600')
 
@@ -82,6 +86,8 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
       setPosition(json.holaoraChatPosition || 'bottom-right')
       setChatTitle(json.holaoraChatTitle || '')
       setGreeting(json.holaoraChatGreeting || '')
+      setSuggestionsEnabled(!!json.holaoraChatSuggestionsEnabled)
+      setSuggestionsText((json.holaoraChatSuggestions || []).join('\n'))
       setIframeW(json.holaoraIframeWidth != null ? String(json.holaoraIframeWidth) : '400')
       setIframeH(json.holaoraIframeHeight != null ? String(json.holaoraIframeHeight) : '600')
     } catch (e: unknown) {
@@ -107,9 +113,17 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
     if (position.trim()) parts.push(`  data-position="${position.trim()}"`)
     if (chatTitle.trim()) parts.push(`  data-title="${esc(chatTitle.trim())}"`)
     if (greeting.trim()) parts.push(`  data-greeting="${esc(greeting.trim())}"`)
+    if (suggestionsEnabled) {
+      parts.push(`  data-suggestions-enabled="true"`)
+      const list = suggestionsText
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean)
+      parts.push(`  data-suggestions="${esc(JSON.stringify(list))}"`)
+    }
     parts.push(`></script>`)
     return parts.join('\n')
-  }, [workspaceId, primaryColor, position, chatTitle, greeting])
+  }, [workspaceId, primaryColor, position, chatTitle, greeting, suggestionsEnabled, suggestionsText])
 
   const previewIframeTag = useMemo(() => {
     const ws = workspaceId.trim()
@@ -149,6 +163,9 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
     if (parsed.position) setPosition(parsed.position)
     if (parsed.title) setChatTitle(parsed.title)
     if (parsed.greeting) setGreeting(parsed.greeting)
+    if (parsed.suggestionsEnabled === true) setSuggestionsEnabled(true)
+    if (parsed.suggestionsEnabled === false) setSuggestionsEnabled(false)
+    if (parsed.suggestions?.length) setSuggestionsText(parsed.suggestions.join('\n'))
     if (parsed.kind === 'IFRAME') {
       if (parsed.iframeWidth != null) setIframeW(String(parsed.iframeWidth))
       if (parsed.iframeHeight != null) setIframeH(String(parsed.iframeHeight))
@@ -177,10 +194,26 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
       posNorm(position) !== posDb ||
       (chatTitle.trim() || null) !== (data.holaoraChatTitle || null) ||
       (greeting.trim() || null) !== (data.holaoraChatGreeting || null) ||
+      suggestionsEnabled !== data.holaoraChatSuggestionsEnabled ||
+      suggestionsText.split('\n').map((l) => l.trim()).filter(Boolean).join('\n') !==
+        (data.holaoraChatSuggestions || []).join('\n') ||
       iwNorm !== iwDb ||
       ihNorm !== ihDb
     )
-  }, [data, embedOn, embedKind, workspaceId, primaryColor, position, chatTitle, greeting, iframeW, iframeH])
+  }, [
+    data,
+    embedOn,
+    embedKind,
+    workspaceId,
+    primaryColor,
+    position,
+    chatTitle,
+    greeting,
+    suggestionsEnabled,
+    suggestionsText,
+    iframeW,
+    iframeH,
+  ])
 
   const save = async () => {
     if (!data?.holaoraEntitled) return
@@ -198,6 +231,11 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
         holaoraChatPosition: position.trim() || null,
         holaoraChatTitle: chatTitle.trim() || null,
         holaoraChatGreeting: greeting.trim() || null,
+        holaoraChatSuggestionsEnabled: suggestionsEnabled,
+        holaoraChatSuggestions: suggestionsText
+          .split('\n')
+          .map((l) => l.trim())
+          .filter(Boolean),
         holaoraIframeWidth: Number.isFinite(iw) ? iw : null,
         holaoraIframeHeight: Number.isFinite(ih) ? ih : null,
       }
@@ -219,6 +257,8 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
               holaoraChatPosition: json.holaoraChatPosition,
               holaoraChatTitle: json.holaoraChatTitle,
               holaoraChatGreeting: json.holaoraChatGreeting,
+              holaoraChatSuggestionsEnabled: json.holaoraChatSuggestionsEnabled,
+              holaoraChatSuggestions: json.holaoraChatSuggestions,
               holaoraIframeWidth: json.holaoraIframeWidth,
               holaoraIframeHeight: json.holaoraIframeHeight,
               aiAssistantEnabled: json.aiAssistantEnabled,
@@ -434,6 +474,34 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
                 />
               </div>
+              <div className="sm:col-span-2 flex items-center gap-2">
+                <input
+                  id="hola-suggestions-en"
+                  type="checkbox"
+                  checked={suggestionsEnabled}
+                  disabled={!canEdit || saving}
+                  onChange={(e) => setSuggestionsEnabled(e.target.checked)}
+                  className="rounded border-gray-300"
+                />
+                <label htmlFor="hola-suggestions-en" className="text-sm font-medium text-gray-700">
+                  Quick suggestions (chips)
+                </label>
+              </div>
+              {suggestionsEnabled && (
+                <div className="sm:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Suggestions (one per line)
+                  </label>
+                  <textarea
+                    value={suggestionsText}
+                    disabled={!canEdit || saving}
+                    onChange={(e) => setSuggestionsText(e.target.value)}
+                    rows={5}
+                    placeholder={'Pricing and plans\nDo I need the WhatsApp Business API?'}
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-mono"
+                  />
+                </div>
+              )}
             </div>
           )}
 
