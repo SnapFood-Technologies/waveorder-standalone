@@ -68,8 +68,8 @@ import { FaXTwitter } from 'react-icons/fa6'
 import { PhoneInput } from '../site/PhoneInput'
 import LegalPagesModal from './LegalPagesModal'
 import { AiChatBubble } from './AiChatBubble'
-// HolaOra embed disabled storefront-wide — partner script can delay / jank the page (see API storefront route).
-// import { HolaOraEmbed } from './HolaOraEmbed'
+import { HolaOraEmbed } from './HolaOraEmbed'
+import { getHolaoraEmbedScriptUrl } from '@/lib/holaora-embed-constants'
 import { StorefrontOrderSubmitButton } from './StorefrontOrderSubmitButton'
 
 // Google Places API hook
@@ -1929,11 +1929,17 @@ interface StoreData {
   timezone?: string
   countryBasedCatalogEnabled?: boolean
   aiAssistantEnabled?: boolean
-  // HolaOra: storefront JSON from GET /api/storefront/[slug] still includes these keys; this interface matches that shape.
-  // Embed is disabled in the API + UI (see route + HolaOraEmbed comments); values are inert until re-enabled.
+  // HolaOra: from GET /api/storefront/[slug] (entitled, embed on, account id; legacy holaoraSuperAdminForceOff in API).
   showHolaOraEmbed?: boolean
   holaoraAccountId?: string | null
+  holaoraEmbedKind?: 'SCRIPT' | 'IFRAME'
   holaoraEmbedScriptUrl?: string | null
+  holaoraChatPrimaryColor?: string | null
+  holaoraChatPosition?: string | null
+  holaoraChatTitle?: string | null
+  holaoraChatGreeting?: string | null
+  holaoraIframeWidth?: number | null
+  holaoraIframeHeight?: number | null
   aiChatIcon?: 'message' | 'help' | 'robot'
   aiChatIconSize?: 'xs' | 'sm' | 'medium' | 'lg' | 'xl'
   aiChatName?: string
@@ -3877,14 +3883,21 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: storeData.fontFamily }}>
-      {/* HolaOra: intentionally not mounted — third-party embed script risk (delay / main-thread). See GET storefront API. */}
-      {/* {storeData.showHolaOraEmbed && storeData.holaoraAccountId && (
+      {storeData.showHolaOraEmbed && storeData.holaoraAccountId && (
         <HolaOraEmbed
-          accountId={storeData.holaoraAccountId}
-          scriptUrl={storeData.holaoraEmbedScriptUrl || undefined}
+          kind={storeData.holaoraEmbedKind === 'IFRAME' ? 'IFRAME' : 'SCRIPT'}
+          workspaceId={storeData.holaoraAccountId}
+          scriptSrc={storeData.holaoraEmbedScriptUrl || getHolaoraEmbedScriptUrl()}
+          primaryColor={storeData.holaoraChatPrimaryColor}
+          position={storeData.holaoraChatPosition}
+          title={storeData.holaoraChatTitle}
+          greeting={storeData.holaoraChatGreeting}
+          iframeWidth={storeData.holaoraIframeWidth}
+          iframeHeight={storeData.holaoraIframeHeight}
         />
-      )} */}
+      )}
       {storeData.aiAssistantEnabled &&
+        !storeData.showHolaOraEmbed &&
         !showCartModal &&
         !showProductModal &&
         !showBusinessInfoModal &&

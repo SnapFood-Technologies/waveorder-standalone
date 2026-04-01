@@ -465,6 +465,19 @@ model Business {
   holaoraEntitled               Boolean @default(false)
   /// Merchant: show HolaOra embed on storefront (mutually exclusive with AI Store Assistant in API layer).
   holaoraStorefrontEmbedEnabled Boolean @default(false)
+  /// HolaOra embed integration: SCRIPT = chat.js + data-* (recommended); IFRAME = embed/window.
+  holaoraEmbedKind              String  @default("SCRIPT")
+  /// Script tag: data-primary-color (e.g. #FF6B35).
+  holaoraChatPrimaryColor       String?
+  /// Script tag: data-position (e.g. bottom-right).
+  holaoraChatPosition           String?
+  /// Script tag: data-title (chat window title).
+  holaoraChatTitle              String?
+  /// Script tag: data-greeting.
+  holaoraChatGreeting           String?
+  /// Iframe embed width/height (defaults 400×600 per Hola docs).
+  holaoraIframeWidth            Int?
+  holaoraIframeHeight           Int?
   /// One-time setup URL from HolaOra provisioning response (optional).
   holaoraSetupUrl               String?
   /// Legacy column; no longer read or written by the app (embed visibility = entitlement + merchant toggle + AI mutex).
@@ -476,6 +489,10 @@ model Business {
   holaoraEntitlementSource      String  @default("STRIPE")
   /// SuperAdmin / sync: FREE vs PAID bundle sent to HolaOra when provisioning API exists (stored for ops + future HTTP).
   holaoraProvisionBundleType     String?
+  /// SuperAdmin: HolaOra web app login email (support handoff). Not used by storefront.
+  holaoraPortalEmail       String?
+  /// SuperAdmin: AES-256-GCM encrypted portal password (see holaora-portal-crypto).
+  holaoraPortalPasswordEnc String?
 
   // SEO Configuration (English/Default)
   seoTitle       String?

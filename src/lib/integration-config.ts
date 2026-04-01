@@ -20,6 +20,25 @@ export const ALL_V1_API_SCOPES = [
 
 export type V1ApiScope = (typeof ALL_V1_API_SCOPES)[number]
 
+/** Hola chat on waveorder.app (marketing site) — SuperAdmin modal; public homepage loads embed only. */
+export const waveorderMarketingSiteSchema = z.object({
+  embedEnabled: z.boolean().default(false),
+  embedKind: z.enum(['SCRIPT', 'IFRAME']).default('SCRIPT'),
+  workspaceId: z.string().max(128).nullable().optional(),
+  primaryColor: z.string().max(64).nullable().optional(),
+  position: z.string().max(64).nullable().optional(),
+  title: z.string().max(200).nullable().optional(),
+  greeting: z.string().max(500).nullable().optional(),
+  iframeWidth: z.number().int().min(200).max(1200).nullable().optional(),
+  iframeHeight: z.number().int().min(200).max(1200).nullable().optional(),
+  /** Support: Hola web app login email (optional). */
+  portalEmail: z.string().max(320).nullable().optional(),
+  /** AES-GCM ciphertext from encryptHolaPortalPassword (optional). */
+  portalPasswordEnc: z.string().max(6000).nullable().optional(),
+})
+
+export type WaveorderMarketingSiteConfig = z.infer<typeof waveorderMarketingSiteSchema>
+
 const holaOraConfigSchema = z.object({
   holaOraBaseUrl: z
     .string()
@@ -32,6 +51,7 @@ const holaOraConfigSchema = z.object({
   documentedV1Paths: z.array(z.string().min(1)).optional().default([]),
   rateLimitPerMinute: z.number().int().positive().max(100_000).optional(),
   setupNotes: z.string().max(8000).optional(),
+  waveorderMarketingSite: waveorderMarketingSiteSchema.optional(),
 })
 
 export type HolaOraIntegrationConfig = z.infer<typeof holaOraConfigSchema>

@@ -13,10 +13,12 @@ import {
   Info,
   ArrowRight,
   Loader2,
+  Globe,
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { HolaOraIntegrationConfig } from '@/lib/integration-config'
 import { HolaOraBusinessDirectory } from '@/components/superadmin/integrations/HolaOraBusinessDirectory'
+import { WaveOrderWebsiteHolaModal } from '@/components/superadmin/integrations/WaveOrderWebsiteHolaModal'
 
 interface IntegrationRow {
   id: string
@@ -30,6 +32,7 @@ interface IntegrationRow {
 }
 
 export default function HolaOraIntegrationPage() {
+  const [waveOrderSiteModalOpen, setWaveOrderSiteModalOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [integration, setIntegration] = useState<
     (IntegrationRow & { parsedConfig: HolaOraIntegrationConfig | null }) | null
@@ -99,8 +102,24 @@ export default function HolaOraIntegrationPage() {
             <Activity className="w-4 h-4" />
             API logs
           </Link>
+          <button
+            type="button"
+            disabled={loading || !integration}
+            title={!integration && !loading ? 'Create the HolaOra platform integration first (All integrations).' : undefined}
+            onClick={() => setWaveOrderSiteModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-teal-800 bg-teal-50 border border-teal-200 rounded-lg hover:bg-teal-100 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Globe className="w-4 h-4" />
+            WaveOrder website
+          </button>
         </div>
       </div>
+
+      <WaveOrderWebsiteHolaModal
+        open={waveOrderSiteModalOpen}
+        onClose={() => setWaveOrderSiteModalOpen(false)}
+        onSaved={load}
+      />
 
       <div className="rounded-xl border border-teal-100 bg-teal-50/80 p-4 flex gap-3">
         <Info className="w-5 h-5 text-teal-600 flex-shrink-0 mt-0.5" />
@@ -119,6 +138,11 @@ export default function HolaOraIntegrationPage() {
             <li>
               <strong>Secrets</strong> — WaveOrder → HolaOra server credentials live in env / secret manager, not in
               this config JSON.
+            </li>
+            <li>
+              <strong>WaveOrder website</strong> — Use the button above to configure Hola chat on{' '}
+              <code className="text-xs bg-white/80 px-1 rounded">waveorder.app</code> (homepage). Optional portal email
+              / password there is for support only (encrypted).
             </li>
           </ul>
         </div>
@@ -254,6 +278,17 @@ export default function HolaOraIntegrationPage() {
                     <div className="md:col-span-2">
                       <dt className="text-gray-500">Internal notes</dt>
                       <dd className="mt-1 text-gray-700 whitespace-pre-wrap">{cfg.setupNotes}</dd>
+                    </div>
+                  )}
+                  {cfg.waveorderMarketingSite?.embedEnabled && (
+                    <div className="md:col-span-2">
+                      <dt className="text-gray-500">WaveOrder homepage chat</dt>
+                      <dd className="mt-1 text-teal-800 font-medium">
+                        On — {cfg.waveorderMarketingSite.embedKind === 'IFRAME' ? 'Iframe' : 'Script'} — workspace{' '}
+                        <code className="text-xs bg-gray-100 px-1 rounded">
+                          {cfg.waveorderMarketingSite.workspaceId || '—'}
+                        </code>
+                      </dd>
                     </div>
                   )}
                 </dl>

@@ -5,6 +5,8 @@ import {
   Building2,
   ChevronLeft,
   ChevronRight,
+  Eye,
+  EyeOff,
   Loader2,
   Pencil,
   RefreshCw,
@@ -29,6 +31,9 @@ type DirectoryRow = {
   holaoraProvisionBundleType: string | null
   holaoraProvisioningStatus: string | null
   holaoraStorefrontEmbedEnabled: boolean
+  holaoraEmbedKind: string
+  holaoraPortalEmail: string | null
+  holaPortalPasswordSaved: boolean
 }
 
 const PAGE_SIZE = 25
@@ -58,6 +63,12 @@ export function HolaOraBusinessDirectory({ hasHolaIntegrationRow }: Props) {
   const [formEntitled, setFormEntitled] = useState(false)
   const [formSource, setFormSource] = useState<string>(HOLA_ENTITLEMENT_SOURCE_STRIPE)
   const [formBundle, setFormBundle] = useState<string>('')
+
+  const [formSavePortalCreds, setFormSavePortalCreds] = useState(false)
+  const [formPortalEmail, setFormPortalEmail] = useState('')
+  const [formPortalPassword, setFormPortalPassword] = useState('')
+  const [showPortalPasswordPlain, setShowPortalPasswordPlain] = useState(false)
+  const [revealingPwd, setRevealingPwd] = useState(false)
 
   const [syncBundle, setSyncBundle] = useState<'FREE' | 'PAID'>('PAID')
 
@@ -101,6 +112,42 @@ export function HolaOraBusinessDirectory({ hasHolaIntegrationRow }: Props) {
     setFormEntitled(r.holaoraEntitled)
     setFormSource(r.holaoraEntitlementSource || HOLA_ENTITLEMENT_SOURCE_STRIPE)
     setFormBundle(r.holaoraProvisionBundleType || '')
+    setFormPortalEmail(r.holaoraPortalEmail || '')
+    setFormPortalPassword('')
+    setShowPortalPasswordPlain(false)
+    setFormSavePortalCreds(Boolean(r.holaoraPortalEmail || r.holaPortalPasswordSaved))
+  }
+
+  const revealPortalPassword = async () => {
+    if (!manageRow) return
+    setRevealingPwd(true)
+    try {
+      const res = await fetch(`/api/superadmin/businesses/${manageRow.id}/holaora-portal-password`)
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Could not load password')
+      setFormPortalPassword(data.password)
+      setShowPortalPasswordPlain(true)
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : 'Reveal failed')
+    } finally {
+      setRevealingPwd(false)
+    }
+  }
+
+  const togglePortalPasswordVisibility = () => {
+    if (showPortalPasswordPlain) {
+      setShowPortalPasswordPlain(false)
+      return
+    }
+    if (formPortalPassword !== '') {
+      setShowPortalPasswordPlain(true)
+      return
+    }
+    if (manageRow?.holaPortalPasswordSaved) {
+      void revealPortalPassword()
+      return
+    }
+    setShowPortalPasswordPlain(true)
   }
 
   const saveManage = async () => {
@@ -114,6 +161,16 @@ export function HolaOraBusinessDirectory({ hasHolaIntegrationRow }: Props) {
       }
       body.holaoraAccountId =
         formAccountId.trim() === '' ? null : formAccountId.trim()
+
+      if (formSavePortalCreds) {
+        body.saveHolaPortalCredentials = true
+        body.holaPortalEmail = formPortalEmail.trim()
+        if (formPortalPassword.trim() !== '') {
+          body.holaPortalPassword = formPortalPassword.trim()
+        }
+      } else {
+        body.saveHolaPortalCredentials = false
+      }
 
       const res = await fetch(`/api/superadmin/businesses/${manageRow.id}/holaora-link`, {
         method: 'PATCH',
@@ -173,9 +230,9 @@ export function HolaOraBusinessDirectory({ hasHolaIntegrationRow }: Props) {
           <div>
             <h2 className="font-semibold text-gray-900">Businesses — HolaOra hub</h2>
             <p className="text-xs text-gray-500 mt-1">
-              Same scope as <strong>SuperAdmin → Businesses</strong> default (active, non-test). Filters: all active
-              stores, or those with a Hola id / Hola entitlement. Manage: manual tenant id, Stripe vs manual source,
-              bundle tier, sync (stub until Hola HTTP).
+              Same scope as <strong>SuperAdmin → Businesses</strong> default (active, non-test). Columns show whether the
+              merchant turned the storefront chat on and script vs iframe. Manage: workspace id, optional encrypted Hola
+              portal login (support), entitlement, bundle, sync.
             </p>
           </div>
           <button
@@ -235,6 +292,8 @@ export function HolaOraBusinessDirectory({ hasHolaIntegrationRow }: Props) {
                 <th className="px-3 py-3">Source</th>
                 <th className="px-3 py-3">Bundle</th>
                 <th className="px-3 py-3">Hola id</th>
+                <th className="px-3 py-3">Storefront chat</th>
+                <th className="px-3 py-3">Portal login</th>
                 <th className="px-3 py-3">Status</th>
                 <th className="px-3 py-3 w-32">Actions</th>
               </tr>
@@ -262,6 +321,30 @@ export function HolaOraBusinessDirectory({ hasHolaIntegrationRow }: Props) {
                   <td className="px-3 py-2 text-xs text-gray-600">{r.holaoraProvisionBundleType || '—'}</td>
                   <td className="px-3 py-2 font-mono text-xs max-w-[140px] truncate" title={r.holaoraAccountId || ''}>
                     {r.holaoraAccountId || '—'}
+                  </td>
+                  <td className="px-3 py-2 text-xs">
+                    {r.holaoraStorefrontEmbedEnabled ? (
+                      r.holaoraEmbedKind === 'IFRAME' ? (
+                        <span className="font-medium text-indigo-700">Iframe</span>
+                      ) : (
+                        <span className="font-medium text-teal-700">Script</span>
+                      )
+                    ) : (
+                      <span className="text-gray-400">Off</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 text-xs text-gray-700 max-w-[160px]">
+                    {r.holaPortalPasswordSaved ? (
+                      <span className="text-teal-800" title="Encrypted password stored">
+                        {r.holaoraPortalEmail ? `${r.holaoraPortalEmail} · ` : ''}saved
+                      </span>
+                    ) : r.holaoraPortalEmail ? (
+                      <span className="text-gray-600 truncate block" title={r.holaoraPortalEmail}>
+                        {r.holaoraPortalEmail}
+                      </span>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
                   </td>
                   <td className="px-3 py-2 text-xs text-gray-600 max-w-[120px]">
                     <div className="truncate" title={r.holaoraProvisioningStatus || ''}>
@@ -341,6 +424,72 @@ export function HolaOraBusinessDirectory({ hasHolaIntegrationRow }: Props) {
               onChange={(e) => setFormAccountId(e.target.value)}
               placeholder="Paste id from HolaOra or leave empty to clear"
             />
+
+            <div className="border-t border-gray-100 pt-4 space-y-3">
+              <p className="text-xs text-gray-500">
+                Optional: save the store&apos;s HolaOra <strong>web app</strong> login for support (encrypted at rest).
+                Merchants still configure the storefront embed under Admin → Settings → HolaOra.
+              </p>
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                <input
+                  type="checkbox"
+                  checked={formSavePortalCreds}
+                  onChange={(e) => setFormSavePortalCreds(e.target.checked)}
+                />
+                Save portal login on file
+              </label>
+              {formSavePortalCreds && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">HolaOra portal email</label>
+                    <input
+                      type="email"
+                      autoComplete="off"
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                      value={formPortalEmail}
+                      onChange={(e) => setFormPortalEmail(e.target.value)}
+                      placeholder="account@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">HolaOra portal password</label>
+                    <div className="flex gap-2">
+                      <input
+                        type={showPortalPasswordPlain ? 'text' : 'password'}
+                        autoComplete="new-password"
+                        className="flex-1 min-w-0 border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                        value={formPortalPassword}
+                        onChange={(e) => setFormPortalPassword(e.target.value)}
+                        placeholder={
+                          manageRow.holaPortalPasswordSaved
+                            ? 'Leave blank to keep saved password'
+                            : 'Required on first save'
+                        }
+                      />
+                      <button
+                        type="button"
+                        title="Show or hide password (fetches from server if saved and field is empty)"
+                        disabled={revealingPwd}
+                        onClick={togglePortalPasswordVisibility}
+                        className="shrink-0 p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-40"
+                      >
+                        {revealingPwd ? (
+                          <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
+                        ) : showPortalPasswordPlain ? (
+                          <EyeOff className="w-4 h-4 text-gray-600" />
+                        ) : (
+                          <Eye className="w-4 h-4 text-gray-600" />
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Eye loads the decrypted password into this field. Clear the checkbox above to remove stored
+                      credentials.
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
 
             <label className="flex items-center gap-2 text-sm">
               <input
