@@ -88,8 +88,8 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">HolaOra</h1>
           <p className="text-sm text-gray-600 mt-1">
-            Scheduling embed on your storefront. The AI Store Assistant is turned off automatically when
-            HolaOra embed is on.
+            Scheduling embed on your storefront. You cannot enable it while the AI Store Assistant is on —
+            disable AI first (SuperAdmin → Custom features for this business).
           </p>
         </div>
       </div>

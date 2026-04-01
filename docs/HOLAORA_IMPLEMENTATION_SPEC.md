@@ -74,13 +74,15 @@ Optional later: **GET** `/api/superadmin/integrations/holaora` returning the sin
 
 ---
 
-## 6. Dedicated HolaOra screen + sidebar
+## 6. Dedicated HolaOra screen + sidebar (SuperAdmin hub)
 
 | Item | Action |
 |------|--------|
 | **New route** | `src/app/superadmin/integrations/holaora/page.tsx` — dedicated **HolaOra** SuperAdmin page. |
 | **Content** | Load the **`Integration`** with **`kind === HOLAORA`** (or fixed slug `holaora` if you enforce it); show Hola **config**, **connected businesses** (same rules as today: `externalIds[slug]` until you migrate counts to `holaoraAccountId`), shortcuts to **API Logs** / main integrations list. |
 | **Sidebar** | [`src/components/superadmin/layout/SuperAdminSidebar.tsx`](../src/components/superadmin/layout/SuperAdminSidebar.tsx) — under **Integrations**, add child **HolaOra** → `/superadmin/integrations/holaora`. |
+
+**Hub behavior (business directory):** paginated list (`GET /api/superadmin/integrations/holaora/directory`) with filters (all / active / Hola linked / Hola entitled) and search. **Manage** modal → `PATCH /api/superadmin/businesses/[id]/holaora-link` (manual `holaoraAccountId`, `holaoraEntitled`, `holaoraEntitlementSource` **STRIPE** vs **MANUAL**, `holaoraProvisionBundleType` **FREE**/**PAID**, `holaoraSuperAdminForceOff`). **MANUAL** entitlement → Stripe webhooks **do not** change that business’s Hola entitlement. **Sync** → `POST .../holaora-sync` with `{ bundleType: FREE | PAID }` (stores tier, logs, runs stub provision if entitled).
 
 Update **`HOLAORA_INTEGRATION.md` §5** when you want the architecture doc to mention this route explicitly.
 
@@ -97,9 +99,8 @@ Update **`HOLAORA_INTEGRATION.md` §5** when you want the architecture doc to me
 ## 8. AI Store Assistant vs HolaOra (product mutex)
 
 - **Not** in HolaOra’s docs — WaveOrder rule: only one of **AI chat** or **Hola embed** should be on.
-- **`applyAiHolaMutex`** (`src/lib/holaora-mutex.ts`): enabling **Hola embed** sets **`aiAssistantEnabled`** false; enabling **AI** sets **`holaoraStorefrontEmbedEnabled`** false.
-- **Merchant:** `PATCH /api/admin/stores/[businessId]/holaora-settings` applies mutex when toggling embed.
-- **SuperAdmin:** `PATCH .../custom-features` — turning **AI** on forces **`holaoraStorefrontEmbedEnabled`** false. Toggle **HolaOra embed (force off)** sets **`holaoraSuperAdminForceOff`** (embed hidden on storefront even if merchant enabled it).
+- **Validation (400):** AI and Hola storefront embed cannot both be on. **`PATCH .../custom-features`**: cannot enable **AI** while **`holaoraStorefrontEmbedEnabled`** is true (message tells admin to turn off Hola embed first). **`PATCH .../holaora-settings`**: cannot enable **Hola embed** while **`aiAssistantEnabled`** is true (message tells admin to disable AI in Custom features). **`PUT .../admin/stores/[id]`**: rejects if the update would leave both true.
+- Toggle **HolaOra embed (force off)** (`holaoraSuperAdminForceOff`) still hides embed on the storefront even if the merchant enabled it.
 - **Storefront:** `GET /api/storefront/[slug]` exposes **`showHolaOraEmbed`**; components render **`HolaOraEmbed`** when true and **`AiChatBubble`** only when **`aiAssistantEnabled && !showHolaOraEmbed`**.
 
 ---
@@ -124,14 +125,14 @@ Update **`HOLAORA_INTEGRATION.md` §5** when you want the architecture doc to me
 | Action | Path / area |
 |--------|----------------|
 | Edit | `prisma/schema.prisma` — `Integration.kind`, `Business` Hola fields |
-| Add | `src/lib/holaora-mutex.ts`, `holaora-provisioning.ts`, `holaora-entitlement-sync.ts` |
+| Add | `src/lib/holaora-ai-mutex-messages.ts`, `holaora-provisioning.ts`, `holaora-entitlement-sync.ts` |
 | Edit | `src/app/api/webhooks/stripe/route.ts` — Hola sync |
 | Add | `src/app/api/admin/stores/[businessId]/holaora-settings/route.ts` |
 | Add | `src/components/admin/settings/HolaOraSettings.tsx`, `src/app/admin/.../settings/holaora/page.tsx` |
 | Edit | `src/components/admin/layout/AdminSidebar.tsx` — Settings → HolaOra |
 | Edit | `src/app/api/superadmin/.../custom-features/route.ts` + `custom-features/page.tsx` |
 | Edit | `src/app/api/storefront/[slug]/route.ts`, `StoreFront` / `ServicesStoreFront` / `SalonStoreFront`, `HolaOraEmbed.tsx` |
-| Add | `src/__tests__/lib/holaora-mutex.test.ts`, `holaora-entitlement.test.ts` |
+| Add | `src/__tests__/lib/holaora-ai-mutex-messages.test.ts`, `holaora-entitlement.test.ts` |
 | Edit | `src/app/api/superadmin/integrations/route.ts` |
 | Edit | `src/app/api/superadmin/integrations/[integrationId]/route.ts` |
 | Edit | `src/app/superadmin/integrations/page.tsx` |

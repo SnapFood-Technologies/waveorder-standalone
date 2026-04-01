@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
-import { applyAiHolaMutex } from '@/lib/holaora-mutex'
+import { HO_MUTEX_ERR_ENABLE_HOLA_EMBED } from '@/lib/holaora-ai-mutex-messages'
 
 const patchSchema = z.object({
   holaoraStorefrontEmbedEnabled: z.boolean().optional(),
@@ -98,7 +98,7 @@ export async function PATCH(
 
     const current = await prisma.business.findUnique({
       where: { id: businessId },
-      select: { holaoraEntitled: true },
+      select: { holaoraEntitled: true, aiAssistantEnabled: true },
     })
     if (!current) {
       return NextResponse.json({ error: 'Business not found' }, { status: 404 })
@@ -111,21 +111,14 @@ export async function PATCH(
       )
     }
 
-    const mutex = applyAiHolaMutex(
-      parsed.data.holaoraStorefrontEmbedEnabled === undefined
-        ? {}
-        : { holaoraStorefrontEmbedEnabled: parsed.data.holaoraStorefrontEmbedEnabled }
-    )
+    if (parsed.data.holaoraStorefrontEmbedEnabled === true && current.aiAssistantEnabled) {
+      return NextResponse.json({ error: HO_MUTEX_ERR_ENABLE_HOLA_EMBED }, { status: 400 })
+    }
 
     const updated = await prisma.business.update({
       where: { id: businessId },
       data: {
-        ...(mutex.holaoraStorefrontEmbedEnabled !== undefined
-          ? { holaoraStorefrontEmbedEnabled: mutex.holaoraStorefrontEmbedEnabled }
-          : {}),
-        ...(mutex.aiAssistantEnabled !== undefined
-          ? { aiAssistantEnabled: mutex.aiAssistantEnabled }
-          : {}),
+        holaoraStorefrontEmbedEnabled: parsed.data.holaoraStorefrontEmbedEnabled,
         updatedAt: new Date(),
       },
       select: {

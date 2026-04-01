@@ -472,6 +472,10 @@ model Business {
   /// Last provisioning / deprovision outcome for ops (e.g. pending_partner_api, stub_success, deprovisioned_local).
   holaoraProvisioningStatus     String?
   holaoraProvisioningError      String?
+  /// STRIPE = Stripe webhooks update holaoraEntitled; MANUAL = SuperAdmin owns entitlement + link (webhooks skip).
+  holaoraEntitlementSource      String  @default("STRIPE")
+  /// SuperAdmin / sync: FREE vs PAID bundle sent to HolaOra when provisioning API exists (stored for ops + future HTTP).
+  holaoraProvisionBundleType     String?
 
   // SEO Configuration (English/Default)
   seoTitle       String?

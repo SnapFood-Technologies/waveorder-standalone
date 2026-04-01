@@ -15,7 +15,11 @@ function provisioningStubEnabled(): boolean {
 export async function provisionHolaOraForBusiness(businessId: string): Promise<void> {
   const business = await prisma.business.findUnique({
     where: { id: businessId },
-    select: { holaoraAccountId: true, holaoraEntitled: true },
+    select: {
+      holaoraAccountId: true,
+      holaoraEntitled: true,
+      holaoraProvisionBundleType: true,
+    },
   })
   if (!business?.holaoraEntitled) return
   if (business.holaoraAccountId && !isStubHolaAccountId(business.holaoraAccountId)) {
@@ -31,6 +35,9 @@ export async function provisionHolaOraForBusiness(businessId: string): Promise<v
         holaoraProvisioningError: null,
       },
     })
+    console.info(
+      `[HolaOra] stub provision businessId=${businessId} bundle=${business.holaoraProvisionBundleType ?? 'unset'}`
+    )
     return
   }
 
@@ -41,7 +48,34 @@ export async function provisionHolaOraForBusiness(businessId: string): Promise<v
       holaoraProvisioningError: null,
     },
   })
-  console.info(`[HolaOra] provisioning pending_partner_api businessId=${businessId}`)
+  console.info(
+    `[HolaOra] provisioning pending_partner_api businessId=${businessId} bundle=${business.holaoraProvisionBundleType ?? 'unset'}`
+  )
+}
+
+/** SuperAdmin “sync with API” (stub today): persist bundle tier, log intent, run provision stub if entitled. */
+export async function runSuperadminHolaProvisionSync(
+  businessId: string,
+  bundleType: 'FREE' | 'PAID'
+): Promise<void> {
+  await prisma.business.update({
+    where: { id: businessId },
+    data: {
+      holaoraProvisionBundleType: bundleType,
+      holaoraProvisioningStatus: `superadmin_sync_${bundleType.toLowerCase()}`,
+      holaoraProvisioningError: null,
+    },
+  })
+  const b = await prisma.business.findUnique({
+    where: { id: businessId },
+    select: { holaoraEntitled: true },
+  })
+  console.info(
+    `[HolaOra] superadmin sync businessId=${businessId} bundle=${bundleType} entitled=${b?.holaoraEntitled}`
+  )
+  if (b?.holaoraEntitled) {
+    await provisionHolaOraForBusiness(businessId)
+  }
 }
 
 /** Clears local Hola linkage when entitlement ends (partner API TBD). */

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { applyAiHolaMutex } from '@/lib/holaora-mutex'
+import { HO_MUTEX_ERR_ENABLE_AI } from '@/lib/holaora-ai-mutex-messages'
 
 // GET - Fetch custom features settings for a business
 export async function GET(
@@ -120,7 +120,22 @@ export async function PATCH(
 
     // Validate business exists
     const business = await prisma.business.findUnique({
-      where: { id: businessId }
+      where: { id: businessId },
+      select: {
+        id: true,
+        holaoraStorefrontEmbedEnabled: true,
+        brandsFeatureEnabled: true,
+        collectionsFeatureEnabled: true,
+        groupsFeatureEnabled: true,
+        customMenuEnabled: true,
+        customFilteringEnabled: true,
+        aiAssistantEnabled: true,
+        aiChatModel: true,
+        metaCatalogExportEnabled: true,
+        metaPixelEnabled: true,
+        storefrontAvailabilityDotEnabled: true,
+        holaoraSuperAdminForceOff: true,
+      },
     })
 
     if (!business) {
@@ -143,17 +158,11 @@ export async function PATCH(
     if (holaoraSuperAdminForceOff !== undefined)
       updateData.holaoraSuperAdminForceOff = holaoraSuperAdminForceOff
 
-    const mutexPatch = applyAiHolaMutex({
-      ...(updateData.aiAssistantEnabled !== undefined
-        ? { aiAssistantEnabled: updateData.aiAssistantEnabled }
-        : {}),
-      ...(updateData.holaoraStorefrontEmbedEnabled !== undefined
-        ? { holaoraStorefrontEmbedEnabled: updateData.holaoraStorefrontEmbedEnabled }
-        : {}),
-    })
-    Object.assign(updateData, mutexPatch)
-    if (updateData.aiAssistantEnabled === true) {
-      updateData.holaoraStorefrontEmbedEnabled = false
+    if (
+      updateData.aiAssistantEnabled === true &&
+      business.holaoraStorefrontEmbedEnabled
+    ) {
+      return NextResponse.json({ error: HO_MUTEX_ERR_ENABLE_AI }, { status: 400 })
     }
 
     // Update business

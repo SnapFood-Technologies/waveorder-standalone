@@ -8,7 +8,6 @@ import {
   Activity,
   ExternalLink,
   RefreshCw,
-  Building2,
   AlertCircle,
   CheckCircle2,
   Info,
@@ -17,6 +16,7 @@ import {
 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import type { HolaOraIntegrationConfig } from '@/lib/integration-config'
+import { HolaOraBusinessDirectory } from '@/components/superadmin/integrations/HolaOraBusinessDirectory'
 
 interface IntegrationRow {
   id: string
@@ -29,23 +29,11 @@ interface IntegrationRow {
   apiCalls30d: number
 }
 
-interface BusinessRow {
-  id: string
-  name: string
-  slug: string
-  logo: string | null
-  businessType: string
-  isActive: boolean
-  holaoraAccountId: string | null
-  createdAt: string
-}
-
 export default function HolaOraIntegrationPage() {
   const [loading, setLoading] = useState(true)
   const [integration, setIntegration] = useState<
     (IntegrationRow & { parsedConfig: HolaOraIntegrationConfig | null }) | null
   >(null)
-  const [businesses, setBusinesses] = useState<BusinessRow[]>([])
   const [totalWithAccount, setTotalWithAccount] = useState(0)
   const [externalIdConnected, setExternalIdConnected] = useState(0)
 
@@ -56,7 +44,6 @@ export default function HolaOraIntegrationPage() {
       if (!res.ok) throw new Error('Failed to load')
       const data = await res.json()
       setIntegration(data.integration)
-      setBusinesses(data.businessesWithAccount || [])
       setTotalWithAccount(data.totalWithHolaAccount ?? 0)
       setExternalIdConnected(data.externalIdConnectedViaSlug ?? 0)
     } catch {
@@ -274,50 +261,7 @@ export default function HolaOraIntegrationPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100">
-              <h2 className="font-semibold text-gray-900">Businesses with HolaOra account id</h2>
-              <p className="text-xs text-gray-500 mt-1">Showing up to 200 rows · Total: {totalWithAccount}</p>
-            </div>
-            {businesses.length === 0 ? (
-              <div className="p-10 text-center text-gray-500 text-sm">
-                <Building2 className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-                No businesses have <code className="text-xs bg-gray-100 px-1 rounded">holaoraAccountId</code> yet.
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-left text-xs font-medium text-gray-600">
-                    <tr>
-                      <th className="px-4 py-3">Business</th>
-                      <th className="px-4 py-3">HolaOra id</th>
-                      <th className="px-4 py-3">Type</th>
-                      <th className="px-4 py-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {businesses.map((b) => (
-                      <tr key={b.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          <div className="font-medium text-gray-900">{b.name}</div>
-                          <div className="text-xs text-gray-500 font-mono">{b.slug}</div>
-                        </td>
-                        <td className="px-4 py-3 font-mono text-xs">{b.holaoraAccountId}</td>
-                        <td className="px-4 py-3 text-gray-600">{b.businessType}</td>
-                        <td className="px-4 py-3">
-                          {b.isActive ? (
-                            <span className="text-green-600 text-xs font-medium">Active</span>
-                          ) : (
-                            <span className="text-red-500 text-xs font-medium">Inactive</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+          <HolaOraBusinessDirectory hasHolaIntegrationRow={!!integration} />
         </>
       )}
     </div>

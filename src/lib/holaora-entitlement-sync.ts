@@ -8,6 +8,7 @@ import {
   deprovisionHolaOraForBusiness,
   provisionHolaOraForBusiness,
 } from '@/lib/holaora-provisioning'
+import { isStripeManagedHolaEntitlement } from '@/lib/holaora-entitlement-source'
 
 export type HolaStripeSub = Pick<Stripe.Subscription, 'id' | 'status' | 'items'>
 
@@ -89,6 +90,13 @@ export async function syncHolaOraEntitlementForStripeSubscription(
 
   for (const businessId of businessIds) {
     try {
+      const row = await prisma.business.findUnique({
+        where: { id: businessId },
+        select: { holaoraEntitlementSource: true },
+      })
+      if (!isStripeManagedHolaEntitlement(row?.holaoraEntitlementSource)) {
+        continue
+      }
       await applyEntitlementToBusiness(businessId, entitled, !!platform)
     } catch (e) {
       console.error(`[HolaOra] sync failed businessId=${businessId}`, e)
