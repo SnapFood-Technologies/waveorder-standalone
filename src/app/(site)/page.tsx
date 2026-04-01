@@ -1,5 +1,6 @@
 // src/app/page.tsx
 import Home from '@/components/site/Home'
+import { WaveOrderMarketingHolaEmbed } from '@/components/site/WaveOrderMarketingHolaEmbed'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -145,6 +146,7 @@ export default function HomePage() {
       />
 
       <Home />
+      <WaveOrderMarketingHolaEmbed />
     </>
   )
 }

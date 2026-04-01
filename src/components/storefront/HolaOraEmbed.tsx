@@ -1,38 +1,81 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { HOLAORA_EMBED_IFRAME_BASE } from '@/lib/holaora-embed-constants'
 
-type HolaOraEmbedProps = {
-  accountId: string
-  /** When set, loads this script once (partner-provided embed loader URL). */
-  scriptUrl?: string
+export type HolaOraEmbedKind = 'SCRIPT' | 'IFRAME'
+
+export type HolaOraEmbedProps = {
+  kind: HolaOraEmbedKind
+  /** Hola workspace UUID (same as data-workspace / ?workspace=). */
+  workspaceId: string
+  /** Usually https://holaora.com/embed/chat.js — passed from storefront API. */
+  scriptSrc: string
+  primaryColor?: string | null
+  position?: string | null
+  title?: string | null
+  greeting?: string | null
+  iframeWidth?: number | null
+  iframeHeight?: number | null
 }
 
 /**
- * Mounts HolaOra storefront widget when configured. Without NEXT_PUBLIC_HOLAORA_EMBED_SCRIPT_URL,
- * renders an inert anchor for future partner scripts that key off data attributes.
+ * HolaOra storefront embed: official script tag (recommended) or iframe alternative.
+ * @see https://holaora.com — paste from dashboard into Admin → Settings → HolaOra.
  */
-export function HolaOraEmbed({ accountId, scriptUrl }: HolaOraEmbedProps) {
+export function HolaOraEmbed({
+  kind,
+  workspaceId,
+  scriptSrc,
+  primaryColor,
+  position,
+  title,
+  greeting,
+  iframeWidth,
+  iframeHeight,
+}: HolaOraEmbedProps) {
   const injected = useRef(false)
 
   useEffect(() => {
-    if (!scriptUrl || injected.current) return
+    if (kind !== 'SCRIPT' || !scriptSrc || !workspaceId || injected.current) return
     injected.current = true
     const s = document.createElement('script')
-    s.src = scriptUrl
+    s.src = scriptSrc
     s.async = true
-    s.dataset.holaoraAccount = accountId
+    s.dataset.workspace = workspaceId
+    if (primaryColor) s.dataset.primaryColor = primaryColor
+    if (position) s.dataset.position = position
+    if (title) s.setAttribute('data-title', encodeURIComponent(title))
+    if (greeting) s.setAttribute('data-greeting', encodeURIComponent(greeting))
     document.body.appendChild(s)
     return () => {
       s.remove()
       injected.current = false
     }
-  }, [accountId, scriptUrl])
+  }, [kind, workspaceId, scriptSrc, primaryColor, position, title, greeting])
+
+  if (kind === 'IFRAME') {
+    const w = iframeWidth ?? 400
+    const h = iframeHeight ?? 600
+    const src = `${HOLAORA_EMBED_IFRAME_BASE}?workspace=${encodeURIComponent(workspaceId)}`
+    return (
+      <div className="fixed bottom-4 right-4 z-[60] max-w-[100vw] pointer-events-auto">
+        <iframe
+          title="HolaOra chat"
+          src={src}
+          width={w}
+          height={h}
+          className="border-0 rounded-xl shadow-lg"
+          style={{ boxShadow: '0 4px 24px rgba(0,0,0,0.1)' }}
+        />
+      </div>
+    )
+  }
 
   return (
     <div
       id="waveorder-holaora-embed"
-      data-holaora-account-id={accountId}
+      data-hola-workspace={workspaceId}
       className="pointer-events-none fixed bottom-0 right-0 z-[60] h-0 w-0 overflow-visible"
       aria-hidden
     />

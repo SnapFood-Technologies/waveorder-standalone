@@ -67,6 +67,9 @@ export async function GET(request: NextRequest) {
           holaoraProvisionBundleType: true,
           holaoraProvisioningStatus: true,
           holaoraStorefrontEmbedEnabled: true,
+          holaoraEmbedKind: true,
+          holaoraPortalEmail: true,
+          holaoraPortalPasswordEnc: true,
           createdAt: true,
         },
         orderBy: { name: 'asc' },
@@ -76,8 +79,13 @@ export async function GET(request: NextRequest) {
       prisma.business.count({ where }),
     ])
 
+    const safeRows = rows.map(({ holaoraPortalPasswordEnc, ...r }) => ({
+      ...r,
+      holaPortalPasswordSaved: Boolean(holaoraPortalPasswordEnc),
+    }))
+
     return NextResponse.json({
-      rows,
+      rows: safeRows,
       total,
       take,
       skip,

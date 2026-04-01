@@ -7,6 +7,7 @@ import { trackVisitorSession } from '@/lib/trackVisitorSession'
 import { logSystemEvent, extractIPAddress } from '@/lib/systemLog'
 import { mergeProductWhereVisitorCountry, resolveVisitorCountryIso } from '@/lib/visitor-country-catalog'
 import * as Sentry from '@sentry/nextjs'
+import { getHolaoraEmbedScriptUrl } from '@/lib/holaora-embed-constants'
 
 function formatBusinessHours(businessHours: any): string | null {
   if (!businessHours) return null
@@ -834,22 +835,22 @@ export async function GET(
 
       // Custom Features
       aiAssistantEnabled: business.aiAssistantEnabled || false,
-      // --- HolaOra storefront embed (DISABLED) ---
-      // Partner script (NEXT_PUBLIC_HOLAORA_EMBED_SCRIPT_URL) loads after hydration via HolaOraEmbed;
-      // it can add network cost, main-thread jank, and perceived delay. Re-enable only after measuring
-      // and accepting that cost; also uncomment <HolaOraEmbed> in StoreFront / SalonStoreFront / ServicesStoreFront.
-      // Previous gate (restore if turning embed back on):
-      // showHolaOraEmbed: Boolean(
-      //   business.holaoraEntitled &&
-      //     !business.holaoraSuperAdminForceOff &&
-      //     business.holaoraStorefrontEmbedEnabled &&
-      //     business.holaoraAccountId
-      // ),
-      // holaoraAccountId: business.holaoraAccountId || null,
-      // holaoraEmbedScriptUrl: process.env.NEXT_PUBLIC_HOLAORA_EMBED_SCRIPT_URL || null,
-      showHolaOraEmbed: false,
-      holaoraAccountId: null,
-      holaoraEmbedScriptUrl: null,
+      // HolaOra: this Boolean is instant (DB fields only). Third-party script load happens client-side in HolaOraEmbed after hydration.
+      showHolaOraEmbed: Boolean(
+        business.holaoraEntitled &&
+          !business.holaoraSuperAdminForceOff &&
+          business.holaoraStorefrontEmbedEnabled &&
+          business.holaoraAccountId
+      ),
+      holaoraAccountId: business.holaoraAccountId || null,
+      holaoraEmbedKind: business.holaoraEmbedKind === 'IFRAME' ? 'IFRAME' : 'SCRIPT',
+      holaoraChatPrimaryColor: business.holaoraChatPrimaryColor ?? null,
+      holaoraChatPosition: business.holaoraChatPosition ?? null,
+      holaoraChatTitle: business.holaoraChatTitle ?? null,
+      holaoraChatGreeting: business.holaoraChatGreeting ?? null,
+      holaoraIframeWidth: business.holaoraIframeWidth ?? null,
+      holaoraIframeHeight: business.holaoraIframeHeight ?? null,
+      holaoraEmbedScriptUrl: getHolaoraEmbedScriptUrl(),
       metaPixelEnabled: business.metaPixelEnabled || false,
       metaPixelId: business.metaPixelId || null,
       aiChatIcon: business.aiChatIcon || 'message',
