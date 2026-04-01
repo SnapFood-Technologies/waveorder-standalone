@@ -39,7 +39,7 @@ export const waveorderMarketingSiteSchema = z.object({
 
 export type WaveorderMarketingSiteConfig = z.infer<typeof waveorderMarketingSiteSchema>
 
-const holaOraConfigSchema = z.object({
+export const holaOraConfigSchema = z.object({
   holaOraBaseUrl: z
     .string()
     .min(1, 'Provisioning base URL is required')
