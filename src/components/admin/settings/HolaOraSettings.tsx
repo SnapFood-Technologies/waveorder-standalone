@@ -163,9 +163,15 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
     if (parsed.position) setPosition(parsed.position)
     if (parsed.title) setChatTitle(parsed.title)
     if (parsed.greeting) setGreeting(parsed.greeting)
-    if (parsed.suggestionsEnabled === true) setSuggestionsEnabled(true)
-    if (parsed.suggestionsEnabled === false) setSuggestionsEnabled(false)
-    if (parsed.suggestions?.length) setSuggestionsText(parsed.suggestions.join('\n'))
+    if (parsed.suggestions?.length) {
+      setSuggestionsEnabled(true)
+      setSuggestionsText(parsed.suggestions.join('\n'))
+    } else if (parsed.suggestionsEnabled === true) {
+      setSuggestionsEnabled(true)
+    } else if (parsed.suggestionsEnabled === false) {
+      setSuggestionsEnabled(false)
+      setSuggestionsText('')
+    }
     if (parsed.kind === 'IFRAME') {
       if (parsed.iframeWidth != null) setIframeW(String(parsed.iframeWidth))
       if (parsed.iframeHeight != null) setIframeH(String(parsed.iframeHeight))

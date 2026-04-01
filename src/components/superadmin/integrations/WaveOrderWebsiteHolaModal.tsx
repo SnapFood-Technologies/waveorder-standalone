@@ -199,6 +199,15 @@ export function WaveOrderWebsiteHolaModal({
     if (p.position) setPosition(p.position)
     if (p.title) setTitle(p.title)
     if (p.greeting) setGreeting(p.greeting)
+    if (p.suggestions?.length) {
+      setSuggestionsEnabled(true)
+      setSuggestionsText(p.suggestions.join('\n'))
+    } else if (p.suggestionsEnabled === true) {
+      setSuggestionsEnabled(true)
+    } else if (p.suggestionsEnabled === false) {
+      setSuggestionsEnabled(false)
+      setSuggestionsText('')
+    }
     if (p.kind === 'IFRAME') {
       if (p.iframeWidth != null) setIframeW(String(p.iframeWidth))
       if (p.iframeHeight != null) setIframeH(String(p.iframeHeight))
@@ -304,9 +313,9 @@ export function WaveOrderWebsiteHolaModal({
                 {showEmbedPaste && (
                   <div className="space-y-2">
                     <p className="text-xs text-gray-600">
-                      Paste the full <strong>script</strong> or <strong>iframe</strong> from your Hola dashboard. Title and
-                      greeting are read from <code className="bg-gray-100 px-0.5">data-title</code> /{' '}
-                      <code className="bg-gray-100 px-0.5">data-greeting</code> (plain text after decoding).
+                      Paste the full <strong>script</strong> or <strong>iframe</strong> from your Hola dashboard. We read{' '}
+                      <code className="bg-gray-100 px-0.5">data-title</code>, <code className="bg-gray-100 px-0.5">data-greeting</code>, and{' '}
+                      <code className="bg-gray-100 px-0.5">data-suggestions*</code> (decoded). Click <strong>Apply to fields</strong> so the preview matches.
                     </p>
                     <textarea
                       value={embedPaste}
