@@ -128,6 +128,10 @@ interface Order {
   updatedAt: string
 }
 
+/** Same as auth Login/Register inputs — stops inherited body color (e.g. prefers-color-scheme: dark) washing out text on white cards. */
+const AUTH_INPUT_TEXT =
+  'bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none'
+
 interface Business {
   name: string
   currency: string
@@ -1327,7 +1331,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
     <select 
       value={selectedStatus} 
       onChange={(e) => setSelectedStatus(e.target.value)}
-      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+      className={`flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${AUTH_INPUT_TEXT}`}
       disabled={updating}
     >
       {getValidStatusOptions(order.status, order.type).map(status => (
@@ -1373,7 +1377,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         <select
           value={selectedPaymentStatus}
           onChange={(e) => setSelectedPaymentStatus(e.target.value)}
-          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+          className={`flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${AUTH_INPUT_TEXT}`}
           disabled={updating}
         >
           <option value="PENDING">Pending</option>
@@ -1406,7 +1410,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
           type="datetime-local"
           value={deliveryTime}
           onChange={(e) => setDeliveryTime(e.target.value)}
-          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+          className={`flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 [color-scheme:light] ${AUTH_INPUT_TEXT}`}
           disabled={updating}
         />
         <div className="flex items-center space-x-2">
@@ -1599,7 +1603,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                     <select
                       value={selectedDeliveryPersonId}
                       onChange={(e) => setSelectedDeliveryPersonId(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${AUTH_INPUT_TEXT}`}
                       disabled={assigningDelivery}
                     >
                       <option value="">Select delivery person</option>
@@ -1654,7 +1658,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                     <select
                       value={newPackagingTypeId}
                       onChange={(e) => setNewPackagingTypeId(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${AUTH_INPUT_TEXT}`}
                     >
                       <option value="">Select packaging type</option>
                       {packagingTypes.filter(t => t.id).map((type) => (
@@ -1670,7 +1674,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                         min="1"
                         value={newPackagingQuantity}
                         onChange={(e) => setNewPackagingQuantity(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                        className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${AUTH_INPUT_TEXT}`}
                       />
                     </div>
                     <div>
@@ -1680,7 +1684,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                         min="1"
                         value={newPackagingItemsPerPackage}
                         onChange={(e) => setNewPackagingItemsPerPackage(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                        className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${AUTH_INPUT_TEXT}`}
                         placeholder="Optional"
                       />
                     </div>
@@ -1693,7 +1697,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                       min="0"
                       value={newPackagingCost}
                       onChange={(e) => setNewPackagingCost(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${AUTH_INPUT_TEXT}`}
                       placeholder="Optional"
                     />
                   </div>
@@ -1702,7 +1706,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                     <textarea
                       value={newPackagingNotes}
                       onChange={(e) => setNewPackagingNotes(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${AUTH_INPUT_TEXT}`}
                       rows={2}
                       placeholder="Optional notes"
                     />
@@ -2084,7 +2088,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                               const value = e.target.value.replace(/\D/g, '').slice(0, 9)
                               setInvoiceAfm(value)
                             }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900"
+                            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm ${AUTH_INPUT_TEXT}`}
                             placeholder="123456789"
                           />
                           <p className="text-xs text-gray-500 mt-1">
@@ -2099,7 +2103,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                             type="text"
                             value={invoiceCompanyName}
                             onChange={(e) => setInvoiceCompanyName(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900"
+                            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm ${AUTH_INPUT_TEXT}`}
                             placeholder="Company name"
                           />
                         </div>
@@ -2111,7 +2115,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                             type="text"
                             value={invoiceTaxOffice}
                             onChange={(e) => setInvoiceTaxOffice(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900"
+                            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm ${AUTH_INPUT_TEXT}`}
                             placeholder="Tax office"
                           />
                         </div>
@@ -2354,7 +2358,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
                 placeholder="Reason for cancellation..."
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                className={`w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none ${AUTH_INPUT_TEXT}`}
                 rows={4}
                 disabled={updating}
                 required
@@ -2409,7 +2413,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                 value={orderNotes}
                 onChange={(e) => setOrderNotes(e.target.value)}
                 placeholder="Add internal notes about this order..."
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
+                className={`w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none ${AUTH_INPUT_TEXT}`}
                 rows={6}
                 disabled={updating}
               />
@@ -2471,7 +2475,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                 value={invoiceNote}
                 onChange={(e) => setInvoiceNote(e.target.value)}
                 placeholder="Add optional note (e.g. thank you message, special terms...)"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
+                className={`w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none ${AUTH_INPUT_TEXT}`}
                 rows={3}
                 disabled={generatingInvoice}
               />
@@ -2553,7 +2557,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                   <textarea
                     value={whatsappMessage}
                     onChange={(e) => setWhatsappMessage(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
+                    className={`w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none ${AUTH_INPUT_TEXT}`}
                     rows={12}
                     placeholder="Customize your message here..."
                   />
