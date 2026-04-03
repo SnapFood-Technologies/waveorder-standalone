@@ -31,6 +31,97 @@ export async function GET(
     }
 
     const { searchParams } = new URL(request.url)
+    const idsParam = searchParams.get('ids')
+    const idList = idsParam
+      ? [...new Set(idsParam.split(',').map((s) => s.trim()).filter(Boolean))].slice(
+          0,
+          100
+        )
+      : []
+
+    /** Lookup by earning ids (e.g. commissions already on a payment) — ignores status/affiliate filters */
+    if (idList.length > 0) {
+      const whereByIds = { businessId, id: { in: idList } }
+      const earningsByIds = await prisma.affiliateEarning.findMany({
+        where: whereByIds,
+        include: {
+          affiliate: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              trackingCode: true,
+            },
+          },
+          order: {
+            select: {
+              orderNumber: true,
+              status: true,
+              total: true,
+              createdAt: true,
+            },
+          },
+        },
+        orderBy: { orderCompletedAt: 'desc' },
+      })
+
+      const paymentsForLinks = await prisma.affiliatePayment.findMany({
+        where: { businessId },
+        select: {
+          id: true,
+          earningsIds: true,
+          paidAt: true,
+          reference: true,
+          amount: true,
+        },
+      })
+      const linkedPaymentByEarningId = new Map<
+        string,
+        { id: string; paidAt: Date; reference: string | null; amount: number }
+      >()
+      for (const p of paymentsForLinks) {
+        for (const eid of p.earningsIds) {
+          if (!linkedPaymentByEarningId.has(eid)) {
+            linkedPaymentByEarningId.set(eid, {
+              id: p.id,
+              paidAt: p.paidAt,
+              reference: p.reference,
+              amount: p.amount,
+            })
+          }
+        }
+      }
+
+      const earningsWithLinks = earningsByIds.map((e) => ({
+        ...e,
+        linkedPayment: linkedPaymentByEarningId.get(e.id) ?? null,
+      }))
+
+      const n = earningsWithLinks.length
+      return NextResponse.json({
+        enabled: true,
+        currency: business.currency || 'EUR',
+        data: {
+          earnings: earningsWithLinks,
+          summary: {
+            grandTotal: 0,
+            totalOrders: 0,
+            pendingTotal: 0,
+            pendingOrders: 0,
+            paidTotal: 0,
+            paidOrders: 0,
+          },
+          totalsByAffiliate: [],
+          pagination: {
+            page: 1,
+            limit: n,
+            total: n,
+            totalPages: 1,
+          },
+        },
+      })
+    }
+
     const status = searchParams.get('status') // PENDING, PAID, CANCELLED, or ALL
     const affiliateId = searchParams.get('affiliateId')
     const startDate = searchParams.get('startDate')
@@ -87,6 +178,39 @@ export async function GET(
       }),
       prisma.affiliateEarning.count({ where })
     ])
+
+    // Map earning id → payment that lists it in earningsIds (for UI reconciliation)
+    const paymentsForLinks = await prisma.affiliatePayment.findMany({
+      where: { businessId },
+      select: {
+        id: true,
+        earningsIds: true,
+        paidAt: true,
+        reference: true,
+        amount: true,
+      },
+    })
+    const linkedPaymentByEarningId = new Map<
+      string,
+      { id: string; paidAt: Date; reference: string | null; amount: number }
+    >()
+    for (const p of paymentsForLinks) {
+      for (const eid of p.earningsIds) {
+        if (!linkedPaymentByEarningId.has(eid)) {
+          linkedPaymentByEarningId.set(eid, {
+            id: p.id,
+            paidAt: p.paidAt,
+            reference: p.reference,
+            amount: p.amount,
+          })
+        }
+      }
+    }
+
+    const earningsWithLinks = earnings.map((e) => ({
+      ...e,
+      linkedPayment: linkedPaymentByEarningId.get(e.id) ?? null,
+    }))
 
     // Calculate summary
     const summary = await prisma.affiliateEarning.aggregate({
@@ -154,7 +278,7 @@ export async function GET(
       enabled: true,
       currency: business.currency || 'EUR',
       data: {
-        earnings,
+        earnings: earningsWithLinks,
         summary: {
           grandTotal: summary._sum.amount || 0,
           totalOrders: summary._count,
