@@ -12,7 +12,9 @@ import {
   RefreshCw,
   Loader2,
   TrendingUp,
-  Download
+  Download,
+  Link2,
+  Unlink2
 } from 'lucide-react'
 import { toast } from 'react-hot-toast'
 import { fetchAndDownloadAffiliatePaymentsReportPdf } from '@/lib/generateAffiliatePaymentsReportPdf'
@@ -31,11 +33,18 @@ interface AffiliatePayment {
   reference: string | null
   notes: string | null
   paidAt: string
+  earningsIds: string[]
   affiliate: {
     id: string
     name: string
     email: string | null
   }
+}
+
+interface PendingEarningRow {
+  id: string
+  amount: number
+  order: { orderNumber: string }
 }
 
 interface TotalsByAffiliate {
@@ -72,11 +81,122 @@ export function AffiliatePayments({ businessId }: AffiliatePaymentsProps) {
     periodEnd: '',
     paidAt: new Date().toISOString().split('T')[0]
   })
+  const [pendingForRecord, setPendingForRecord] = useState<PendingEarningRow[]>([])
+  const [loadingPendingForRecord, setLoadingPendingForRecord] = useState(false)
+  const [recordSelectedEarningIds, setRecordSelectedEarningIds] = useState<string[]>([])
+
+  const [linkModalPayment, setLinkModalPayment] = useState<AffiliatePayment | null>(null)
+  const [pendingForLink, setPendingForLink] = useState<PendingEarningRow[]>([])
+  const [linkedOnPayment, setLinkedOnPayment] = useState<PendingEarningRow[]>([])
+  const [loadingPendingForLink, setLoadingPendingForLink] = useState(false)
+  const [linkModalSelectedIds, setLinkModalSelectedIds] = useState<string[]>([])
+  const [unlinkSelectedIds, setUnlinkSelectedIds] = useState<string[]>([])
+  /** Which save action is running in the manage-links modal (avoid shared spinner on both buttons) */
+  const [linkModalSaving, setLinkModalSaving] = useState<'link' | 'unlink' | null>(null)
 
   useEffect(() => {
     fetchPayments()
     fetchAffiliates()
   }, [businessId, page, affiliateFilter, dateFilter])
+
+  useEffect(() => {
+    if (!showAddPayment || !newPayment.affiliateId) {
+      setPendingForRecord([])
+      setRecordSelectedEarningIds([])
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      setLoadingPendingForRecord(true)
+      try {
+        const params = new URLSearchParams({
+          affiliateId: newPayment.affiliateId,
+          status: 'PENDING',
+          limit: '200',
+          page: '1',
+        })
+        const res = await fetch(
+          `/api/admin/stores/${businessId}/affiliates/earnings?${params}`
+        )
+        const data = await res.json()
+        if (cancelled) return
+        const rows = (data.data?.earnings || []) as PendingEarningRow[]
+        setPendingForRecord(rows)
+        setRecordSelectedEarningIds([])
+      } catch {
+        if (!cancelled) {
+          setPendingForRecord([])
+          setRecordSelectedEarningIds([])
+        }
+      } finally {
+        if (!cancelled) setLoadingPendingForRecord(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [showAddPayment, newPayment.affiliateId, businessId])
+
+  useEffect(() => {
+    if (!linkModalPayment) {
+      setPendingForLink([])
+      setLinkedOnPayment([])
+      setLinkModalSelectedIds([])
+      setUnlinkSelectedIds([])
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      setLoadingPendingForLink(true)
+      setLinkModalSelectedIds([])
+      setUnlinkSelectedIds([])
+      try {
+        const pendingParams = new URLSearchParams({
+          affiliateId: linkModalPayment.affiliate.id,
+          status: 'PENDING',
+          limit: '200',
+          page: '1',
+        })
+        const linkedIds = linkModalPayment.earningsIds ?? []
+        const linkedUrl =
+          linkedIds.length > 0
+            ? `/api/admin/stores/${businessId}/affiliates/earnings?ids=${encodeURIComponent(linkedIds.join(','))}`
+            : null
+
+        const [pendingRes, linkedRes] = await Promise.all([
+          fetch(`/api/admin/stores/${businessId}/affiliates/earnings?${pendingParams}`),
+          linkedUrl ? fetch(linkedUrl) : Promise.resolve(null),
+        ])
+
+        if (cancelled) return
+
+        const pendingData = await pendingRes.json()
+        if (!pendingRes.ok) throw new Error(pendingData.message || 'Failed to load pending')
+        setPendingForLink((pendingData.data?.earnings || []) as PendingEarningRow[])
+
+        if (linkedRes) {
+          const linkedData = await linkedRes.json()
+          if (linkedRes.ok) {
+            setLinkedOnPayment((linkedData.data?.earnings || []) as PendingEarningRow[])
+          } else {
+            setLinkedOnPayment([])
+          }
+        } else {
+          setLinkedOnPayment([])
+        }
+      } catch {
+        if (!cancelled) {
+          setPendingForLink([])
+          setLinkedOnPayment([])
+        }
+      } finally {
+        if (!cancelled) setLoadingPendingForLink(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [linkModalPayment, businessId])
 
   const fetchAffiliates = async () => {
     try {
@@ -145,6 +265,100 @@ export function AffiliatePayments({ businessId }: AffiliatePaymentsProps) {
     }
   }
 
+  const toggleRecordEarning = (id: string) => {
+    setRecordSelectedEarningIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
+  const fillAmountFromSelectedCommissions = () => {
+    const sum = pendingForRecord
+      .filter((e) => recordSelectedEarningIds.includes(e.id))
+      .reduce((s, e) => s + e.amount, 0)
+    setNewPayment((p) => ({ ...p, amount: sum > 0 ? sum.toFixed(2) : p.amount }))
+  }
+
+  const toggleLinkModalEarning = (id: string) => {
+    setLinkModalSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
+  const toggleUnlinkSelection = (id: string) => {
+    setUnlinkSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
+  const submitUnlinkFromPayment = async () => {
+    if (!linkModalPayment || unlinkSelectedIds.length === 0) {
+      toast.error('Select at least one linked commission to remove')
+      return
+    }
+    if (
+      !confirm(
+        'Remove the selected commissions from this payment? They will go back to pending until you link or pay them again.'
+      )
+    ) {
+      return
+    }
+    setLinkModalSaving('unlink')
+    try {
+      const res = await fetch(
+        `/api/admin/stores/${businessId}/affiliates/payments/${linkModalPayment.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ removeEarningsIds: unlinkSelectedIds }),
+        }
+      )
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Failed to unlink')
+      toast.success('Unlinked; commissions are pending again')
+      setUnlinkSelectedIds([])
+      const p = data.data?.payment as AffiliatePayment | undefined
+      if (p) {
+        setLinkModalPayment({
+          ...p,
+          earningsIds: p.earningsIds ?? [],
+          affiliate: p.affiliate ?? linkModalPayment.affiliate,
+        })
+      }
+      fetchPayments()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to unlink')
+    } finally {
+      setLinkModalSaving(null)
+    }
+  }
+
+  const submitLinkEarningsToPayment = async () => {
+    if (!linkModalPayment || linkModalSelectedIds.length === 0) {
+      toast.error('Select at least one pending commission to link')
+      return
+    }
+    setLinkModalSaving('link')
+    try {
+      const res = await fetch(
+        `/api/admin/stores/${businessId}/affiliates/payments/${linkModalPayment.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ addEarningsIds: linkModalSelectedIds }),
+        }
+      )
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Failed to link earnings')
+      toast.success('Commissions linked and marked paid')
+      setLinkModalPayment(null)
+      fetchPayments()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to link')
+    } finally {
+      setLinkModalSaving(null)
+    }
+  }
+
   const handleAddPayment = async () => {
     if (!newPayment.affiliateId || !newPayment.amount) {
       toast.error('Please fill in all required fields')
@@ -153,20 +367,25 @@ export function AffiliatePayments({ businessId }: AffiliatePaymentsProps) {
 
     setAddingPayment(true)
     try {
+      const payload: Record<string, unknown> = {
+        affiliateId: newPayment.affiliateId,
+        amount: parseFloat(newPayment.amount),
+        currency: currency,
+        paymentMethod: newPayment.paymentMethod || null,
+        reference: newPayment.reference || null,
+        notes: newPayment.notes || null,
+        periodStart: newPayment.periodStart || null,
+        periodEnd: newPayment.periodEnd || null,
+        paidAt: newPayment.paidAt,
+      }
+      if (recordSelectedEarningIds.length > 0) {
+        payload.earningsIds = recordSelectedEarningIds
+      }
+
       const response = await fetch(`/api/admin/stores/${businessId}/affiliates/payments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          affiliateId: newPayment.affiliateId,
-          amount: parseFloat(newPayment.amount),
-          currency: currency,
-          paymentMethod: newPayment.paymentMethod || null,
-          reference: newPayment.reference || null,
-          notes: newPayment.notes || null,
-          periodStart: newPayment.periodStart || null,
-          periodEnd: newPayment.periodEnd || null,
-          paidAt: newPayment.paidAt
-        })
+        body: JSON.stringify(payload),
       })
 
       if (!response.ok) {
@@ -174,7 +393,11 @@ export function AffiliatePayments({ businessId }: AffiliatePaymentsProps) {
         throw new Error(data.message || 'Failed to create payment')
       }
 
-      toast.success('Payment recorded successfully')
+      toast.success(
+        recordSelectedEarningIds.length > 0
+          ? 'Payment recorded and selected commissions marked paid'
+          : 'Payment recorded successfully'
+      )
       setShowAddPayment(false)
       setNewPayment({
         affiliateId: '',
@@ -186,6 +409,7 @@ export function AffiliatePayments({ businessId }: AffiliatePaymentsProps) {
         periodEnd: '',
         paidAt: new Date().toISOString().split('T')[0]
       })
+      setRecordSelectedEarningIds([])
       fetchPayments()
     } catch (error) {
       console.error('Error creating payment:', error)
@@ -428,10 +652,12 @@ export function AffiliatePayments({ businessId }: AffiliatePaymentsProps) {
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Affiliate</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Linked orders</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Method</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reference</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Period</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Paid At</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -445,6 +671,10 @@ export function AffiliatePayments({ businessId }: AffiliatePaymentsProps) {
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <div className="text-sm font-semibold text-gray-900">{formatCurrency(payment.amount)}</div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {(payment.earningsIds ?? []).length} order
+                        {(payment.earningsIds ?? []).length !== 1 ? 's' : ''}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                         {payment.paymentMethod || 'N/A'}
@@ -460,6 +690,16 @@ export function AffiliatePayments({ businessId }: AffiliatePaymentsProps) {
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(payment.paidAt)}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => setLinkModalPayment(payment)}
+                          className="inline-flex items-center text-xs font-medium text-teal-700 hover:text-teal-900"
+                        >
+                          <Link2 className="w-3.5 h-3.5 mr-1" />
+                          Manage links
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -531,6 +771,52 @@ export function AffiliatePayments({ businessId }: AffiliatePaymentsProps) {
                   ))}
                 </select>
               </div>
+
+              {newPayment.affiliateId && (
+                <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <p className="text-sm font-medium text-gray-800 mb-2">
+                    Include pending commissions (optional)
+                  </p>
+                  <p className="text-xs text-gray-600 mb-3">
+                    Tick the orders this payout covers. They will be marked paid and linked to this payment.
+                  </p>
+                  {loadingPendingForRecord ? (
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Loading pending commissions…
+                    </div>
+                  ) : pendingForRecord.length === 0 ? (
+                    <p className="text-xs text-gray-500">No pending commissions for this affiliate.</p>
+                  ) : (
+                    <ul className="max-h-40 overflow-y-auto space-y-2 mb-3">
+                      {pendingForRecord.map((e) => (
+                        <li key={e.id}>
+                          <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={recordSelectedEarningIds.includes(e.id)}
+                              onChange={() => toggleRecordEarning(e.id)}
+                              className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                            />
+                            <span>
+                              {e.order.orderNumber} — {formatCurrency(e.amount)}
+                            </span>
+                          </label>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {recordSelectedEarningIds.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={fillAmountFromSelectedCommissions}
+                      className="text-xs text-teal-700 font-medium hover:underline"
+                    >
+                      Set amount to sum of selected ({recordSelectedEarningIds.length})
+                    </button>
+                  )}
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -656,6 +942,163 @@ export function AffiliatePayments({ businessId }: AffiliatePaymentsProps) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Link pending earnings to an existing payment */}
+      {linkModalPayment && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-xl">
+            <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-900">Manage payment links</h2>
+              <button
+                type="button"
+                disabled={linkModalSaving !== null}
+                onClick={() => setLinkModalPayment(null)}
+                className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+              >
+                <span className="sr-only">Close</span>
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className="p-6 space-y-6">
+              <p className="text-sm text-gray-600">
+                Payment {formatCurrency(linkModalPayment.amount)} to{' '}
+                <span className="font-medium">{linkModalPayment.affiliate.name}</span> (
+                {formatDate(linkModalPayment.paidAt)}).
+              </p>
+
+              {loadingPendingForLink ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="w-8 h-8 animate-spin text-teal-600" />
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                      Linked to this payment
+                    </h3>
+                    <p className="text-xs text-gray-500 mb-2">
+                      Unlink to set commissions back to pending (they stay on this affiliate).
+                    </p>
+                    {linkedOnPayment.length === 0 ? (
+                      <p className="text-sm text-gray-500 border border-dashed border-gray-200 rounded-lg p-3">
+                        No orders linked yet.
+                      </p>
+                    ) : (
+                      <ul className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
+                        {linkedOnPayment.map((e) => (
+                          <li key={e.id} className="px-3 py-2">
+                            <label className="flex items-center gap-3 text-sm cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={unlinkSelectedIds.includes(e.id)}
+                                onChange={() => toggleUnlinkSelection(e.id)}
+                                className="rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                              />
+                              <span>
+                                {e.order.orderNumber} — {formatCurrency(e.amount)}
+                              </span>
+                            </label>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <div className="mt-3 flex justify-end">
+                      <button
+                        type="button"
+                        disabled={
+                          linkModalSaving !== null ||
+                          unlinkSelectedIds.length === 0 ||
+                          linkedOnPayment.length === 0
+                        }
+                        onClick={() => void submitUnlinkFromPayment()}
+                        className="px-4 py-2 border border-amber-200 bg-amber-50 text-amber-900 rounded-lg hover:bg-amber-100 disabled:opacity-50 inline-flex items-center gap-2 text-sm font-medium"
+                      >
+                        {linkModalSaving === 'unlink' ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Unlinking…
+                          </>
+                        ) : (
+                          <>
+                            <Unlink2 className="w-4 h-4" />
+                            Unlink selected
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-semibold text-gray-900 mb-1">
+                      Pending — link to this payment
+                    </h3>
+                    <p className="text-xs text-gray-500 mb-2">
+                      Select commissions to mark paid and attach to this payout.
+                    </p>
+                    {pendingForLink.length === 0 ? (
+                      <p className="text-sm text-gray-500 border border-dashed border-gray-200 rounded-lg p-3">
+                        No pending commissions for this affiliate.
+                      </p>
+                    ) : (
+                      <ul className="max-h-48 overflow-y-auto border border-gray-200 rounded-lg divide-y divide-gray-100">
+                        {pendingForLink.map((e) => (
+                          <li key={e.id} className="px-3 py-2">
+                            <label className="flex items-center gap-3 text-sm cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={linkModalSelectedIds.includes(e.id)}
+                                onChange={() => toggleLinkModalEarning(e.id)}
+                                className="rounded border-gray-300 text-teal-600 focus:ring-teal-500"
+                              />
+                              <span>
+                                {e.order.orderNumber} — {formatCurrency(e.amount)}
+                              </span>
+                            </label>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <div className="mt-3 flex flex-wrap justify-end gap-3">
+                      <button
+                        type="button"
+                        disabled={linkModalSaving !== null}
+                        onClick={() => setLinkModalPayment(null)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                      >
+                        Close
+                      </button>
+                      <button
+                        type="button"
+                        disabled={
+                          linkModalSaving !== null ||
+                          linkModalSelectedIds.length === 0 ||
+                          pendingForLink.length === 0
+                        }
+                        onClick={() => void submitLinkEarningsToPayment()}
+                        className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 inline-flex items-center gap-2"
+                      >
+                        {linkModalSaving === 'link' ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Linking…
+                          </>
+                        ) : (
+                          <>
+                            <Link2 className="w-4 h-4" />
+                            Link selected
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       )}

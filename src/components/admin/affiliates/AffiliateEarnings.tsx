@@ -41,6 +41,12 @@ interface AffiliateEarning {
     email: string | null
     trackingCode: string
   }
+  linkedPayment?: {
+    id: string
+    paidAt: string
+    reference: string | null
+    amount: number
+  } | null
 }
 
 interface SummaryData {
@@ -91,6 +97,15 @@ export function AffiliateEarnings({ businessId }: AffiliateEarningsProps) {
   const [manualCommissionValue, setManualCommissionValue] = useState('')
   const [manualSubmitting, setManualSubmitting] = useState(false)
   const [loadingEligible, setLoadingEligible] = useState(false)
+
+  const [statusUpdatingId, setStatusUpdatingId] = useState<string | null>(null)
+  const [linkModalEarning, setLinkModalEarning] = useState<AffiliateEarning | null>(null)
+  const [paymentOptions, setPaymentOptions] = useState<
+    Array<{ id: string; paidAt: string; amount: number; reference: string | null }>
+  >([])
+  const [loadingPayments, setLoadingPayments] = useState(false)
+  const [selectedPaymentId, setSelectedPaymentId] = useState('')
+  const [linkSubmitting, setLinkSubmitting] = useState(false)
 
   useEffect(() => {
     fetchEarnings()
@@ -173,6 +188,123 @@ export function AffiliateEarnings({ businessId }: AffiliateEarningsProps) {
       toast.error(error instanceof Error ? error.message : 'Failed to create earning')
     } finally {
       setManualSubmitting(false)
+    }
+  }
+
+  const fetchPaymentsForAffiliate = async (affiliateId: string) => {
+    setLoadingPayments(true)
+    setPaymentOptions([])
+    setSelectedPaymentId('')
+    try {
+      const res = await fetch(
+        `/api/admin/stores/${businessId}/affiliates/payments?affiliateId=${affiliateId}&limit=50`
+      )
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Failed to load payments')
+      const list = (data.data?.payments || []) as Array<{
+        id: string
+        paidAt: string
+        amount: number
+        reference: string | null
+      }>
+      setPaymentOptions(list)
+      if (list.length === 1) setSelectedPaymentId(list[0].id)
+    } catch (e) {
+      console.error(e)
+      toast.error(e instanceof Error ? e.message : 'Failed to load payments')
+    } finally {
+      setLoadingPayments(false)
+    }
+  }
+
+  const openLinkPaymentModal = (earning: AffiliateEarning) => {
+    setLinkModalEarning(earning)
+    void fetchPaymentsForAffiliate(earning.affiliate.id)
+  }
+
+  const submitLinkPayment = async () => {
+    if (!linkModalEarning || !selectedPaymentId) {
+      toast.error('Select a payment record to link')
+      return
+    }
+    setLinkSubmitting(true)
+    try {
+      const res = await fetch(
+        `/api/admin/stores/${businessId}/affiliates/earnings/${linkModalEarning.id}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'PAID', paymentId: selectedPaymentId }),
+        }
+      )
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Update failed')
+      toast.success('Earning marked paid and linked to payment')
+      setLinkModalEarning(null)
+      fetchEarnings()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Update failed')
+    } finally {
+      setLinkSubmitting(false)
+    }
+  }
+
+  const patchEarningStatus = async (
+    earningId: string,
+    status: 'PENDING' | 'PAID' | 'CANCELLED'
+  ) => {
+    setStatusUpdatingId(earningId)
+    try {
+      const res = await fetch(
+        `/api/admin/stores/${businessId}/affiliates/earnings/${earningId}`,
+        {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status }),
+        }
+      )
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Update failed')
+      toast.success('Earning updated')
+      fetchEarnings()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Update failed')
+    } finally {
+      setStatusUpdatingId(null)
+    }
+  }
+
+  const handleEarningActionSelect = (earning: AffiliateEarning, action: string) => {
+    if (action === 'link_paid') {
+      openLinkPaymentModal(earning)
+      return
+    }
+    if (action === 'mark_paid') {
+      void patchEarningStatus(earning.id, 'PAID')
+      return
+    }
+    if (action === 'cancel') {
+      const msg =
+        earning.status === 'PAID'
+          ? 'Cancel this earning? It will be removed from any linked payment and marked cancelled.'
+          : 'Cancel this earning? It will no longer count toward owed commission.'
+      if (!confirm(msg)) return
+      void patchEarningStatus(earning.id, 'CANCELLED')
+      return
+    }
+    if (action === 'reopen') {
+      void patchEarningStatus(earning.id, 'PENDING')
+      return
+    }
+    if (action === 'unpay') {
+      if (
+        !confirm(
+          'Mark this earning as pending again? It will be removed from any linked payment record.'
+        )
+      )
+        return
+      void patchEarningStatus(earning.id, 'PENDING')
+      return
     }
   }
 
@@ -498,6 +630,8 @@ export function AffiliateEarnings({ businessId }: AffiliateEarningsProps) {
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order Total</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Commission</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Linked payment</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed At</th>
                   </tr>
                 </thead>
@@ -523,6 +657,56 @@ export function AffiliateEarnings({ businessId }: AffiliateEarningsProps) {
                           {getStatusIcon(earning.status)}
                           <span className="ml-1">{earning.status}</span>
                         </span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500 max-w-[10rem]">
+                        {earning.linkedPayment ? (
+                          <div>
+                            <div className="text-xs font-medium text-gray-800">
+                              {formatCurrency(earning.linkedPayment.amount)}
+                            </div>
+                            <div className="text-xs">{formatDate(earning.linkedPayment.paidAt)}</div>
+                            {earning.linkedPayment.reference && (
+                              <div className="text-xs truncate" title={earning.linkedPayment.reference}>
+                                {earning.linkedPayment.reference}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <select
+                          className="text-xs border border-gray-300 rounded-md px-2 py-1.5 max-w-[11rem] bg-white"
+                          value=""
+                          disabled={statusUpdatingId === earning.id}
+                          onChange={(e) => {
+                            const v = e.target.value
+                            e.target.selectedIndex = 0
+                            if (!v) return
+                            handleEarningActionSelect(earning, v)
+                          }}
+                        >
+                          <option value="">
+                            {statusUpdatingId === earning.id ? 'Updating…' : 'Actions…'}
+                          </option>
+                          {earning.status === 'PENDING' && (
+                            <>
+                              <option value="mark_paid">Mark paid (no link)</option>
+                              <option value="link_paid">Mark paid & link to payment…</option>
+                              <option value="cancel">Cancel earning</option>
+                            </>
+                          )}
+                          {earning.status === 'PAID' && (
+                            <>
+                              <option value="unpay">Mark pending again</option>
+                              <option value="cancel">Cancel earning</option>
+                            </>
+                          )}
+                          {earning.status === 'CANCELLED' && (
+                            <option value="reopen">Reopen as pending</option>
+                          )}
+                        </select>
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
                         {formatDate(earning.orderCompletedAt)}
@@ -560,6 +744,69 @@ export function AffiliateEarnings({ businessId }: AffiliateEarningsProps) {
           </>
         )}
       </div>
+
+      {/* Link earning to existing payment */}
+      {linkModalEarning && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4">
+            <div
+              className="fixed inset-0 bg-black/50"
+              onClick={() => !linkSubmitting && setLinkModalEarning(null)}
+            />
+            <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-1">Link to payment</h2>
+              <p className="text-sm text-gray-600 mb-4">
+                Mark this commission paid and attach it to a payment you already recorded for{' '}
+                <span className="font-medium">{linkModalEarning.affiliate.name}</span>.
+              </p>
+              {loadingPayments ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600" />
+                </div>
+              ) : paymentOptions.length === 0 ? (
+                <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                  No payment records for this affiliate yet. Record a payment first, then link this earning.
+                </p>
+              ) : (
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Payment</label>
+                  <select
+                    value={selectedPaymentId}
+                    onChange={(e) => setSelectedPaymentId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                  >
+                    <option value="">Select payment…</option>
+                    {paymentOptions.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {formatCurrency(p.amount)} — {formatDate(p.paidAt)}
+                        {p.reference ? ` (${p.reference})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div className="flex gap-3 justify-end mt-6">
+                <button
+                  type="button"
+                  disabled={linkSubmitting}
+                  onClick={() => setLinkModalEarning(null)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={linkSubmitting || !selectedPaymentId || paymentOptions.length === 0}
+                  onClick={() => void submitLinkPayment()}
+                  className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50"
+                >
+                  {linkSubmitting ? 'Saving…' : 'Mark paid & link'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Manual Earning Modal */}
       {showManualModal && (
