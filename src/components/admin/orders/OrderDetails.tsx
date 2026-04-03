@@ -36,6 +36,10 @@ import { useImpersonation } from '@/lib/impersonation'
 import toast from 'react-hot-toast'
 import { fetchAndDownloadInvoicePdf } from '@/lib/generateInvoicePdf'
 import { isOrderEligibleForInternalInvoice } from '@/lib/internal-order-invoice'
+import {
+  datetimeLocalInTimeZoneToIsoUtc,
+  instantToDatetimeLocalInTimeZone,
+} from '@/lib/business-timezone-datetime-local'
 
 interface OrderDetailsProps {
   businessId: string
@@ -141,6 +145,8 @@ interface Business {
   storefrontLanguage?: string
   translateContentToBusinessLanguage?: boolean
   timeFormat?: string
+  /** IANA zone for pickup/delivery wall times (matches storefront scheduling) */
+  timezone?: string | null
   // Notification settings
   customerNotificationEnabled?: boolean
   notifyPickupOnConfirmed?: boolean
@@ -400,7 +406,11 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         setSelectedStatus(data.order.status)
         setSelectedPaymentStatus(data.order.paymentStatus)
         setOrderNotes(data.order.notes || '')
-        setDeliveryTime(data.order.deliveryTime ? new Date(data.order.deliveryTime).toISOString().slice(0, 16) : '')
+        setDeliveryTime(
+          data.order.deliveryTime
+            ? instantToDatetimeLocalInTimeZone(data.order.deliveryTime, data.business?.timezone)
+            : ''
+        )
         setInvoiceAfm(data.order.invoiceAfm || '')
         setInvoiceCompanyName(data.order.invoiceCompanyName || '')
         setInvoiceTaxOffice(data.order.invoiceTaxOffice || '')
@@ -597,7 +607,9 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          deliveryTime: deliveryTime ? new Date(deliveryTime).toISOString() : null 
+          deliveryTime: deliveryTime
+            ? datetimeLocalInTimeZoneToIsoUtc(deliveryTime, business?.timezone)
+            : null,
         })
       })
 
@@ -759,17 +771,31 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
+    if (Number.isNaN(date.getTime())) return dateString
     const timeFormat = business?.timeFormat || '24'
     const use24Hour = timeFormat === '24'
-    
-    return date.toLocaleDateString('en-US', {
+    const tz = business?.timezone?.trim()
+    const opts: Intl.DateTimeFormatOptions = {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: !use24Hour
-    })
+      hour12: !use24Hour,
+      ...(tz ? { timeZone: tz } : {}),
+    }
+    try {
+      return date.toLocaleString('en-US', opts)
+    } catch {
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: !use24Hour,
+      })
+    }
   }
 
   // Check if WhatsApp modal should be shown based on notification settings
@@ -876,7 +902,8 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       const deliveryDate = new Date(order.deliveryTime)
       const timeFormat = business?.timeFormat || '24'
       const use24Hour = timeFormat === '24'
-      
+      const bizTz = business?.timezone?.trim() || 'UTC'
+
       let timeLabel: string
       if (order.type === 'DELIVERY') {
         timeLabel = whatsappLabels.deliveryTime
@@ -885,27 +912,50 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       } else {
         timeLabel = whatsappLabels.arrivalTime
       }
-      
+
       let timeString: string
-      if (use24Hour) {
-        // 24-hour format
-        timeString = deliveryDate.toLocaleDateString(locale, {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        }) + ' ' + whatsappLabels.at + ' ' + deliveryDate.toTimeString().slice(0, 5)
-      } else {
-        // 12-hour format
+      const tzOpts = { timeZone: bizTz } as const
+      try {
+        if (use24Hour) {
+          timeString =
+            deliveryDate.toLocaleDateString(locale, {
+              ...tzOpts,
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            }) +
+            ' ' +
+            whatsappLabels.at +
+            ' ' +
+            deliveryDate.toLocaleTimeString(locale, {
+              ...tzOpts,
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+            })
+        } else {
+          timeString = deliveryDate.toLocaleString(locale, {
+            ...tzOpts,
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          })
+        }
+      } catch {
         timeString = deliveryDate.toLocaleString(locale, {
+          timeZone: 'UTC',
           year: 'numeric',
           month: 'long',
           day: 'numeric',
           hour: 'numeric',
           minute: '2-digit',
-          hour12: true
+          hour12: !use24Hour,
         })
       }
-      
+
       message += `⏰ ${timeLabel}: ${timeString}\n`
     }
     

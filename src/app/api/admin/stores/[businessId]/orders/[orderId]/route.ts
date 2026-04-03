@@ -203,6 +203,7 @@ export async function GET(
             storefrontLanguage: true,
             translateContentToBusinessLanguage: true,
             timeFormat: true,
+            timezone: true,
             // Notification settings for WhatsApp modal control
             customerNotificationEnabled: true,
             notifyPickupOnConfirmed: true,
