@@ -36,6 +36,10 @@ import { useImpersonation } from '@/lib/impersonation'
 import toast from 'react-hot-toast'
 import { fetchAndDownloadInvoicePdf } from '@/lib/generateInvoicePdf'
 import { isOrderEligibleForInternalInvoice } from '@/lib/internal-order-invoice'
+import {
+  datetimeLocalInTimeZoneToIsoUtc,
+  instantToDatetimeLocalInTimeZone,
+} from '@/lib/business-timezone-datetime-local'
 
 interface OrderDetailsProps {
   businessId: string
@@ -128,6 +132,10 @@ interface Order {
   updatedAt: string
 }
 
+/** Same as auth Login/Register inputs — stops inherited body color (e.g. prefers-color-scheme: dark) washing out text on white cards. */
+const AUTH_INPUT_TEXT =
+  'bg-white text-gray-900 placeholder:text-gray-500 focus:outline-none'
+
 interface Business {
   name: string
   currency: string
@@ -137,6 +145,8 @@ interface Business {
   storefrontLanguage?: string
   translateContentToBusinessLanguage?: boolean
   timeFormat?: string
+  /** IANA zone for pickup/delivery wall times (matches storefront scheduling) */
+  timezone?: string | null
   // Notification settings
   customerNotificationEnabled?: boolean
   notifyPickupOnConfirmed?: boolean
@@ -396,7 +406,11 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         setSelectedStatus(data.order.status)
         setSelectedPaymentStatus(data.order.paymentStatus)
         setOrderNotes(data.order.notes || '')
-        setDeliveryTime(data.order.deliveryTime ? new Date(data.order.deliveryTime).toISOString().slice(0, 16) : '')
+        setDeliveryTime(
+          data.order.deliveryTime
+            ? instantToDatetimeLocalInTimeZone(data.order.deliveryTime, data.business?.timezone)
+            : ''
+        )
         setInvoiceAfm(data.order.invoiceAfm || '')
         setInvoiceCompanyName(data.order.invoiceCompanyName || '')
         setInvoiceTaxOffice(data.order.invoiceTaxOffice || '')
@@ -593,7 +607,9 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          deliveryTime: deliveryTime ? new Date(deliveryTime).toISOString() : null 
+          deliveryTime: deliveryTime
+            ? datetimeLocalInTimeZoneToIsoUtc(deliveryTime, business?.timezone)
+            : null,
         })
       })
 
@@ -755,17 +771,31 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString)
+    if (Number.isNaN(date.getTime())) return dateString
     const timeFormat = business?.timeFormat || '24'
     const use24Hour = timeFormat === '24'
-    
-    return date.toLocaleDateString('en-US', {
+    const tz = business?.timezone?.trim()
+    const opts: Intl.DateTimeFormatOptions = {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: !use24Hour
-    })
+      hour12: !use24Hour,
+      ...(tz ? { timeZone: tz } : {}),
+    }
+    try {
+      return date.toLocaleString('en-US', opts)
+    } catch {
+      return date.toLocaleString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: !use24Hour,
+      })
+    }
   }
 
   // Check if WhatsApp modal should be shown based on notification settings
@@ -872,7 +902,8 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       const deliveryDate = new Date(order.deliveryTime)
       const timeFormat = business?.timeFormat || '24'
       const use24Hour = timeFormat === '24'
-      
+      const bizTz = business?.timezone?.trim() || 'UTC'
+
       let timeLabel: string
       if (order.type === 'DELIVERY') {
         timeLabel = whatsappLabels.deliveryTime
@@ -881,27 +912,50 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
       } else {
         timeLabel = whatsappLabels.arrivalTime
       }
-      
+
       let timeString: string
-      if (use24Hour) {
-        // 24-hour format
-        timeString = deliveryDate.toLocaleDateString(locale, {
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        }) + ' ' + whatsappLabels.at + ' ' + deliveryDate.toTimeString().slice(0, 5)
-      } else {
-        // 12-hour format
+      const tzOpts = { timeZone: bizTz } as const
+      try {
+        if (use24Hour) {
+          timeString =
+            deliveryDate.toLocaleDateString(locale, {
+              ...tzOpts,
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+            }) +
+            ' ' +
+            whatsappLabels.at +
+            ' ' +
+            deliveryDate.toLocaleTimeString(locale, {
+              ...tzOpts,
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+            })
+        } else {
+          timeString = deliveryDate.toLocaleString(locale, {
+            ...tzOpts,
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          })
+        }
+      } catch {
         timeString = deliveryDate.toLocaleString(locale, {
+          timeZone: 'UTC',
           year: 'numeric',
           month: 'long',
           day: 'numeric',
           hour: 'numeric',
           minute: '2-digit',
-          hour12: true
+          hour12: !use24Hour,
         })
       }
-      
+
       message += `⏰ ${timeLabel}: ${timeString}\n`
     }
     
@@ -1327,7 +1381,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
     <select 
       value={selectedStatus} 
       onChange={(e) => setSelectedStatus(e.target.value)}
-      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+      className={`flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${AUTH_INPUT_TEXT}`}
       disabled={updating}
     >
       {getValidStatusOptions(order.status, order.type).map(status => (
@@ -1373,7 +1427,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
         <select
           value={selectedPaymentStatus}
           onChange={(e) => setSelectedPaymentStatus(e.target.value)}
-          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+          className={`flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${AUTH_INPUT_TEXT}`}
           disabled={updating}
         >
           <option value="PENDING">Pending</option>
@@ -1406,7 +1460,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
           type="datetime-local"
           value={deliveryTime}
           onChange={(e) => setDeliveryTime(e.target.value)}
-          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+          className={`flex-1 border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 [color-scheme:light] ${AUTH_INPUT_TEXT}`}
           disabled={updating}
         />
         <div className="flex items-center space-x-2">
@@ -1599,7 +1653,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                     <select
                       value={selectedDeliveryPersonId}
                       onChange={(e) => setSelectedDeliveryPersonId(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${AUTH_INPUT_TEXT}`}
                       disabled={assigningDelivery}
                     >
                       <option value="">Select delivery person</option>
@@ -1654,7 +1708,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                     <select
                       value={newPackagingTypeId}
                       onChange={(e) => setNewPackagingTypeId(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${AUTH_INPUT_TEXT}`}
                     >
                       <option value="">Select packaging type</option>
                       {packagingTypes.filter(t => t.id).map((type) => (
@@ -1670,7 +1724,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                         min="1"
                         value={newPackagingQuantity}
                         onChange={(e) => setNewPackagingQuantity(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                        className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${AUTH_INPUT_TEXT}`}
                       />
                     </div>
                     <div>
@@ -1680,7 +1734,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                         min="1"
                         value={newPackagingItemsPerPackage}
                         onChange={(e) => setNewPackagingItemsPerPackage(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                        className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${AUTH_INPUT_TEXT}`}
                         placeholder="Optional"
                       />
                     </div>
@@ -1693,7 +1747,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                       min="0"
                       value={newPackagingCost}
                       onChange={(e) => setNewPackagingCost(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${AUTH_INPUT_TEXT}`}
                       placeholder="Optional"
                     />
                   </div>
@@ -1702,7 +1756,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                     <textarea
                       value={newPackagingNotes}
                       onChange={(e) => setNewPackagingNotes(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500"
+                      className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 ${AUTH_INPUT_TEXT}`}
                       rows={2}
                       placeholder="Optional notes"
                     />
@@ -2084,7 +2138,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                               const value = e.target.value.replace(/\D/g, '').slice(0, 9)
                               setInvoiceAfm(value)
                             }}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900"
+                            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm ${AUTH_INPUT_TEXT}`}
                             placeholder="123456789"
                           />
                           <p className="text-xs text-gray-500 mt-1">
@@ -2099,7 +2153,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                             type="text"
                             value={invoiceCompanyName}
                             onChange={(e) => setInvoiceCompanyName(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900"
+                            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm ${AUTH_INPUT_TEXT}`}
                             placeholder="Company name"
                           />
                         </div>
@@ -2111,7 +2165,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                             type="text"
                             value={invoiceTaxOffice}
                             onChange={(e) => setInvoiceTaxOffice(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm text-gray-900"
+                            className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm ${AUTH_INPUT_TEXT}`}
                             placeholder="Tax office"
                           />
                         </div>
@@ -2354,7 +2408,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                 value={rejectionReason}
                 onChange={(e) => setRejectionReason(e.target.value)}
                 placeholder="Reason for cancellation..."
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
+                className={`w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none ${AUTH_INPUT_TEXT}`}
                 rows={4}
                 disabled={updating}
                 required
@@ -2409,7 +2463,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                 value={orderNotes}
                 onChange={(e) => setOrderNotes(e.target.value)}
                 placeholder="Add internal notes about this order..."
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
+                className={`w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none ${AUTH_INPUT_TEXT}`}
                 rows={6}
                 disabled={updating}
               />
@@ -2471,7 +2525,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                 value={invoiceNote}
                 onChange={(e) => setInvoiceNote(e.target.value)}
                 placeholder="Add optional note (e.g. thank you message, special terms...)"
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none"
+                className={`w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-500 focus:border-teal-500 resize-none ${AUTH_INPUT_TEXT}`}
                 rows={3}
                 disabled={generatingInvoice}
               />
@@ -2553,7 +2607,7 @@ export default function OrderDetails({ businessId, orderId }: OrderDetailsProps)
                   <textarea
                     value={whatsappMessage}
                     onChange={(e) => setWhatsappMessage(e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
+                    className={`w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none ${AUTH_INPUT_TEXT}`}
                     rows={12}
                     placeholder="Customize your message here..."
                   />
