@@ -10,6 +10,8 @@ import {
   Code,
   ChevronDown,
   ChevronUp,
+  Info,
+  ExternalLink,
 } from 'lucide-react'
 import { HOLAORA_EMBED_IFRAME_BASE, HOLAORA_EMBED_SCRIPT_DEFAULT } from '@/lib/holaora-embed-constants'
 import { parseHolaEmbedPaste } from '@/lib/holaora-embed-parse'
@@ -36,6 +38,10 @@ type HolaState = {
   aiAssistantEnabled: boolean
   storefrontAiGeoSplitEnabled: boolean
   aiAssistantVisitorCountryCodes: string[]
+}
+
+function sortedCodes(codes: string[]): string {
+  return [...codes].map((c) => c.toUpperCase()).sort().join(',')
 }
 
 function formatApiError(json: { error?: unknown }): string {
@@ -207,7 +213,11 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
     const ihNorm = Number.isFinite(ih) ? ih : 600
     const iwDb = data.holaoraIframeWidth ?? 400
     const ihDb = data.holaoraIframeHeight ?? 600
+    const geoDirty =
+      geoSplit !== !!data.storefrontAiGeoSplitEnabled ||
+      sortedCodes(aiCountryCodes) !== sortedCodes(data.aiAssistantVisitorCountryCodes || [])
     return (
+      geoDirty ||
       embedOn !== data.holaoraStorefrontEmbedEnabled ||
       embedKind !== (data.holaoraEmbedKind === 'IFRAME' ? 'IFRAME' : 'SCRIPT') ||
       w !== w0 ||
@@ -223,6 +233,8 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
     )
   }, [
     data,
+    geoSplit,
+    aiCountryCodes,
     embedOn,
     embedKind,
     workspaceId,
@@ -315,52 +327,34 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
   const canEdit = data.holaoraEntitled
 
   return (
-    <div className="max-w-2xl space-y-6">
-      <div className="flex items-start gap-3">
-        <CalendarClock className="w-8 h-8 text-teal-600 shrink-0 mt-1" />
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">HolaOra</h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Paste the embed code from your HolaOra dashboard (script or iframe). You cannot enable the embed while the AI
-            Store Assistant is on — unless <strong>AI vs Hola by country</strong> is enabled below with at least one country
-            (configure details under SuperAdmin → Custom features, or here).
-          </p>
-        </div>
-      </div>
-
-      {error && <div className="rounded-lg bg-red-50 text-red-800 text-sm px-4 py-3">{error}</div>}
-
-      <div className="rounded-xl border border-gray-200 bg-white p-6 space-y-4 shadow-sm">
-        <div className="flex justify-between gap-4">
-          <span className="text-sm font-medium text-gray-700">Subscription entitlement</span>
-          <span className={data.holaoraEntitled ? 'text-teal-700 font-medium' : 'text-gray-500'}>
-            {data.holaoraEntitled ? 'Active' : 'Not included'}
-          </span>
-        </div>
-
-        <div className="flex justify-between gap-4 text-sm">
-          <span className="text-gray-700">Provisioning</span>
-          <span className="text-gray-600 text-right">
-            {data.holaoraProvisioningStatus || '—'}
-            {data.holaoraProvisioningError ? ` — ${data.holaoraProvisioningError}` : ''}
-          </span>
-        </div>
-
-        {data.holaoraSetupUrl && (
-          <div className="text-sm">
-            <span className="text-gray-700 block mb-1">Setup link</span>
-            <a href={data.holaoraSetupUrl} target="_blank" rel="noreferrer" className="text-teal-600 underline break-all">
-              {data.holaoraSetupUrl}
-            </a>
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
+      {/* Main column — form (~3/4) */}
+      <div className="lg:col-span-3 space-y-6 min-w-0">
+        <div className="flex items-start gap-3">
+          <div className="w-11 h-11 rounded-lg bg-teal-100 flex items-center justify-center shrink-0">
+            <CalendarClock className="w-6 h-6 text-teal-600" />
           </div>
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-gray-900">HolaOra</h1>
+            <p className="text-sm text-gray-600 mt-1">
+              Connect your HolaOra workspace and control how chat appears on your storefront.
+            </p>
+          </div>
+        </div>
+
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 text-red-800 text-sm px-4 py-3">{error}</div>
         )}
 
-        <div className="border-t border-gray-100 pt-4 space-y-4">
-          <div className="rounded-lg bg-slate-50 border border-slate-100 p-4 space-y-3">
+        <div className="rounded-xl border border-gray-200 bg-white p-6 sm:p-8 space-y-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-900">Storefront embed</h2>
+
+          <div className="space-y-6">
+            <div className="rounded-lg bg-slate-50 border border-slate-100 p-4 space-y-3">
             <div className="text-sm font-medium text-gray-900">AI vs Hola by visitor country</div>
             <p className="text-xs text-gray-600">
-              Visitors in the selected countries see the WaveOrder AI assistant (when enabled). Everyone else sees Hola when
-              the embed below is on. Uses the same visitor country as the catalog: URL params and cookie.
+              Selected countries → WaveOrder AI (if enabled). Others → Hola when embed is on. See sidebar for catalog URL /
+              cookie rules.
             </p>
             <div className="flex items-center justify-between gap-4">
               <span className="text-sm text-gray-800">Enable geo split</span>
@@ -410,9 +404,9 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
                 />
               </>
             )}
-          </div>
+            </div>
 
-          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center justify-between gap-4">
             <div>
               <div className="text-sm font-medium text-gray-900">Show HolaOra on storefront</div>
               <div className="text-xs text-gray-500 mt-0.5">
@@ -665,22 +659,99 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
             </div>
           )}
 
-          <button
-            type="button"
-            onClick={save}
-            disabled={!canEdit || saving || !dirty}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white text-sm font-medium hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Save embed settings
-          </button>
+          <div className="pt-2 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={save}
+              disabled={!canEdit || saving || !dirty}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-teal-600 text-white text-sm font-medium hover:bg-teal-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+              Save embed settings
+            </button>
+          </div>
+          </div>
         </div>
       </div>
 
-      <p className="text-xs text-gray-500">
-        Entitlement updates when your Stripe subscription includes a HolaOra-eligible price. Contact support if entitlement
-        looks wrong after a plan change.
-      </p>
+      {/* Info column (~1/4) — matches admin patterns (e.g. InvoiceView, WhatsAppFlowsSettings) */}
+      <aside className="lg:col-span-1">
+        <div className="space-y-4 lg:sticky lg:top-6">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-5">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+              <Info className="w-4 h-4 text-teal-600 shrink-0" />
+              How it works
+            </h3>
+            <ul className="text-xs text-gray-600 space-y-2.5 leading-relaxed list-disc pl-4">
+              <li>
+                Paste the <strong>script</strong> or <strong>iframe</strong> snippet from your{' '}
+                <a
+                  href="https://holaora.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-teal-600 hover:underline inline-flex items-center gap-0.5"
+                >
+                  HolaOra
+                  <ExternalLink className="w-3 h-3" />
+                </a>{' '}
+                dashboard — or fill the workspace ID manually.
+              </li>
+              <li>
+                You cannot turn on the storefront embed while the <strong>AI Store Assistant</strong> is on, unless{' '}
+                <strong>AI vs Hola by country</strong> is enabled with at least one country (set here or under SuperAdmin →
+                Custom features).
+              </li>
+              <li>
+                Geo split uses the same visitor country as your product catalog: URL parameters (e.g.{' '}
+                <code className="text-[11px] bg-gray-100 px-1 rounded">?cc=GR</code>) and the saved cookie.
+              </li>
+            </ul>
+          </div>
+
+          <div className="bg-gray-50 rounded-lg border border-gray-200 p-5">
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">Integration status</h3>
+            <dl className="space-y-3 text-xs">
+              <div className="flex justify-between gap-2">
+                <dt className="text-gray-600 shrink-0">Entitlement</dt>
+                <dd className={data.holaoraEntitled ? 'text-teal-700 font-medium text-right' : 'text-gray-500 text-right'}>
+                  {data.holaoraEntitled ? 'Active' : 'Not included'}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-gray-600 mb-0.5">Provisioning</dt>
+                <dd className="text-gray-800 break-words">
+                  {data.holaoraProvisioningStatus || '—'}
+                  {data.holaoraProvisioningError ? (
+                    <span className="text-red-600 block mt-1">{data.holaoraProvisioningError}</span>
+                  ) : null}
+                </dd>
+              </div>
+            </dl>
+            {data.holaoraSetupUrl && (
+              <div className="mt-4 pt-4 border-t border-gray-200">
+                <p className="text-xs font-medium text-gray-700 mb-1">Setup link</p>
+                <a
+                  href={data.holaoraSetupUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-teal-600 hover:underline break-all inline-flex items-start gap-1"
+                >
+                  Open in HolaOra
+                  <ExternalLink className="w-3 h-3 shrink-0 mt-0.5" />
+                </a>
+              </div>
+            )}
+          </div>
+
+          <div className="bg-white rounded-lg border border-gray-200 p-5">
+            <h3 className="text-sm font-semibold text-gray-900 mb-2">Billing & support</h3>
+            <p className="text-xs text-gray-600 leading-relaxed">
+              Entitlement updates when your Stripe subscription includes a HolaOra-eligible price. If something looks wrong
+              after a plan change, contact support.
+            </p>
+          </div>
+        </div>
+      </aside>
     </div>
   )
 }

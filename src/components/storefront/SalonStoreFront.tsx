@@ -1222,6 +1222,13 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
     }
   }, [])
 
+  const suppressHolaFloating =
+    showBookingModal ||
+    showServiceModal ||
+    showBusinessInfoModal ||
+    showShareModal ||
+    showFilterModal
+
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: storeData.fontFamily || 'system-ui' }}>
       {storefrontChat.showHolaEmbed && storeData.holaoraAccountId && (
@@ -1237,6 +1244,9 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
           suggestions={storeData.holaoraChatSuggestions}
           iframeWidth={storeData.holaoraIframeWidth}
           iframeHeight={storeData.holaoraIframeHeight}
+          suppressFloating={suppressHolaFloating}
+          alignBottomWithStorefrontFab
+          storefrontFabElevated={bookingItems.length > 0}
         />
       )}
       {storefrontChat.showAiAssistant &&

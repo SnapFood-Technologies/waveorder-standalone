@@ -6,9 +6,5 @@ interface PageProps {
 
 export default async function HolaOraSettingsPage({ params }: PageProps) {
   const { businessId } = await params
-  return (
-    <div className="p-6">
-      <HolaOraSettings businessId={businessId} />
-    </div>
-  )
+  return <HolaOraSettings businessId={businessId} />
 }
