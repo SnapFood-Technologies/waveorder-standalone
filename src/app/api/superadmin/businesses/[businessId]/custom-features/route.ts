@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { HO_MUTEX_ERR_ENABLE_AI } from '@/lib/holaora-ai-mutex-messages'
+import { aiHolaMutexEnforced } from '@/lib/storefront-ai-hola-geo-split'
+import { filterToCatalogCountryCodes } from '@/lib/catalog-country-options'
 
 // GET - Fetch custom features settings for a business
 export async function GET(
@@ -43,6 +45,9 @@ export async function GET(
         metaCatalogExportEnabled: true,
         metaPixelEnabled: true,
         storefrontAvailabilityDotEnabled: true,
+        holaoraStorefrontEmbedEnabled: true,
+        storefrontAiGeoSplitEnabled: true,
+        aiAssistantVisitorCountryCodes: true,
       }
     })
 
@@ -67,6 +72,11 @@ export async function GET(
         metaCatalogExportEnabled: business.metaCatalogExportEnabled,
         metaPixelEnabled: business.metaPixelEnabled,
         storefrontAvailabilityDotEnabled: business.storefrontAvailabilityDotEnabled,
+        storefrontAiGeoSplitEnabled: business.storefrontAiGeoSplitEnabled ?? false,
+        aiAssistantVisitorCountryCodes: Array.isArray(business.aiAssistantVisitorCountryCodes)
+          ? business.aiAssistantVisitorCountryCodes
+          : [],
+        holaoraStorefrontEmbedEnabled: business.holaoraStorefrontEmbedEnabled ?? false,
       }
     })
   } catch (error) {
@@ -102,17 +112,19 @@ export async function PATCH(
     const { businessId } = await params
     const body = await request.json()
 
-    const { 
-      brandsFeatureEnabled, 
-      collectionsFeatureEnabled, 
+    const {
+      brandsFeatureEnabled,
+      collectionsFeatureEnabled,
       groupsFeatureEnabled,
-      customMenuEnabled, 
+      customMenuEnabled,
       customFilteringEnabled,
       aiAssistantEnabled,
       aiChatModel,
-        metaCatalogExportEnabled,
-        metaPixelEnabled,
-        storefrontAvailabilityDotEnabled,
+      metaCatalogExportEnabled,
+      metaPixelEnabled,
+      storefrontAvailabilityDotEnabled,
+      storefrontAiGeoSplitEnabled,
+      aiAssistantVisitorCountryCodes,
     } = body
 
     // Validate business exists
@@ -121,6 +133,8 @@ export async function PATCH(
       select: {
         id: true,
         holaoraStorefrontEmbedEnabled: true,
+        storefrontAiGeoSplitEnabled: true,
+        aiAssistantVisitorCountryCodes: true,
         brandsFeatureEnabled: true,
         collectionsFeatureEnabled: true,
         groupsFeatureEnabled: true,
@@ -139,7 +153,7 @@ export async function PATCH(
     }
 
     // Prepare update data (only include fields that are provided)
-    const updateData: any = {}
+    const updateData: Record<string, unknown> = {}
     if (brandsFeatureEnabled !== undefined) updateData.brandsFeatureEnabled = brandsFeatureEnabled
     if (collectionsFeatureEnabled !== undefined) updateData.collectionsFeatureEnabled = collectionsFeatureEnabled
     if (groupsFeatureEnabled !== undefined) updateData.groupsFeatureEnabled = groupsFeatureEnabled
@@ -151,10 +165,41 @@ export async function PATCH(
     if (metaPixelEnabled !== undefined) updateData.metaPixelEnabled = metaPixelEnabled
     if (storefrontAvailabilityDotEnabled !== undefined)
       updateData.storefrontAvailabilityDotEnabled = storefrontAvailabilityDotEnabled
+    if (storefrontAiGeoSplitEnabled !== undefined)
+      updateData.storefrontAiGeoSplitEnabled = storefrontAiGeoSplitEnabled
+    if (aiAssistantVisitorCountryCodes !== undefined)
+      updateData.aiAssistantVisitorCountryCodes = filterToCatalogCountryCodes(aiAssistantVisitorCountryCodes)
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: 'No valid fields to update' }, { status: 400 })
+    }
+
+    const nextGeo =
+      storefrontAiGeoSplitEnabled !== undefined
+        ? storefrontAiGeoSplitEnabled
+        : business.storefrontAiGeoSplitEnabled
+    const nextCodes =
+      aiAssistantVisitorCountryCodes !== undefined
+        ? filterToCatalogCountryCodes(aiAssistantVisitorCountryCodes)
+        : filterToCatalogCountryCodes(business.aiAssistantVisitorCountryCodes)
+
+    if (nextGeo === true && nextCodes.length === 0) {
+      return NextResponse.json(
+        {
+          error:
+            'Geo split requires at least one country (where WaveOrder AI shows), or turn geo split off.',
+        },
+        { status: 400 }
+      )
+    }
+
+    const nextAi =
+      aiAssistantEnabled !== undefined ? aiAssistantEnabled : business.aiAssistantEnabled
 
     if (
-      updateData.aiAssistantEnabled === true &&
-      business.holaoraStorefrontEmbedEnabled
+      nextAi === true &&
+      business.holaoraStorefrontEmbedEnabled &&
+      aiHolaMutexEnforced(nextGeo, nextCodes)
     ) {
       return NextResponse.json({ error: HO_MUTEX_ERR_ENABLE_AI }, { status: 400 })
     }
@@ -176,7 +221,10 @@ export async function PATCH(
         metaCatalogExportEnabled: true,
         metaPixelEnabled: true,
         storefrontAvailabilityDotEnabled: true,
-      }
+        storefrontAiGeoSplitEnabled: true,
+        aiAssistantVisitorCountryCodes: true,
+        holaoraStorefrontEmbedEnabled: true,
+      },
     })
 
     return NextResponse.json({
@@ -193,7 +241,12 @@ export async function PATCH(
         metaCatalogExportEnabled: updatedBusiness.metaCatalogExportEnabled,
         metaPixelEnabled: updatedBusiness.metaPixelEnabled,
         storefrontAvailabilityDotEnabled: updatedBusiness.storefrontAvailabilityDotEnabled,
-      }
+        storefrontAiGeoSplitEnabled: updatedBusiness.storefrontAiGeoSplitEnabled ?? false,
+        aiAssistantVisitorCountryCodes: Array.isArray(updatedBusiness.aiAssistantVisitorCountryCodes)
+          ? updatedBusiness.aiAssistantVisitorCountryCodes
+          : [],
+        holaoraStorefrontEmbedEnabled: updatedBusiness.holaoraStorefrontEmbedEnabled ?? false,
+      },
     })
   } catch (error) {
     console.error('Error updating custom features:', error)

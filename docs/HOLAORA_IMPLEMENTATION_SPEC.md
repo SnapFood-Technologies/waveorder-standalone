@@ -98,9 +98,10 @@ Update **`HOLAORA_INTEGRATION.md` §5** when you want the architecture doc to me
 
 ## 8. AI Store Assistant vs HolaOra (product mutex)
 
-- **Not** in HolaOra’s docs — WaveOrder rule: only one of **AI chat** or **Hola embed** should be on.
-- **Validation (400):** AI and Hola storefront embed cannot both be on. **`PATCH .../custom-features`**: cannot enable **AI** while **`holaoraStorefrontEmbedEnabled`** is true (message tells admin to turn off Hola embed first). **`PATCH .../holaora-settings`**: cannot enable **Hola embed** while **`aiAssistantEnabled`** is true (message tells admin to disable AI in Custom features). **`PUT .../admin/stores/[id]`**: rejects if the update would leave both true.
-- **Storefront:** `GET /api/storefront/[slug]` exposes **`showHolaOraEmbed`** when entitled, merchant embed on, and account id set; components render **`HolaOraEmbed`** when true and **`AiChatBubble`** only when **`aiAssistantEnabled && !showHolaOraEmbed`**.
+- **Not** in HolaOra’s docs — WaveOrder rule: only one of **AI chat** or **Hola embed** should be on **by default**.
+- **Exception — geo split:** When **`storefrontAiGeoSplitEnabled`** is true and **`aiAssistantVisitorCountryCodes`** is non-empty (catalog ISO2 list), **both** may be enabled in the DB. Storefront picks **AI** for visitors whose country is in the list and **Hola** for others (unknown visitor → Hola path). Visitor country uses the same **`?cc` / `?visitorCountry`** and cookie as **country-based catalog** (`storefront-catalog-visitor`). Scroll-to-top FAB moves **left** when Hola is shown for that visitor.
+- **Validation (400):** If geo split is **off** or country list **empty**, AI and Hola storefront embed cannot both be on. **`PATCH .../custom-features`**, **`PATCH .../holaora-settings`**, **`PUT .../admin/stores/[id]`** apply this rule. Geo split **on** requires **≥1** country.
+- **Storefront:** `GET /api/storefront/[slug]` returns **`storefrontAiGeoSplitEnabled`**, **`aiAssistantVisitorCountryCodes`**, plus existing **`showHolaOraEmbed`** / **`aiAssistantEnabled`**. `StoreFront` / `SalonStoreFront` / `ServicesStoreFront` use **`computeStorefrontChatPresentation`** (`src/lib/storefront-ai-hola-geo-split.ts`) — no extra network delay.
 
 ---
 

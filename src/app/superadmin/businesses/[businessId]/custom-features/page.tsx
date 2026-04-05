@@ -18,7 +18,9 @@ import {
   Megaphone,
   ExternalLink,
   CircleDot,
+  Globe,
 } from 'lucide-react'
+import { CatalogCountryMultiselect } from '@/components/admin/products/CatalogCountryMultiselect'
 
 const AI_CHAT_MODELS = [
   {
@@ -52,7 +54,16 @@ interface CustomFeatures {
   metaCatalogExportEnabled: boolean
   metaPixelEnabled: boolean
   storefrontAvailabilityDotEnabled: boolean
+  storefrontAiGeoSplitEnabled: boolean
+  aiAssistantVisitorCountryCodes: string[]
+  /** Read-only hint from API (Hola embed on); not written by this form except via ignored JSON keys. */
+  holaoraStorefrontEmbedEnabled: boolean
 }
+
+type BooleanFeatureKey = Exclude<
+  keyof CustomFeatures,
+  'aiChatModel' | 'aiAssistantVisitorCountryCodes' | 'holaoraStorefrontEmbedEnabled'
+>
 
 interface Business {
   id: string
@@ -76,6 +87,9 @@ export default function ManageCustomFeaturesPage() {
     metaCatalogExportEnabled: false,
     metaPixelEnabled: false,
     storefrontAvailabilityDotEnabled: false,
+    storefrontAiGeoSplitEnabled: false,
+    aiAssistantVisitorCountryCodes: [],
+    holaoraStorefrontEmbedEnabled: false,
   })
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -96,7 +110,15 @@ export default function ManageCustomFeaturesPage() {
         
         if (featuresData.success) {
           setBusiness(featuresData.business)
-          setFeatures(featuresData.features)
+          const f = featuresData.features
+          setFeatures({
+            ...f,
+            storefrontAiGeoSplitEnabled: f.storefrontAiGeoSplitEnabled ?? false,
+            aiAssistantVisitorCountryCodes: Array.isArray(f.aiAssistantVisitorCountryCodes)
+              ? f.aiAssistantVisitorCountryCodes
+              : [],
+            holaoraStorefrontEmbedEnabled: f.holaoraStorefrontEmbedEnabled ?? false,
+          })
         }
       } catch (err) {
         console.error('Error fetching data:', err)
@@ -109,10 +131,10 @@ export default function ManageCustomFeaturesPage() {
     fetchData()
   }, [businessId])
 
-  const handleToggle = (feature: keyof CustomFeatures) => {
-    setFeatures(prev => ({
+  const handleToggle = (feature: BooleanFeatureKey) => {
+    setFeatures((prev: CustomFeatures) => ({
       ...prev,
-      [feature]: !prev[feature]
+      [feature]: !prev[feature],
     }))
   }
 
@@ -358,8 +380,13 @@ export default function ManageCustomFeaturesPage() {
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">AI Store Assistant</h3>
                   <p className="text-sm text-gray-600 mb-3">
-                    Enable AI-powered chat assistant on the storefront. Customers can ask questions about products, hours, delivery, and ordering. Uses OpenAI API. Pro/Business plan or SuperAdmin override. You cannot turn this on while the merchant has the HolaOra storefront embed enabled (Settings → HolaOra).
+                    Enable AI-powered chat assistant on the storefront. Customers can ask questions about products, hours, delivery, and ordering. Uses OpenAI API. Pro/Business plan or SuperAdmin override. You cannot turn this on while the merchant has the HolaOra storefront embed enabled — unless <strong>AI vs Hola by country</strong> is on below with at least one country (then both may be enabled; visitors see one or the other by country, same <code className="text-xs bg-gray-100 px-1 rounded">?cc</code> / cookie as catalog).
                   </p>
+                  {features.holaoraStorefrontEmbedEnabled && (
+                    <p className="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mb-3">
+                      Hola storefront embed is currently ON for this business. To enable AI without geo split, turn Hola off first (merchant: Settings → HolaOra).
+                    </p>
+                  )}
                   <div className="flex items-center gap-2 text-xs text-gray-500">
                     <span className="px-2 py-1 bg-gray-100 rounded">Pro+</span>
                     <span className="px-2 py-1 bg-gray-100 rounded">Storefront Chat</span>
@@ -406,6 +433,69 @@ export default function ManageCustomFeaturesPage() {
                   }`}
                 />
               </button>
+            </div>
+
+            <div className="mt-6 pt-6 border-t border-gray-100 space-y-4">
+              <div className="flex items-start gap-3">
+                <Globe className="w-5 h-5 text-indigo-600 mt-0.5 shrink-0" />
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900">AI vs Hola by visitor country</h4>
+                    <p className="text-xs text-gray-600 mt-1">
+                      When on, pick countries where visitors see the <strong>WaveOrder AI</strong> assistant. All other visitors see <strong>Hola</strong> (if embed is on and entitled). Uses the same visitor country as product catalog: URL <code className="text-xs bg-gray-100 px-1 rounded">?cc=GR</code> or <code className="text-xs bg-gray-100 px-1 rounded">?visitorCountry=GR</code> and the saved cookie. Scroll-to-top moves left when Hola is shown so it does not cover the chat widget.
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <span className="text-sm font-medium text-gray-800">Enable geo split</span>
+                    <button
+                      type="button"
+                      onClick={() => handleToggle('storefrontAiGeoSplitEnabled')}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-teal-600 focus:ring-offset-2 ${
+                        features.storefrontAiGeoSplitEnabled ? 'bg-teal-600' : 'bg-gray-200'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          features.storefrontAiGeoSplitEnabled ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  {features.storefrontAiGeoSplitEnabled && (
+                    <>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          className="text-xs px-2 py-1 rounded-md border border-gray-200 bg-white hover:bg-gray-50"
+                          onClick={() =>
+                            setFeatures((p) => ({ ...p, aiAssistantVisitorCountryCodes: ['GR'] }))
+                          }
+                        >
+                          Preset: Greece only
+                        </button>
+                        <button
+                          type="button"
+                          className="text-xs px-2 py-1 rounded-md border border-gray-200 bg-white hover:bg-gray-50"
+                          onClick={() =>
+                            setFeatures((p) => ({ ...p, aiAssistantVisitorCountryCodes: [] }))
+                          }
+                        >
+                          Clear countries
+                        </button>
+                      </div>
+                      <CatalogCountryMultiselect
+                        id="ai-geo-split-countries"
+                        label="Countries — WaveOrder AI (not Hola)"
+                        helperText="Visitors from selected countries see AI when it is enabled; others see Hola when the embed is on. At least one country required while geo split is on."
+                        value={features.aiAssistantVisitorCountryCodes}
+                        onChange={(codes) =>
+                          setFeatures((p) => ({ ...p, aiAssistantVisitorCountryCodes: codes }))
+                        }
+                      />
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
 

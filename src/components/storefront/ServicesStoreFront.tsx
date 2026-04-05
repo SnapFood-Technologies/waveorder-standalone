@@ -50,6 +50,12 @@ import LegalPagesModal from './LegalPagesModal'
 import { AiChatBubble } from './AiChatBubble'
 import { HolaOraEmbed } from './HolaOraEmbed'
 import { getHolaoraEmbedScriptUrl } from '@/lib/holaora-embed-constants'
+import {
+  persistCatalogVisitorCookie,
+  readCatalogVisitorIsoFromBrowser,
+  readInitialCatalogVisitorIso,
+} from '@/lib/storefront-catalog-visitor'
+import { computeStorefrontChatPresentation } from '@/lib/storefront-ai-hola-geo-split'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
 import { logStorefrontWhatsAppOrderRedirect } from '@/lib/client-system-log'
 import { PhoneInput } from '../site/PhoneInput'
@@ -115,6 +121,9 @@ interface StoreData {
   serviceAllowAppointmentBooking?: boolean
   serviceAllowRequestByEmail?: boolean
   serviceAllowRequestByWhatsApp?: boolean
+  countryBasedCatalogEnabled?: boolean
+  storefrontAiGeoSplitEnabled?: boolean
+  aiAssistantVisitorCountryCodes?: string[]
   aiAssistantEnabled?: boolean
   // HolaOra: from GET /api/storefront/[slug] (entitled, embed on, account id; legacy holaoraSuperAdminForceOff in API).
   showHolaOraEmbed?: boolean
@@ -368,7 +377,47 @@ function BookingSuccessMessage({
 
 export default function ServicesStoreFront({ storeData }: { storeData: StoreData }) {
   const searchParams = useSearchParams()
-  
+
+  const catalogOrChatVisitorIsoEnabled =
+    !!storeData.countryBasedCatalogEnabled || !!storeData.storefrontAiGeoSplitEnabled
+  const [catalogVisitorIso, setCatalogVisitorIso] = useState<string | null>(() =>
+    readInitialCatalogVisitorIso(catalogOrChatVisitorIsoEnabled, searchParams)
+  )
+  useEffect(() => {
+    if (!catalogOrChatVisitorIsoEnabled) {
+      setCatalogVisitorIso(null)
+      return
+    }
+    const cc = searchParams.get('cc') || searchParams.get('visitorCountry')
+    if (cc && /^[a-zA-Z]{2}$/.test(cc)) {
+      const iso = cc.toUpperCase()
+      setCatalogVisitorIso(iso)
+      persistCatalogVisitorCookie(iso)
+      return
+    }
+    setCatalogVisitorIso(readCatalogVisitorIsoFromBrowser())
+  }, [catalogOrChatVisitorIsoEnabled, storeData.slug, searchParams])
+
+  const storefrontChat = useMemo(
+    () =>
+      computeStorefrontChatPresentation({
+        storefrontAiGeoSplitEnabled: !!storeData.storefrontAiGeoSplitEnabled,
+        aiAssistantVisitorCountryCodes: storeData.aiAssistantVisitorCountryCodes ?? [],
+        visitorCountryIso: catalogVisitorIso,
+        aiAssistantEnabled: !!storeData.aiAssistantEnabled,
+        showHolaOraEmbed: !!storeData.showHolaOraEmbed,
+        holaoraAccountId: storeData.holaoraAccountId,
+      }),
+    [
+      storeData.storefrontAiGeoSplitEnabled,
+      storeData.aiAssistantVisitorCountryCodes,
+      storeData.aiAssistantEnabled,
+      storeData.showHolaOraEmbed,
+      storeData.holaoraAccountId,
+      catalogVisitorIso,
+    ]
+  )
+
   // Track service event (view or add_to_booking) - defined inside component to access storeData
   const trackServiceEvent = (
     serviceId: string, 
@@ -1244,7 +1293,7 @@ export default function ServicesStoreFront({ storeData }: { storeData: StoreData
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: storeData.fontFamily || 'system-ui' }}>
-      {storeData.showHolaOraEmbed && storeData.holaoraAccountId && (
+      {storefrontChat.showHolaEmbed && storeData.holaoraAccountId && (
         <HolaOraEmbed
           kind={storeData.holaoraEmbedKind === 'IFRAME' ? 'IFRAME' : 'SCRIPT'}
           workspaceId={storeData.holaoraAccountId}
@@ -1259,8 +1308,7 @@ export default function ServicesStoreFront({ storeData }: { storeData: StoreData
           iframeHeight={storeData.holaoraIframeHeight}
         />
       )}
-      {storeData.aiAssistantEnabled &&
-        !storeData.showHolaOraEmbed &&
+      {storefrontChat.showAiAssistant &&
         !showBookingModal &&
         !showServiceModal &&
         !showBusinessInfoModal &&
@@ -2855,7 +2903,7 @@ export default function ServicesStoreFront({ storeData }: { storeData: StoreData
       {showScrollToTop && !showBookingModal && !showServiceModal && !showBusinessInfoModal && !showShareModal && !showFilterModal && (
         <button
           onClick={scrollToTop}
-          className={`fixed ${bookingItems.length > 0 ? 'bottom-24' : 'bottom-10'} right-5 lg:right-[21px] lg:mr-6 w-12 h-12 rounded-full flex items-center justify-center shadow-xl cursor-pointer z-[60] transition-all duration-300 hover:scale-110`}
+          className={`fixed ${bookingItems.length > 0 ? 'bottom-24' : 'bottom-10'} ${storefrontChat.scrollToTopLeft ? 'left-5 lg:left-[21px] lg:ml-6' : 'right-5 lg:right-[21px] lg:mr-6'} w-12 h-12 rounded-full flex items-center justify-center shadow-xl cursor-pointer z-[60] transition-all duration-300 hover:scale-110`}
           style={{ backgroundColor: primaryColor }}
           aria-label="Scroll to top"
         >
