@@ -70,6 +70,7 @@ import LegalPagesModal from './LegalPagesModal'
 import { AiChatBubble } from './AiChatBubble'
 import { HolaOraEmbed } from './HolaOraEmbed'
 import { getHolaoraEmbedScriptUrl } from '@/lib/holaora-embed-constants'
+import { computeStorefrontChatPresentation } from '@/lib/storefront-ai-hola-geo-split'
 import { StorefrontOrderSubmitButton } from './StorefrontOrderSubmitButton'
 
 // Google Places API hook
@@ -1928,6 +1929,8 @@ interface StoreData {
   rememberCustomerEnabled?: boolean
   timezone?: string
   countryBasedCatalogEnabled?: boolean
+  storefrontAiGeoSplitEnabled?: boolean
+  aiAssistantVisitorCountryCodes?: string[]
   aiAssistantEnabled?: boolean
   // HolaOra: from GET /api/storefront/[slug] (entitled, embed on, account id; legacy holaoraSuperAdminForceOff in API).
   showHolaOraEmbed?: boolean
@@ -2087,13 +2090,15 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   // URL params for product sharing
   const searchParams = useSearchParams()
 
-  /** Resolved ISO2 for country-based catalog (query ?cc / ?visitorCountry, then cookie). */
+  /** Resolved ISO2 for country-based catalog and/or AI vs Hola geo split (same ?cc / ?visitorCountry + cookie). */
+  const catalogOrChatVisitorIsoEnabled =
+    !!storeData.countryBasedCatalogEnabled || !!storeData.storefrontAiGeoSplitEnabled
   const [catalogVisitorIso, setCatalogVisitorIso] = useState<string | null>(() =>
-    readInitialCatalogVisitorIso(!!storeData.countryBasedCatalogEnabled, searchParams)
+    readInitialCatalogVisitorIso(catalogOrChatVisitorIsoEnabled, searchParams)
   )
 
   useEffect(() => {
-    if (!storeData.countryBasedCatalogEnabled) {
+    if (!catalogOrChatVisitorIsoEnabled) {
       setCatalogVisitorIso(null)
       return
     }
@@ -2105,7 +2110,27 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
       return
     }
     setCatalogVisitorIso(readCatalogVisitorIsoFromBrowser())
-  }, [storeData.countryBasedCatalogEnabled, storeData.slug, searchParams])
+  }, [catalogOrChatVisitorIsoEnabled, storeData.slug, searchParams])
+
+  const storefrontChat = useMemo(
+    () =>
+      computeStorefrontChatPresentation({
+        storefrontAiGeoSplitEnabled: !!storeData.storefrontAiGeoSplitEnabled,
+        aiAssistantVisitorCountryCodes: storeData.aiAssistantVisitorCountryCodes ?? [],
+        visitorCountryIso: catalogVisitorIso,
+        aiAssistantEnabled: !!storeData.aiAssistantEnabled,
+        showHolaOraEmbed: !!storeData.showHolaOraEmbed,
+        holaoraAccountId: storeData.holaoraAccountId,
+      }),
+    [
+      storeData.storefrontAiGeoSplitEnabled,
+      storeData.aiAssistantVisitorCountryCodes,
+      storeData.aiAssistantEnabled,
+      storeData.showHolaOraEmbed,
+      storeData.holaoraAccountId,
+      catalogVisitorIso,
+    ]
+  )
   
   // Capture UTM parameters from URL for affiliate tracking
   const [utmParams, setUtmParams] = useState<{
@@ -3885,7 +3910,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
 
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: storeData.fontFamily }}>
-      {storeData.showHolaOraEmbed && storeData.holaoraAccountId && (
+      {storefrontChat.showHolaEmbed && storeData.holaoraAccountId && (
         <HolaOraEmbed
           kind={storeData.holaoraEmbedKind === 'IFRAME' ? 'IFRAME' : 'SCRIPT'}
           workspaceId={storeData.holaoraAccountId}
@@ -3900,8 +3925,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           iframeHeight={storeData.holaoraIframeHeight}
         />
       )}
-      {storeData.aiAssistantEnabled &&
-        !storeData.showHolaOraEmbed &&
+      {storefrontChat.showAiAssistant &&
         !showCartModal &&
         !showProductModal &&
         !showBusinessInfoModal &&
@@ -5121,7 +5145,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
       {showScrollToTop && !showCartModal && !showProductModal && !showBusinessInfoModal && !showShareModal && !showSchedulingModal && !showFilterModal && (
         <button
           onClick={scrollToTop}
-          className={`fixed ${cartItemCount > 0 && !storeData.isTemporarilyClosed && storeData.mobileCartStyle !== 'badge' ? 'bottom-24' : 'bottom-10'} right-5 lg:right-[21px] lg:mr-6 w-12 h-12 rounded-full flex items-center justify-center shadow-xl cursor-pointer z-[60] transition-all duration-300 hover:scale-110`}
+          className={`fixed ${cartItemCount > 0 && !storeData.isTemporarilyClosed && storeData.mobileCartStyle !== 'badge' ? 'bottom-24' : 'bottom-10'} ${storefrontChat.scrollToTopLeft ? 'left-5 lg:left-[21px] lg:ml-6' : 'right-5 lg:right-[21px] lg:mr-6'} w-12 h-12 rounded-full flex items-center justify-center shadow-xl cursor-pointer z-[60] transition-all duration-300 hover:scale-110`}
           style={{ backgroundColor: primaryColor }}
           aria-label="Scroll to top"
         >

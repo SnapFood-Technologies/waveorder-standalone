@@ -13,6 +13,7 @@ import {
 } from 'lucide-react'
 import { HOLAORA_EMBED_IFRAME_BASE, HOLAORA_EMBED_SCRIPT_DEFAULT } from '@/lib/holaora-embed-constants'
 import { parseHolaEmbedPaste } from '@/lib/holaora-embed-parse'
+import { CatalogCountryMultiselect } from '@/components/admin/products/CatalogCountryMultiselect'
 
 type EmbedKind = 'SCRIPT' | 'IFRAME'
 
@@ -33,6 +34,8 @@ type HolaState = {
   holaoraProvisioningStatus: string | null
   holaoraProvisioningError: string | null
   aiAssistantEnabled: boolean
+  storefrontAiGeoSplitEnabled: boolean
+  aiAssistantVisitorCountryCodes: string[]
 }
 
 function formatApiError(json: { error?: unknown }): string {
@@ -70,6 +73,8 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
   const [embedPasteErr, setEmbedPasteErr] = useState<string | null>(null)
 
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
+  const [geoSplit, setGeoSplit] = useState(false)
+  const [aiCountryCodes, setAiCountryCodes] = useState<string[]>([])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -78,7 +83,13 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
       const res = await fetch(`/api/admin/stores/${businessId}/holaora-settings`)
       const json = await res.json()
       if (!res.ok) throw new Error(formatApiError(json))
-      setData(json)
+      setData({
+        ...json,
+        storefrontAiGeoSplitEnabled: json.storefrontAiGeoSplitEnabled ?? false,
+        aiAssistantVisitorCountryCodes: Array.isArray(json.aiAssistantVisitorCountryCodes)
+          ? json.aiAssistantVisitorCountryCodes
+          : [],
+      })
       setEmbedOn(!!json.holaoraStorefrontEmbedEnabled)
       setEmbedKind(json.holaoraEmbedKind === 'IFRAME' ? 'IFRAME' : 'SCRIPT')
       setWorkspaceId(json.holaoraAccountId || '')
@@ -90,6 +101,10 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
       setSuggestionsText((json.holaoraChatSuggestions || []).join('\n'))
       setIframeW(json.holaoraIframeWidth != null ? String(json.holaoraIframeWidth) : '400')
       setIframeH(json.holaoraIframeHeight != null ? String(json.holaoraIframeHeight) : '600')
+      setGeoSplit(!!json.storefrontAiGeoSplitEnabled)
+      setAiCountryCodes(
+        Array.isArray(json.aiAssistantVisitorCountryCodes) ? json.aiAssistantVisitorCountryCodes : []
+      )
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load')
     } finally {
@@ -244,6 +259,8 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
           .filter(Boolean),
         holaoraIframeWidth: Number.isFinite(iw) ? iw : null,
         holaoraIframeHeight: Number.isFinite(ih) ? ih : null,
+        storefrontAiGeoSplitEnabled: geoSplit,
+        aiAssistantVisitorCountryCodes: aiCountryCodes,
       }
       const res = await fetch(`/api/admin/stores/${businessId}/holaora-settings`, {
         method: 'PATCH',
@@ -268,8 +285,16 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
               holaoraIframeWidth: json.holaoraIframeWidth,
               holaoraIframeHeight: json.holaoraIframeHeight,
               aiAssistantEnabled: json.aiAssistantEnabled,
+              storefrontAiGeoSplitEnabled: json.storefrontAiGeoSplitEnabled ?? false,
+              aiAssistantVisitorCountryCodes: Array.isArray(json.aiAssistantVisitorCountryCodes)
+                ? json.aiAssistantVisitorCountryCodes
+                : [],
             }
           : prev
+      )
+      setGeoSplit(!!json.storefrontAiGeoSplitEnabled)
+      setAiCountryCodes(
+        Array.isArray(json.aiAssistantVisitorCountryCodes) ? json.aiAssistantVisitorCountryCodes : []
       )
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Save failed')
@@ -296,9 +321,9 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">HolaOra</h1>
           <p className="text-sm text-gray-600 mt-1">
-            Paste the embed code from your HolaOra dashboard (script or iframe). Choose which integration WaveOrder uses on
-            your storefront. You cannot enable the embed while the AI Store Assistant is on — disable AI first (SuperAdmin →
-            Custom features for this business).
+            Paste the embed code from your HolaOra dashboard (script or iframe). You cannot enable the embed while the AI
+            Store Assistant is on — unless <strong>AI vs Hola by country</strong> is enabled below with at least one country
+            (configure details under SuperAdmin → Custom features, or here).
           </p>
         </div>
       </div>
@@ -331,11 +356,70 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
         )}
 
         <div className="border-t border-gray-100 pt-4 space-y-4">
+          <div className="rounded-lg bg-slate-50 border border-slate-100 p-4 space-y-3">
+            <div className="text-sm font-medium text-gray-900">AI vs Hola by visitor country</div>
+            <p className="text-xs text-gray-600">
+              Visitors in the selected countries see the WaveOrder AI assistant (when enabled). Everyone else sees Hola when
+              the embed below is on. Uses the same visitor country as the catalog: URL params and cookie.
+            </p>
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-sm text-gray-800">Enable geo split</span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={geoSplit}
+                disabled={!canEdit || saving}
+                onClick={() => setGeoSplit((v) => !v)}
+                className={`relative inline-flex h-7 w-12 shrink-0 rounded-full transition-colors ${
+                  geoSplit ? 'bg-teal-600' : 'bg-gray-200'
+                } ${!canEdit ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow mt-1 transition ${
+                    geoSplit ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+            {geoSplit && (
+              <>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="text-xs px-2 py-1 rounded-md border border-gray-200 bg-white hover:bg-gray-50"
+                    disabled={!canEdit || saving}
+                    onClick={() => setAiCountryCodes(['GR'])}
+                  >
+                    Preset: Greece only
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs px-2 py-1 rounded-md border border-gray-200 bg-white hover:bg-gray-50"
+                    disabled={!canEdit || saving}
+                    onClick={() => setAiCountryCodes([])}
+                  >
+                    Clear
+                  </button>
+                </div>
+                <CatalogCountryMultiselect
+                  id="hola-settings-ai-countries"
+                  label="Countries — WaveOrder AI"
+                  helperText="Required while geo split is on (at least one). Same country list as product catalog."
+                  value={aiCountryCodes}
+                  onChange={setAiCountryCodes}
+                />
+              </>
+            )}
+          </div>
+
           <div className="flex items-center justify-between gap-4">
             <div>
               <div className="text-sm font-medium text-gray-900">Show HolaOra on storefront</div>
               <div className="text-xs text-gray-500 mt-0.5">
-                AI assistant: {data.aiAssistantEnabled ? 'on' : 'off'} (mutually exclusive)
+                AI assistant: {data.aiAssistantEnabled ? 'on' : 'off'}
+                {data.storefrontAiGeoSplitEnabled && (data.aiAssistantVisitorCountryCodes?.length ?? 0) > 0
+                  ? ' — geo split on (both may be enabled)'
+                  : ' — mutually exclusive unless geo split'}
               </div>
             </div>
             <button

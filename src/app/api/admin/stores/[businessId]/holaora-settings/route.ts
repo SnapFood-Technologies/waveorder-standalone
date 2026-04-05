@@ -4,6 +4,8 @@ import type { Prisma } from '@prisma/client'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 import { HO_MUTEX_ERR_ENABLE_HOLA_EMBED } from '@/lib/holaora-ai-mutex-messages'
+import { aiHolaMutexEnforced } from '@/lib/storefront-ai-hola-geo-split'
+import { filterToCatalogCountryCodes } from '@/lib/catalog-country-options'
 
 const uuidLike = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -20,6 +22,8 @@ const patchSchema = z
     holaoraChatSuggestions: z.union([z.array(z.string().max(200)).max(30), z.null()]).optional(),
     holaoraIframeWidth: z.union([z.number().int().min(200).max(1200), z.null()]).optional(),
     holaoraIframeHeight: z.union([z.number().int().min(200).max(1200), z.null()]).optional(),
+    storefrontAiGeoSplitEnabled: z.boolean().optional(),
+    aiAssistantVisitorCountryCodes: z.array(z.string().max(8)).max(50).optional(),
   })
   .strict()
 
@@ -53,6 +57,8 @@ export async function GET(
         holaoraProvisioningStatus: true,
         holaoraProvisioningError: true,
         aiAssistantEnabled: true,
+        storefrontAiGeoSplitEnabled: true,
+        aiAssistantVisitorCountryCodes: true,
       },
     })
 
@@ -79,6 +85,10 @@ export async function GET(
       holaoraProvisioningStatus: business.holaoraProvisioningStatus,
       holaoraProvisioningError: business.holaoraProvisioningError,
       aiAssistantEnabled: business.aiAssistantEnabled,
+      storefrontAiGeoSplitEnabled: business.storefrontAiGeoSplitEnabled ?? false,
+      aiAssistantVisitorCountryCodes: Array.isArray(business.aiAssistantVisitorCountryCodes)
+        ? business.aiAssistantVisitorCountryCodes
+        : [],
     })
   } catch (e) {
     console.error('holaora-settings GET', e)
@@ -141,6 +151,8 @@ export async function PATCH(
         holaoraEntitled: true,
         aiAssistantEnabled: true,
         holaoraStorefrontEmbedEnabled: true,
+        storefrontAiGeoSplitEnabled: true,
+        aiAssistantVisitorCountryCodes: true,
       },
     })
     if (!current) {
@@ -154,7 +166,30 @@ export async function PATCH(
       )
     }
 
-    if (p.holaoraStorefrontEmbedEnabled === true && current.aiAssistantEnabled) {
+    const nextGeo =
+      p.storefrontAiGeoSplitEnabled !== undefined
+        ? p.storefrontAiGeoSplitEnabled
+        : current.storefrontAiGeoSplitEnabled
+    const nextCodes =
+      p.aiAssistantVisitorCountryCodes !== undefined
+        ? filterToCatalogCountryCodes(p.aiAssistantVisitorCountryCodes)
+        : filterToCatalogCountryCodes(current.aiAssistantVisitorCountryCodes)
+
+    if (nextGeo === true && nextCodes.length === 0) {
+      return NextResponse.json(
+        {
+          error:
+            'Geo split requires at least one country (WaveOrder AI regions), or turn geo split off.',
+        },
+        { status: 400 }
+      )
+    }
+
+    if (
+      p.holaoraStorefrontEmbedEnabled === true &&
+      current.aiAssistantEnabled &&
+      aiHolaMutexEnforced(nextGeo, nextCodes)
+    ) {
       return NextResponse.json({ error: HO_MUTEX_ERR_ENABLE_HOLA_EMBED }, { status: 400 })
     }
 
@@ -172,6 +207,9 @@ export async function PATCH(
       data.holaoraChatSuggestions = p.holaoraChatSuggestions as Prisma.InputJsonValue
     if (p.holaoraIframeWidth !== undefined) data.holaoraIframeWidth = p.holaoraIframeWidth
     if (p.holaoraIframeHeight !== undefined) data.holaoraIframeHeight = p.holaoraIframeHeight
+    if (p.storefrontAiGeoSplitEnabled !== undefined) data.storefrontAiGeoSplitEnabled = p.storefrontAiGeoSplitEnabled
+    if (p.aiAssistantVisitorCountryCodes !== undefined)
+      data.aiAssistantVisitorCountryCodes = filterToCatalogCountryCodes(p.aiAssistantVisitorCountryCodes)
 
     const updated = await prisma.business.update({
       where: { id: businessId },
@@ -189,6 +227,8 @@ export async function PATCH(
         holaoraIframeWidth: true,
         holaoraIframeHeight: true,
         aiAssistantEnabled: true,
+        storefrontAiGeoSplitEnabled: true,
+        aiAssistantVisitorCountryCodes: true,
       },
     })
 
@@ -208,6 +248,10 @@ export async function PATCH(
       holaoraIframeWidth: updated.holaoraIframeWidth,
       holaoraIframeHeight: updated.holaoraIframeHeight,
       aiAssistantEnabled: updated.aiAssistantEnabled,
+      storefrontAiGeoSplitEnabled: updated.storefrontAiGeoSplitEnabled ?? false,
+      aiAssistantVisitorCountryCodes: Array.isArray(updated.aiAssistantVisitorCountryCodes)
+        ? updated.aiAssistantVisitorCountryCodes
+        : [],
     })
   } catch (e) {
     console.error('holaora-settings PATCH', e)

@@ -319,6 +319,10 @@ model Business {
 
   /// When true, storefront catalog filters products by visitor country (visibleCountryCodes / hiddenCountryCodes on Product)
   countryBasedCatalogEnabled Boolean @default(false)
+  /// When true with non-empty aiAssistantVisitorCountryCodes, visitors from those ISO2 countries see WaveOrder AI; others see Hola when both are enabled (AI/Hola mutex lifted only then). Visitor country uses same ?cc / ?visitorCountry / cookie as catalog.
+  storefrontAiGeoSplitEnabled Boolean @default(false)
+  /// ISO 3166-1 alpha-2 (catalog list). Visitors in this set get AI when geo split is on; others get Hola embed.
+  aiAssistantVisitorCountryCodes String[] @default([])
 
   // SERVICES business type: which request options are enabled (only used when businessType === SERVICES)
   serviceAllowAppointmentBooking Boolean? @default(true)

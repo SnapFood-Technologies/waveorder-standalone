@@ -838,6 +838,10 @@ export async function GET(
       showStockBadge: business.showStockBadge ?? false,
       storefrontAvailabilityDotEnabled: business.storefrontAvailabilityDotEnabled ?? false,
       countryBasedCatalogEnabled: business.countryBasedCatalogEnabled ?? false,
+      storefrontAiGeoSplitEnabled: business.storefrontAiGeoSplitEnabled ?? false,
+      aiAssistantVisitorCountryCodes: Array.isArray(business.aiAssistantVisitorCountryCodes)
+        ? business.aiAssistantVisitorCountryCodes
+        : [],
 
       // Custom Features
       aiAssistantEnabled: business.aiAssistantEnabled || false,

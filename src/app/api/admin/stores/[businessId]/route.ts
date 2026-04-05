@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { checkBusinessAccess } from '@/lib/api-helpers'
 import { prisma } from '@/lib/prisma'
 import { HO_MUTEX_ERR_BOTH_ON } from '@/lib/holaora-ai-mutex-messages'
+import { aiHolaMutexEnforced } from '@/lib/storefront-ai-hola-geo-split'
+import { filterToCatalogCountryCodes } from '@/lib/catalog-country-options'
 
 export async function GET(
   request: NextRequest,
@@ -227,11 +229,18 @@ export async function PUT(
 
     if (
       body.aiAssistantEnabled !== undefined ||
-      body.holaoraStorefrontEmbedEnabled !== undefined
+      body.holaoraStorefrontEmbedEnabled !== undefined ||
+      body.storefrontAiGeoSplitEnabled !== undefined ||
+      body.aiAssistantVisitorCountryCodes !== undefined
     ) {
       const existing = await prisma.business.findUnique({
         where: { id: businessId },
-        select: { aiAssistantEnabled: true, holaoraStorefrontEmbedEnabled: true },
+        select: {
+          aiAssistantEnabled: true,
+          holaoraStorefrontEmbedEnabled: true,
+          storefrontAiGeoSplitEnabled: true,
+          aiAssistantVisitorCountryCodes: true,
+        },
       })
       if (!existing) {
         return NextResponse.json({ error: 'Business not found' }, { status: 404 })
@@ -244,9 +253,28 @@ export async function PUT(
         body.holaoraStorefrontEmbedEnabled !== undefined
           ? body.holaoraStorefrontEmbedEnabled
           : existing.holaoraStorefrontEmbedEnabled
-      if (nextAi === true && nextEmbed === true) {
+      const nextGeo =
+        body.storefrontAiGeoSplitEnabled !== undefined
+          ? body.storefrontAiGeoSplitEnabled
+          : existing.storefrontAiGeoSplitEnabled
+      const nextCodes =
+        body.aiAssistantVisitorCountryCodes !== undefined
+          ? filterToCatalogCountryCodes(body.aiAssistantVisitorCountryCodes)
+          : filterToCatalogCountryCodes(existing.aiAssistantVisitorCountryCodes)
+      if (
+        nextAi === true &&
+        nextEmbed === true &&
+        aiHolaMutexEnforced(nextGeo, nextCodes)
+      ) {
         return NextResponse.json({ error: HO_MUTEX_ERR_BOTH_ON }, { status: 400 })
       }
+    }
+
+    const sanitizedBody = { ...body }
+    if (Array.isArray(body.aiAssistantVisitorCountryCodes)) {
+      sanitizedBody.aiAssistantVisitorCountryCodes = filterToCatalogCountryCodes(
+        body.aiAssistantVisitorCountryCodes
+      )
     }
 
     // Update business data
@@ -255,7 +283,7 @@ export async function PUT(
         id: businessId
       },
       data: {
-        ...body,
+        ...sanitizedBody,
         updatedAt: new Date()
       },
       select: {
