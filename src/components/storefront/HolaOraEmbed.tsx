@@ -2,8 +2,13 @@
 
 import { useEffect, useRef } from 'react'
 import { HOLAORA_EMBED_IFRAME_BASE } from '@/lib/holaora-embed-constants'
+import { cssAlignHolaLauncherWithStorefrontFab } from '@/lib/holaora-widget-storefront-css'
 
 export type HolaOraEmbedKind = 'SCRIPT' | 'IFRAME'
+
+const HOLA_SUPPRESS_STYLE_ID = 'waveorder-holaora-suppress-floating-style'
+const HOLA_BOTTOM_ALIGN_STYLE_ID = 'waveorder-holaora-bottom-align-style'
+const BODY_CLASS_SUPPRESS_HOLA = 'wo-holaora-suppress-floating'
 
 export type HolaOraEmbedProps = {
   kind: HolaOraEmbedKind
@@ -21,6 +26,18 @@ export type HolaOraEmbedProps = {
   suggestions?: string[] | null
   iframeWidth?: number | null
   iframeHeight?: number | null
+  /**
+   * Hide Hola’s launcher + panel (same idea as hiding AI bubble / scroll-to-top during modals).
+   * Script embed: body class + CSS on #holaora-widget-container. Iframe: wrapper visibility.
+   */
+  suppressFloating?: boolean
+  /**
+   * Override Hola’s default bottom: 20px so the launcher matches storefront scroll-to-top FAB
+   * (2.5rem / 6rem — Tailwind bottom-10 / bottom-24).
+   */
+  alignBottomWithStorefrontFab?: boolean
+  /** When alignBottomWithStorefrontFab, use 6rem (elevated bar) vs 2.5rem. */
+  storefrontFabElevated?: boolean
 }
 
 /**
@@ -39,8 +56,53 @@ export function HolaOraEmbed({
   suggestions,
   iframeWidth,
   iframeHeight,
+  suppressFloating = false,
+  alignBottomWithStorefrontFab = false,
+  storefrontFabElevated = false,
 }: HolaOraEmbedProps) {
   const injected = useRef(false)
+
+  // One-time rule: hide widget when body has suppress class (script injects #holaora-widget-container).
+  useEffect(() => {
+    if (kind !== 'SCRIPT') return
+    if (document.getElementById(HOLA_SUPPRESS_STYLE_ID)) return
+    const el = document.createElement('style')
+    el.id = HOLA_SUPPRESS_STYLE_ID
+    el.textContent = `body.${BODY_CLASS_SUPPRESS_HOLA} #holaora-widget-container { visibility: hidden !important; pointer-events: none !important; }`
+    document.head.appendChild(el)
+  }, [kind])
+
+  useEffect(() => {
+    if (kind !== 'SCRIPT') {
+      document.body.classList.remove(BODY_CLASS_SUPPRESS_HOLA)
+      return
+    }
+    if (!suppressFloating) {
+      document.body.classList.remove(BODY_CLASS_SUPPRESS_HOLA)
+      return
+    }
+    document.body.classList.add(BODY_CLASS_SUPPRESS_HOLA)
+    return () => {
+      document.body.classList.remove(BODY_CLASS_SUPPRESS_HOLA)
+    }
+  }, [kind, suppressFloating])
+
+  useEffect(() => {
+    if (kind !== 'SCRIPT' || !alignBottomWithStorefrontFab) {
+      document.getElementById(HOLA_BOTTOM_ALIGN_STYLE_ID)?.remove()
+      return
+    }
+    let el = document.getElementById(HOLA_BOTTOM_ALIGN_STYLE_ID) as HTMLStyleElement | null
+    if (!el) {
+      el = document.createElement('style')
+      el.id = HOLA_BOTTOM_ALIGN_STYLE_ID
+      document.head.appendChild(el)
+    }
+    el.textContent = cssAlignHolaLauncherWithStorefrontFab(storefrontFabElevated)
+    return () => {
+      document.getElementById(HOLA_BOTTOM_ALIGN_STYLE_ID)?.remove()
+    }
+  }, [kind, alignBottomWithStorefrontFab, storefrontFabElevated])
 
   useEffect(() => {
     if (kind !== 'SCRIPT' || !scriptSrc || !workspaceId || injected.current) return
@@ -69,8 +131,17 @@ export function HolaOraEmbed({
     const w = iframeWidth ?? 400
     const h = iframeHeight ?? 600
     const src = `${HOLAORA_EMBED_IFRAME_BASE}?workspace=${encodeURIComponent(workspaceId)}`
+    const bottomClass = alignBottomWithStorefrontFab
+      ? storefrontFabElevated
+        ? 'bottom-24'
+        : 'bottom-10'
+      : 'bottom-4'
     return (
-      <div className="fixed bottom-4 right-4 z-[60] max-w-[100vw] pointer-events-auto">
+      <div
+        className={`fixed right-4 z-[60] max-w-[100vw] pointer-events-auto ${bottomClass} ${
+          suppressFloating ? 'invisible pointer-events-none' : ''
+        }`}
+      >
         <iframe
           title="HolaOra chat"
           src={src}

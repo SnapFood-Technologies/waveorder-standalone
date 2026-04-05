@@ -3908,6 +3908,16 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
     }
   }, [])
 
+  const suppressHolaFloating =
+    showCartModal ||
+    showProductModal ||
+    showBusinessInfoModal ||
+    showShareModal ||
+    showSchedulingModal ||
+    showFilterModal
+  const holaFabElevated =
+    cartItemCount > 0 && !storeData.isTemporarilyClosed && storeData.mobileCartStyle !== 'badge'
+
   return (
     <div className="min-h-screen bg-white" style={{ fontFamily: storeData.fontFamily }}>
       {storefrontChat.showHolaEmbed && storeData.holaoraAccountId && (
@@ -3923,6 +3933,9 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           suggestions={storeData.holaoraChatSuggestions}
           iframeWidth={storeData.holaoraIframeWidth}
           iframeHeight={storeData.holaoraIframeHeight}
+          suppressFloating={suppressHolaFloating}
+          alignBottomWithStorefrontFab
+          storefrontFabElevated={holaFabElevated}
         />
       )}
       {storefrontChat.showAiAssistant &&

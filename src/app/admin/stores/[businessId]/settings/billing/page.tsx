@@ -8,9 +8,5 @@ interface BillingPageProps {
 export default async function BillingPage({ params }: BillingPageProps) {
   const { businessId } = await params
   
-  return (
-    <div className="p-6">
-      <BillingPanel businessId={businessId} />
-    </div>
-  )
+  return <BillingPanel businessId={businessId} />
 }
