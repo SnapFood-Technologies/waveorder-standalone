@@ -29,6 +29,8 @@ export const waveorderMarketingSiteSchema = z.object({
   position: z.string().max(64).nullable().optional(),
   title: z.string().max(200).nullable().optional(),
   greeting: z.string().max(500).nullable().optional(),
+  /** Script: data-launcher-icon (Hola preset id, e.g. heart) */
+  launcherIcon: z.string().max(64).nullable().optional(),
   /** Script: data-suggestions-enabled */
   suggestionsEnabled: z.boolean().default(false),
   /** Script: data-suggestions — JSON array of suggestion strings */

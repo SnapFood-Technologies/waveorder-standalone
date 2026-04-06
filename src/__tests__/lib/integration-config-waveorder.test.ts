@@ -21,9 +21,11 @@ describe('holaOraConfigSchema waveorderMarketingSite', () => {
         embedEnabled: true,
         embedKind: 'SCRIPT' as const,
         workspaceId: '56e25486-18e7-49ae-8db0-10725f151a6f',
+        launcherIcon: 'heart',
       },
     })
     expect(r.success).toBe(true)
+    if (r.success) expect(r.data.waveorderMarketingSite?.launcherIcon).toBe('heart')
   })
 
   it('normalizeIntegrationConfig accepts merged config', () => {

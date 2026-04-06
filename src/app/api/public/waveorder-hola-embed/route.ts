@@ -37,6 +37,7 @@ export async function GET() {
         position: site.position ?? null,
         title: site.title ?? null,
         greeting: site.greeting ?? null,
+        launcherIcon: site.launcherIcon ?? null,
         suggestionsEnabled: site.suggestionsEnabled ?? false,
         suggestions: Array.isArray(site.suggestions) ? site.suggestions : [],
         iframeWidth: site.iframeWidth ?? null,

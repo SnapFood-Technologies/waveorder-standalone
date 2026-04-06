@@ -51,8 +51,7 @@ import { HolaOraEmbed } from './HolaOraEmbed'
 import { getHolaoraEmbedScriptUrl } from '@/lib/holaora-embed-constants'
 import {
   persistCatalogVisitorCookie,
-  readCatalogVisitorIsoFromBrowser,
-  readInitialCatalogVisitorIso,
+  resolveCatalogVisitorIsoFromClientState,
 } from '@/lib/storefront-catalog-visitor'
 import { computeStorefrontChatPresentation } from '@/lib/storefront-ai-hola-geo-split'
 import { getStorefrontTranslations } from '@/utils/storefront-translations'
@@ -118,6 +117,7 @@ interface StoreData {
   rememberCustomerEnabled?: boolean
   countryBasedCatalogEnabled?: boolean
   storefrontAiGeoSplitEnabled?: boolean
+  resolvedVisitorCountryIso?: string | null
   aiAssistantVisitorCountryCodes?: string[]
   aiAssistantEnabled?: boolean
   // HolaOra: from GET /api/storefront/[slug] (entitled, embed on, account id; legacy holaoraSuperAdminForceOff in API).
@@ -129,6 +129,7 @@ interface StoreData {
   holaoraChatPosition?: string | null
   holaoraChatTitle?: string | null
   holaoraChatGreeting?: string | null
+  holaoraChatLauncherIcon?: string | null
   holaoraChatSuggestionsEnabled?: boolean
   holaoraChatSuggestions?: string[] | null
   holaoraIframeWidth?: number | null
@@ -376,22 +377,33 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
   const catalogOrChatVisitorIsoEnabled =
     !!storeData.countryBasedCatalogEnabled || !!storeData.storefrontAiGeoSplitEnabled
   const [catalogVisitorIso, setCatalogVisitorIso] = useState<string | null>(() =>
-    readInitialCatalogVisitorIso(catalogOrChatVisitorIsoEnabled, searchParams)
+    resolveCatalogVisitorIsoFromClientState(
+      catalogOrChatVisitorIsoEnabled,
+      searchParams,
+      storeData.resolvedVisitorCountryIso
+    )
   )
   useEffect(() => {
     if (!catalogOrChatVisitorIsoEnabled) {
       setCatalogVisitorIso(null)
       return
     }
+    const next = resolveCatalogVisitorIsoFromClientState(
+      true,
+      searchParams,
+      storeData.resolvedVisitorCountryIso
+    )
+    setCatalogVisitorIso(next)
     const cc = searchParams.get('cc') || searchParams.get('visitorCountry')
     if (cc && /^[a-zA-Z]{2}$/.test(cc)) {
-      const iso = cc.toUpperCase()
-      setCatalogVisitorIso(iso)
-      persistCatalogVisitorCookie(iso)
-      return
+      persistCatalogVisitorCookie(cc.toUpperCase())
     }
-    setCatalogVisitorIso(readCatalogVisitorIsoFromBrowser())
-  }, [catalogOrChatVisitorIsoEnabled, storeData.slug, searchParams])
+  }, [
+    catalogOrChatVisitorIsoEnabled,
+    storeData.slug,
+    searchParams,
+    storeData.resolvedVisitorCountryIso,
+  ])
 
   const storefrontChat = useMemo(
     () =>
@@ -1240,6 +1252,7 @@ export default function SalonStoreFront({ storeData }: { storeData: StoreData })
           position={storeData.holaoraChatPosition}
           title={storeData.holaoraChatTitle}
           greeting={storeData.holaoraChatGreeting}
+          launcherIcon={storeData.holaoraChatLauncherIcon}
           suggestionsEnabled={storeData.holaoraChatSuggestionsEnabled}
           suggestions={storeData.holaoraChatSuggestions}
           iframeWidth={storeData.holaoraIframeWidth}

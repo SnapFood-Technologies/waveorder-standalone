@@ -24,6 +24,7 @@ type SitePayload = {
   position?: string | null
   title?: string | null
   greeting?: string | null
+  launcherIcon?: string | null
   suggestionsEnabled?: boolean
   suggestions?: string[]
   iframeWidth?: number | null
@@ -50,6 +51,7 @@ export function WaveOrderWebsiteHolaModal({
   const [position, setPosition] = useState('bottom-right')
   const [title, setTitle] = useState('')
   const [greeting, setGreeting] = useState('')
+  const [launcherIcon, setLauncherIcon] = useState('')
   const [suggestionsEnabled, setSuggestionsEnabled] = useState(false)
   const [suggestionsText, setSuggestionsText] = useState('')
   const [iframeW, setIframeW] = useState('400')
@@ -79,6 +81,7 @@ export function WaveOrderWebsiteHolaModal({
         setPosition(s.position || 'bottom-right')
         setTitle(s.title || '')
         setGreeting(s.greeting || '')
+        setLauncherIcon(s.launcherIcon || '')
         setSuggestionsEnabled(!!s.suggestionsEnabled)
         setSuggestionsText((s.suggestions || []).join('\n'))
         setIframeW(s.iframeWidth != null ? String(s.iframeWidth) : '400')
@@ -95,6 +98,7 @@ export function WaveOrderWebsiteHolaModal({
         setPosition('bottom-right')
         setTitle('')
         setGreeting('')
+        setLauncherIcon('')
         setSuggestionsEnabled(false)
         setSuggestionsText('')
         setIframeW('400')
@@ -155,6 +159,7 @@ export function WaveOrderWebsiteHolaModal({
         position: position.trim(),
         title: title.trim(),
         greeting: greeting.trim(),
+        launcherIcon: launcherIcon.trim(),
         suggestionsEnabled,
         suggestions: suggestionsText
           .split('\n')
@@ -388,6 +393,18 @@ export function WaveOrderWebsiteHolaModal({
                     />
                     <p className="text-xs text-gray-500 mt-1">
                       Don&apos;t paste <code className="bg-gray-100 px-0.5">%20</code> sequences — type the sentence normally.
+                    </p>
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-gray-700 mb-1">Launcher icon</label>
+                    <input
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2"
+                      value={launcherIcon}
+                      onChange={(e) => setLauncherIcon(e.target.value)}
+                      placeholder="e.g. heart"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">
+                      HolaOra <code className="bg-gray-100 px-0.5">data-launcher-icon</code> preset id.
                     </p>
                   </div>
                   <div className="sm:col-span-2 flex items-center gap-2">

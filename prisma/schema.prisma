@@ -479,6 +479,8 @@ model Business {
   holaoraChatTitle              String?
   /// Script tag: data-greeting.
   holaoraChatGreeting           String?
+  /// Script tag: data-launcher-icon (e.g. heart) — HolaOra widget launcher icon preset.
+  holaoraChatLauncherIcon       String?
   /// Script tag: data-suggestions-enabled (Hola quick-reply chips).
   holaoraChatSuggestionsEnabled Boolean @default(false)
   /// Script tag: data-suggestions — JSON string[] (stored as Json).

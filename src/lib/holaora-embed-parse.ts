@@ -10,6 +10,8 @@ export type ParsedHolaSnippet = {
   position: string | null
   title: string | null
   greeting: string | null
+  /** Script: data-launcher-icon (e.g. heart) */
+  launcherIcon: string | null
   suggestionsEnabled?: boolean | null
   suggestions?: string[] | null
   kind: 'SCRIPT' | 'IFRAME' | null
@@ -35,6 +37,7 @@ export function parseHolaScriptSnippet(html: string): ParsedHolaSnippet {
     position: null,
     title: null,
     greeting: null,
+    launcherIcon: null,
     suggestionsEnabled: null,
     suggestions: null,
     kind: null,
@@ -53,6 +56,10 @@ export function parseHolaScriptSnippet(html: string): ParsedHolaSnippet {
   const position = html.match(/data-position\s*=\s*["']([^"']+)["']/i)?.[1] ?? null
   const titleRaw = html.match(/data-title\s*=\s*["']([^"']+)["']/i)?.[1] ?? null
   const greetingRaw = html.match(/data-greeting\s*=\s*["']([^"']+)["']/i)?.[1] ?? null
+  const launcherIconRaw =
+    html.match(/data-launcher-icon\s*=\s*["']([^"']+)["']/i)?.[1] ??
+    html.match(/data-launcher-icon\s*=\s*([^\s/>]+)/i)?.[1] ??
+    null
   const sugEnRaw = html.match(/data-suggestions-enabled\s*=\s*["']([^"']+)["']/i)?.[1]?.trim().toLowerCase()
   const suggestionsEnabled =
     sugEnRaw === 'true' || sugEnRaw === '1' ? true : sugEnRaw === 'false' || sugEnRaw === '0' ? false : null
@@ -76,6 +83,7 @@ export function parseHolaScriptSnippet(html: string): ParsedHolaSnippet {
     position,
     title: decodeAttr(titleRaw),
     greeting: decodeAttr(greetingRaw),
+    launcherIcon: launcherIconRaw ? decodeAttr(launcherIconRaw) : null,
     suggestionsEnabled,
     suggestions,
     kind: workspaceId ? 'SCRIPT' : null,
@@ -133,6 +141,7 @@ export function parseHolaIframeSnippet(html: string): ParsedHolaSnippet {
     position: null,
     title: null,
     greeting: null,
+    launcherIcon: null,
     suggestionsEnabled: null,
     suggestions: null,
     kind: workspaceId ? 'IFRAME' : null,
@@ -152,6 +161,7 @@ export function parseHolaEmbedPaste(raw: string): ParsedHolaSnippet {
     position: null,
     title: null,
     greeting: null,
+    launcherIcon: null,
     suggestionsEnabled: null,
     suggestions: null,
     kind: null,

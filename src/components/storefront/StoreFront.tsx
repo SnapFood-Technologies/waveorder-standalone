@@ -51,8 +51,7 @@ import { getStorefrontTranslations } from '@/utils/storefront-translations'
 import { logStorefrontWhatsAppOrderRedirect } from '@/lib/client-system-log'
 import {
   persistCatalogVisitorCookie,
-  readCatalogVisitorIsoFromBrowser,
-  readInitialCatalogVisitorIso
+  resolveCatalogVisitorIsoFromClientState,
 } from '@/lib/storefront-catalog-visitor'
 import {
   canSubmitStorefrontOrder,
@@ -1930,6 +1929,8 @@ interface StoreData {
   timezone?: string
   countryBasedCatalogEnabled?: boolean
   storefrontAiGeoSplitEnabled?: boolean
+  /** From GET /api/storefront/[slug]: query (?cc) then IP when catalog or AI geo split is on. */
+  resolvedVisitorCountryIso?: string | null
   aiAssistantVisitorCountryCodes?: string[]
   aiAssistantEnabled?: boolean
   // HolaOra: from GET /api/storefront/[slug] (entitled, embed on, account id; legacy holaoraSuperAdminForceOff in API).
@@ -1941,6 +1942,7 @@ interface StoreData {
   holaoraChatPosition?: string | null
   holaoraChatTitle?: string | null
   holaoraChatGreeting?: string | null
+  holaoraChatLauncherIcon?: string | null
   holaoraChatSuggestionsEnabled?: boolean
   holaoraChatSuggestions?: string[] | null
   holaoraIframeWidth?: number | null
@@ -2094,7 +2096,11 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
   const catalogOrChatVisitorIsoEnabled =
     !!storeData.countryBasedCatalogEnabled || !!storeData.storefrontAiGeoSplitEnabled
   const [catalogVisitorIso, setCatalogVisitorIso] = useState<string | null>(() =>
-    readInitialCatalogVisitorIso(catalogOrChatVisitorIsoEnabled, searchParams)
+    resolveCatalogVisitorIsoFromClientState(
+      catalogOrChatVisitorIsoEnabled,
+      searchParams,
+      storeData.resolvedVisitorCountryIso
+    )
   )
 
   useEffect(() => {
@@ -2102,15 +2108,22 @@ export default function StoreFront({ storeData }: { storeData: StoreData }) {
       setCatalogVisitorIso(null)
       return
     }
+    const next = resolveCatalogVisitorIsoFromClientState(
+      true,
+      searchParams,
+      storeData.resolvedVisitorCountryIso
+    )
+    setCatalogVisitorIso(next)
     const cc = searchParams.get('cc') || searchParams.get('visitorCountry')
     if (cc && /^[a-zA-Z]{2}$/.test(cc)) {
-      const iso = cc.toUpperCase()
-      setCatalogVisitorIso(iso)
-      persistCatalogVisitorCookie(iso)
-      return
+      persistCatalogVisitorCookie(cc.toUpperCase())
     }
-    setCatalogVisitorIso(readCatalogVisitorIsoFromBrowser())
-  }, [catalogOrChatVisitorIsoEnabled, storeData.slug, searchParams])
+  }, [
+    catalogOrChatVisitorIsoEnabled,
+    storeData.slug,
+    searchParams,
+    storeData.resolvedVisitorCountryIso,
+  ])
 
   const storefrontChat = useMemo(
     () =>
@@ -3929,6 +3942,7 @@ const handleDeliveryTypeChange = (newType: 'delivery' | 'pickup' | 'dineIn') => 
           position={storeData.holaoraChatPosition}
           title={storeData.holaoraChatTitle}
           greeting={storeData.holaoraChatGreeting}
+          launcherIcon={storeData.holaoraChatLauncherIcon}
           suggestionsEnabled={storeData.holaoraChatSuggestionsEnabled}
           suggestions={storeData.holaoraChatSuggestions}
           iframeWidth={storeData.holaoraIframeWidth}
