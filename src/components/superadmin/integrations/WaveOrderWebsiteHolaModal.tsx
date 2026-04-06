@@ -204,6 +204,7 @@ export function WaveOrderWebsiteHolaModal({
     if (p.position) setPosition(p.position)
     if (p.title) setTitle(p.title)
     if (p.greeting) setGreeting(p.greeting)
+    if (p.launcherIcon) setLauncherIcon(p.launcherIcon)
     if (p.suggestions?.length) {
       setSuggestionsEnabled(true)
       setSuggestionsText(p.suggestions.join('\n'))
@@ -233,6 +234,7 @@ export function WaveOrderWebsiteHolaModal({
     if (position.trim()) lines.push(`  data-position="${position.trim()}"`)
     if (title.trim()) lines.push(`  data-title="${encodeURIComponent(title.trim())}"`)
     if (greeting.trim()) lines.push(`  data-greeting="${encodeURIComponent(greeting.trim())}"`)
+    if (launcherIcon.trim()) lines.push(`  data-launcher-icon="${launcherIcon.trim()}"`)
     if (suggestionsEnabled) {
       lines.push(`  data-suggestions-enabled="true"`)
       const list = suggestionsText
