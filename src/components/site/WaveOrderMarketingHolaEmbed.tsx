@@ -13,6 +13,7 @@ type EmbedPayload = {
   position?: string | null
   title?: string | null
   greeting?: string | null
+  launcherIcon?: string | null
   suggestionsEnabled?: boolean
   suggestions?: string[]
   iframeWidth?: number | null
@@ -52,6 +53,7 @@ export function WaveOrderMarketingHolaEmbed() {
       position={data.position}
       title={data.title}
       greeting={data.greeting}
+      launcherIcon={data.launcherIcon}
       suggestionsEnabled={data.suggestionsEnabled}
       suggestions={data.suggestions}
       iframeWidth={data.iframeWidth}

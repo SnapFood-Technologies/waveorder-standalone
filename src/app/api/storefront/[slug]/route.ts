@@ -231,7 +231,7 @@ export async function GET(
       : [business.id]
 
     let visitorIso: string | null = null
-    if (business.countryBasedCatalogEnabled) {
+    if (business.countryBasedCatalogEnabled || business.storefrontAiGeoSplitEnabled) {
       visitorIso = await resolveVisitorCountryIso(request)
     }
     const countryCatalogOpts = {
@@ -842,6 +842,8 @@ export async function GET(
       aiAssistantVisitorCountryCodes: Array.isArray(business.aiAssistantVisitorCountryCodes)
         ? business.aiAssistantVisitorCountryCodes
         : [],
+      // Query (?cc / ?visitorCountry) then IP — same as catalog; client uses after URL+cookie for AI vs Hola.
+      resolvedVisitorCountryIso: visitorIso,
 
       // Custom Features
       aiAssistantEnabled: business.aiAssistantEnabled || false,
@@ -858,6 +860,7 @@ export async function GET(
       holaoraChatPosition: business.holaoraChatPosition ?? null,
       holaoraChatTitle: business.holaoraChatTitle ?? null,
       holaoraChatGreeting: business.holaoraChatGreeting ?? null,
+      holaoraChatLauncherIcon: business.holaoraChatLauncherIcon ?? null,
       holaoraChatSuggestionsEnabled: business.holaoraChatSuggestionsEnabled ?? false,
       holaoraChatSuggestions: holaSuggestionsFromDb(business.holaoraChatSuggestions) ?? null,
       holaoraIframeWidth: business.holaoraIframeWidth ?? null,

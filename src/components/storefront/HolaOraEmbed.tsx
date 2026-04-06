@@ -20,6 +20,8 @@ export type HolaOraEmbedProps = {
   position?: string | null
   title?: string | null
   greeting?: string | null
+  /** Script: data-launcher-icon (Hola preset, e.g. heart) */
+  launcherIcon?: string | null
   /** Script: data-suggestions-enabled */
   suggestionsEnabled?: boolean | null
   /** Script: data-suggestions — JSON array of quick-reply labels */
@@ -52,6 +54,7 @@ export function HolaOraEmbed({
   position,
   title,
   greeting,
+  launcherIcon,
   suggestionsEnabled,
   suggestions,
   iframeWidth,
@@ -115,6 +118,7 @@ export function HolaOraEmbed({
     if (position) s.dataset.position = position
     if (title) s.setAttribute('data-title', encodeURIComponent(title))
     if (greeting) s.setAttribute('data-greeting', encodeURIComponent(greeting))
+    if (launcherIcon?.trim()) s.setAttribute('data-launcher-icon', launcherIcon.trim())
     if (suggestionsEnabled) {
       s.setAttribute('data-suggestions-enabled', 'true')
       const list = Array.isArray(suggestions) ? suggestions : []
@@ -125,7 +129,18 @@ export function HolaOraEmbed({
       s.remove()
       injected.current = false
     }
-  }, [kind, workspaceId, scriptSrc, primaryColor, position, title, greeting, suggestionsEnabled, suggestions])
+  }, [
+    kind,
+    workspaceId,
+    scriptSrc,
+    primaryColor,
+    position,
+    title,
+    greeting,
+    launcherIcon,
+    suggestionsEnabled,
+    suggestions,
+  ])
 
   if (kind === 'IFRAME') {
     const w = iframeWidth ?? 400

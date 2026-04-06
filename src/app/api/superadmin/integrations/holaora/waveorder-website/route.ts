@@ -17,6 +17,7 @@ const patchBody = z
     position: z.union([z.string().max(64), z.literal('')]).optional(),
     title: z.union([z.string().max(200), z.literal('')]).optional(),
     greeting: z.union([z.string().max(500), z.literal('')]).optional(),
+    launcherIcon: z.union([z.string().max(64), z.literal('')]).optional(),
     suggestionsEnabled: z.boolean().optional(),
     suggestions: z.array(z.string().max(200)).max(30).optional(),
     iframeWidth: z.union([z.number().int().min(200).max(1200), z.null()]).optional(),
@@ -55,6 +56,7 @@ export async function GET() {
           position: null,
           title: null,
           greeting: null,
+          launcherIcon: null,
           suggestionsEnabled: false,
           suggestions: [],
           iframeWidth: null,
@@ -178,6 +180,7 @@ export async function PATCH(request: NextRequest) {
       position: (p.position ?? '').trim() || null,
       title: (p.title ?? '').trim() || null,
       greeting: (p.greeting ?? '').trim() || null,
+      launcherIcon: (p.launcherIcon ?? '').trim() || null,
       suggestionsEnabled: p.suggestionsEnabled ?? prev?.suggestionsEnabled ?? false,
       suggestions:
         p.suggestions !== undefined ? p.suggestions : prev?.suggestions ?? [],

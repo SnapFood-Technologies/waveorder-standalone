@@ -25,6 +25,15 @@ describe('parseHolaScriptSnippet', () => {
     expect(p.greeting).toBe('Hi! How can I help you today?')
   })
 
+  it('extracts data-launcher-icon', () => {
+    const html = `<script src="https://holaora.com/embed/chat.js"
+  data-workspace="${WS}"
+  data-launcher-icon="heart">
+</script>`
+    const p = parseHolaScriptSnippet(html)
+    expect(p.launcherIcon).toBe('heart')
+  })
+
   it('extracts data-suggestions-enabled and data-suggestions', () => {
     const sug = ['Pricing', 'Help']
     const html = `<script src="https://holaora.com/embed/chat.js"

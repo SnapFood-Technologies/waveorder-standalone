@@ -18,6 +18,7 @@ const patchSchema = z
     holaoraChatPosition: z.union([z.string().max(64), z.null()]).optional(),
     holaoraChatTitle: z.union([z.string().max(200), z.null()]).optional(),
     holaoraChatGreeting: z.union([z.string().max(500), z.null()]).optional(),
+    holaoraChatLauncherIcon: z.union([z.string().max(64), z.null()]).optional(),
     holaoraChatSuggestionsEnabled: z.boolean().optional(),
     holaoraChatSuggestions: z.union([z.array(z.string().max(200)).max(30), z.null()]).optional(),
     holaoraIframeWidth: z.union([z.number().int().min(200).max(1200), z.null()]).optional(),
@@ -49,6 +50,7 @@ export async function GET(
         holaoraChatPosition: true,
         holaoraChatTitle: true,
         holaoraChatGreeting: true,
+        holaoraChatLauncherIcon: true,
         holaoraChatSuggestionsEnabled: true,
         holaoraChatSuggestions: true,
         holaoraIframeWidth: true,
@@ -75,6 +77,7 @@ export async function GET(
       holaoraChatPosition: business.holaoraChatPosition,
       holaoraChatTitle: business.holaoraChatTitle,
       holaoraChatGreeting: business.holaoraChatGreeting,
+      holaoraChatLauncherIcon: business.holaoraChatLauncherIcon,
       holaoraChatSuggestionsEnabled: business.holaoraChatSuggestionsEnabled ?? false,
       holaoraChatSuggestions: Array.isArray(business.holaoraChatSuggestions)
         ? (business.holaoraChatSuggestions as string[])
@@ -201,6 +204,7 @@ export async function PATCH(
     if (p.holaoraChatPosition !== undefined) data.holaoraChatPosition = p.holaoraChatPosition
     if (p.holaoraChatTitle !== undefined) data.holaoraChatTitle = p.holaoraChatTitle
     if (p.holaoraChatGreeting !== undefined) data.holaoraChatGreeting = p.holaoraChatGreeting
+    if (p.holaoraChatLauncherIcon !== undefined) data.holaoraChatLauncherIcon = p.holaoraChatLauncherIcon
     if (p.holaoraChatSuggestionsEnabled !== undefined)
       data.holaoraChatSuggestionsEnabled = p.holaoraChatSuggestionsEnabled
     if (p.holaoraChatSuggestions !== undefined)
@@ -222,6 +226,7 @@ export async function PATCH(
         holaoraChatPosition: true,
         holaoraChatTitle: true,
         holaoraChatGreeting: true,
+        holaoraChatLauncherIcon: true,
         holaoraChatSuggestionsEnabled: true,
         holaoraChatSuggestions: true,
         holaoraIframeWidth: true,
@@ -241,6 +246,7 @@ export async function PATCH(
       holaoraChatPosition: updated.holaoraChatPosition,
       holaoraChatTitle: updated.holaoraChatTitle,
       holaoraChatGreeting: updated.holaoraChatGreeting,
+      holaoraChatLauncherIcon: updated.holaoraChatLauncherIcon,
       holaoraChatSuggestionsEnabled: updated.holaoraChatSuggestionsEnabled ?? false,
       holaoraChatSuggestions: Array.isArray(updated.holaoraChatSuggestions)
         ? (updated.holaoraChatSuggestions as string[])

@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 import {
   cssAlignHolaLauncherWithStorefrontFab,
   HOLAORA_WIDGET_CONTAINER_SELECTOR,

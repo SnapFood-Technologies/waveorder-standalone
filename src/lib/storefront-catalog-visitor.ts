@@ -42,3 +42,30 @@ export function persistCatalogVisitorCookie(iso: string): void {
   if (!/^[A-Z]{2}$/.test(code)) return
   document.cookie = `${STOREFRONT_VISITOR_COUNTRY_COOKIE}=${code}; path=/; max-age=31536000; SameSite=Lax`
 }
+
+/** Normalize API / server ISO2 for client-side use (same shape as catalog visitor codes). */
+export function normalizeStorefrontVisitorIso2(raw: string | null | undefined): string | null {
+  if (raw == null || raw === '') return null
+  const t = String(raw).trim()
+  if (!/^[a-zA-Z]{2}$/.test(t)) return null
+  return t.toUpperCase()
+}
+
+/**
+ * Single precedence for storefront visitor ISO: URL (?cc / ?visitorCountry), then cookie,
+ * then server-resolved value from GET /api/storefront/[slug] (same query-then-IP rule as
+ * `resolveVisitorCountryIso` in visitor-country-catalog).
+ * Does not write cookies (IP guess is not persisted unless user uses ?cc=).
+ */
+export function resolveCatalogVisitorIsoFromClientState(
+  enabled: boolean,
+  searchParams: URLSearchParams,
+  serverResolvedIso: string | null | undefined
+): string | null {
+  if (!enabled) return null
+  const cc = searchParams.get('cc') || searchParams.get('visitorCountry')
+  if (cc && /^[a-zA-Z]{2}$/.test(cc)) return cc.toUpperCase()
+  const fromCookie = readCatalogVisitorIsoFromBrowser()
+  if (fromCookie != null) return fromCookie
+  return normalizeStorefrontVisitorIso2(serverResolvedIso)
+}

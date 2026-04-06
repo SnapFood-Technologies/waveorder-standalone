@@ -28,6 +28,7 @@ type HolaState = {
   holaoraChatPosition: string | null
   holaoraChatTitle: string | null
   holaoraChatGreeting: string | null
+  holaoraChatLauncherIcon: string | null
   holaoraChatSuggestionsEnabled: boolean
   holaoraChatSuggestions: string[] | null
   holaoraIframeWidth: number | null
@@ -69,6 +70,7 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
   const [position, setPosition] = useState('bottom-right')
   const [chatTitle, setChatTitle] = useState('')
   const [greeting, setGreeting] = useState('')
+  const [launcherIcon, setLauncherIcon] = useState('')
   const [suggestionsEnabled, setSuggestionsEnabled] = useState(false)
   const [suggestionsText, setSuggestionsText] = useState('')
   const [iframeW, setIframeW] = useState('400')
@@ -103,6 +105,7 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
       setPosition(json.holaoraChatPosition || 'bottom-right')
       setChatTitle(json.holaoraChatTitle || '')
       setGreeting(json.holaoraChatGreeting || '')
+      setLauncherIcon(json.holaoraChatLauncherIcon || '')
       setSuggestionsEnabled(!!json.holaoraChatSuggestionsEnabled)
       setSuggestionsText((json.holaoraChatSuggestions || []).join('\n'))
       setIframeW(json.holaoraIframeWidth != null ? String(json.holaoraIframeWidth) : '400')
@@ -134,6 +137,7 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
     if (position.trim()) parts.push(`  data-position="${position.trim()}"`)
     if (chatTitle.trim()) parts.push(`  data-title="${esc(chatTitle.trim())}"`)
     if (greeting.trim()) parts.push(`  data-greeting="${esc(greeting.trim())}"`)
+    if (launcherIcon.trim()) parts.push(`  data-launcher-icon="${launcherIcon.trim()}"`)
     if (suggestionsEnabled) {
       parts.push(`  data-suggestions-enabled="true"`)
       const list = suggestionsText
@@ -144,7 +148,16 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
     }
     parts.push(`></script>`)
     return parts.join('\n')
-  }, [workspaceId, primaryColor, position, chatTitle, greeting, suggestionsEnabled, suggestionsText])
+  }, [
+    workspaceId,
+    primaryColor,
+    position,
+    chatTitle,
+    greeting,
+    launcherIcon,
+    suggestionsEnabled,
+    suggestionsText,
+  ])
 
   const previewIframeTag = useMemo(() => {
     const ws = workspaceId.trim()
@@ -184,6 +197,7 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
     if (parsed.position) setPosition(parsed.position)
     if (parsed.title) setChatTitle(parsed.title)
     if (parsed.greeting) setGreeting(parsed.greeting)
+    if (parsed.launcherIcon) setLauncherIcon(parsed.launcherIcon)
     if (parsed.suggestions?.length) {
       setSuggestionsEnabled(true)
       setSuggestionsText(parsed.suggestions.join('\n'))
@@ -225,6 +239,7 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
       posNorm(position) !== posDb ||
       (chatTitle.trim() || null) !== (data.holaoraChatTitle || null) ||
       (greeting.trim() || null) !== (data.holaoraChatGreeting || null) ||
+      (launcherIcon.trim() || null) !== (data.holaoraChatLauncherIcon || null) ||
       suggestionsEnabled !== data.holaoraChatSuggestionsEnabled ||
       suggestionsText.split('\n').map((l) => l.trim()).filter(Boolean).join('\n') !==
         (data.holaoraChatSuggestions || []).join('\n') ||
@@ -242,6 +257,7 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
     position,
     chatTitle,
     greeting,
+    launcherIcon,
     suggestionsEnabled,
     suggestionsText,
     iframeW,
@@ -264,6 +280,7 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
         holaoraChatPosition: position.trim() || null,
         holaoraChatTitle: chatTitle.trim() || null,
         holaoraChatGreeting: greeting.trim() || null,
+        holaoraChatLauncherIcon: launcherIcon.trim() || null,
         holaoraChatSuggestionsEnabled: suggestionsEnabled,
         holaoraChatSuggestions: suggestionsText
           .split('\n')
@@ -292,6 +309,7 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
               holaoraChatPosition: json.holaoraChatPosition,
               holaoraChatTitle: json.holaoraChatTitle,
               holaoraChatGreeting: json.holaoraChatGreeting,
+              holaoraChatLauncherIcon: json.holaoraChatLauncherIcon,
               holaoraChatSuggestionsEnabled: json.holaoraChatSuggestionsEnabled,
               holaoraChatSuggestions: json.holaoraChatSuggestions,
               holaoraIframeWidth: json.holaoraIframeWidth,
@@ -555,6 +573,19 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
                   value={greeting}
                   disabled={!canEdit || saving}
                   onChange={(e) => setGreeting(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Launcher icon
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. heart (data-launcher-icon from HolaOra)"
+                  value={launcherIcon}
+                  disabled={!canEdit || saving}
+                  onChange={(e) => setLauncherIcon(e.target.value)}
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
                 />
               </div>
