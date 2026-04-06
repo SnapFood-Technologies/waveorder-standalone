@@ -70,6 +70,7 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
   const [position, setPosition] = useState('bottom-right')
   const [chatTitle, setChatTitle] = useState('')
   const [greeting, setGreeting] = useState('')
+  const [launcherIcon, setLauncherIcon] = useState('')
   const [suggestionsEnabled, setSuggestionsEnabled] = useState(false)
   const [suggestionsText, setSuggestionsText] = useState('')
   const [iframeW, setIframeW] = useState('400')
@@ -104,6 +105,7 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
       setPosition(json.holaoraChatPosition || 'bottom-right')
       setChatTitle(json.holaoraChatTitle || '')
       setGreeting(json.holaoraChatGreeting || '')
+      setLauncherIcon(json.holaoraChatLauncherIcon || '')
       setSuggestionsEnabled(!!json.holaoraChatSuggestionsEnabled)
       setSuggestionsText((json.holaoraChatSuggestions || []).join('\n'))
       setIframeW(json.holaoraIframeWidth != null ? String(json.holaoraIframeWidth) : '400')
@@ -135,6 +137,7 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
     if (position.trim()) parts.push(`  data-position="${position.trim()}"`)
     if (chatTitle.trim()) parts.push(`  data-title="${esc(chatTitle.trim())}"`)
     if (greeting.trim()) parts.push(`  data-greeting="${esc(greeting.trim())}"`)
+    if (launcherIcon.trim()) parts.push(`  data-launcher-icon="${launcherIcon.trim()}"`)
     if (suggestionsEnabled) {
       parts.push(`  data-suggestions-enabled="true"`)
       const list = suggestionsText
@@ -306,6 +309,7 @@ export function HolaOraSettings({ businessId }: { businessId: string }) {
               holaoraChatPosition: json.holaoraChatPosition,
               holaoraChatTitle: json.holaoraChatTitle,
               holaoraChatGreeting: json.holaoraChatGreeting,
+              holaoraChatLauncherIcon: json.holaoraChatLauncherIcon,
               holaoraChatSuggestionsEnabled: json.holaoraChatSuggestionsEnabled,
               holaoraChatSuggestions: json.holaoraChatSuggestions,
               holaoraIframeWidth: json.holaoraIframeWidth,

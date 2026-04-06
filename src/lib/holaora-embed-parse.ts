@@ -100,6 +100,7 @@ export function parseHolaIframeSnippet(html: string): ParsedHolaSnippet {
     position: null,
     title: null,
     greeting: null,
+    launcherIcon: null,
     suggestionsEnabled: null,
     suggestions: null,
     kind: null,
